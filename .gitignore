@@ -31,3 +31,9 @@ coverage/
 
 # Logs
 *.log
+
+# Vercel
+.vercel
+
+# TypeScript build info
+*.tsbuildinfo
