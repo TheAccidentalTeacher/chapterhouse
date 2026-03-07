@@ -53,6 +53,9 @@ The second track is no longer vague. It now has documented:
 - UI plan
 - hosting architecture
 - intelligence-engine behavior
+- MVP build checklist
+
+It also now has a real application scaffold in [web/README.md](web/README.md) and [web/package.json](web/package.json).
 
 That means this folder is now both:
 - the brand guide
@@ -175,6 +178,11 @@ Defines the cognitive layer of Chapterhouse: layered prompt architecture, person
 *Date: March 6, 2026*
 Defines the execution sequence for building Chapterhouse. Covers phase-by-phase implementation, deliverables, testing strategy, browser-console debugging workflow, recommended developer tooling, model-evaluation guidance for which AI should do the actual coding work, and the immediate next steps before scaffolding begins.
 
+#### [chapterhouse-mvp-build-checklist.md](chapterhouse-mvp-build-checklist.md)
+**Chapterhouse MVP Build Checklist**
+*Date: March 6, 2026*
+Locks the first practical implementation decisions for Chapterhouse: app location, package manager, component strategy, auth posture, env rules, migration strategy, day-one model providers, MVP scope, and the first vertical slice to build.
+
 ---
 
 ### SCOTT'S PORTFOLIO — Built Projects (Reference URLs)
@@ -220,18 +228,20 @@ Defines the execution sequence for building Chapterhouse. Covers phase-by-phase 
 | Mar 6, 2026 | Project docs now organized as an operating system | Added master operating guide for brand, commerce, content, research, and product decisions |
 | Mar 6, 2026 | Outside research now gets captured through a formal intake system | Added external intelligence log and evidence grading framework |
 | Mar 6, 2026 | Chapterhouse direction established | Added .env scaffold and living knowledge base blueprint for daily intelligence and retrieval |
-| Mar 6, 2026 | Internal AI product spec established | Added working specification for command-center app behavior, scoring, intelligence, and governance |
+| Mar 6, 2026 | Internal AI product spec established | Added working specification for Chapterhouse app behavior, scoring, intelligence, and governance |
 | Mar 6, 2026 | First-pass schema direction established | Added detailed data model specification for app entities, relationships, and workflow memory |
 | Mar 6, 2026 | Core workflow behavior established | Added workflow specification for briefs, research, opportunities, review, tasks, content, and document updates |
-| Mar 6, 2026 | First detailed UI plan established | Added screen-by-screen interface specification for the command-center app |
+| Mar 6, 2026 | First detailed UI plan established | Added screen-by-screen interface specification for the Chapterhouse app |
 | Mar 6, 2026 | Technical hosting direction established | Added technical architecture spec for hosting stack, service roles, request flows, ingestion flows, and build sequencing |
 | Mar 6, 2026 | Intelligence engine rules established | Added prompt, retrieval, scoring, ingestion, and citation logic for the internal AI system |
-| Mar 6, 2026 | Command-center hosting stack chosen | Vercel + Supabase + Qdrant + Upstash + Trigger.dev as the default architecture |
-| Mar 6, 2026 | Command-center UI direction chosen | GPT-style hybrid home, left nav, adaptive density, review queue, and opportunity-feed-first product intelligence |
-| Mar 6, 2026 | Command-center scoring model chosen | Three formal scores: store, curriculum, and content |
-| Mar 6, 2026 | Command-center workflow posture chosen | Once-daily brief, approval gates, staging-first document updates, and reviewed-calendar content flow |
-| Mar 6, 2026 | Command-center coding plan established | Added phased implementation plan, testing stack, F12 debugging workflow, tool recommendations, and model evaluation approach |
+| Mar 6, 2026 | Chapterhouse hosting stack chosen | Vercel + Supabase + Qdrant + Upstash + Trigger.dev as the default architecture |
+| Mar 6, 2026 | Chapterhouse UI direction chosen | GPT-style hybrid home, left nav, adaptive density, review queue, and opportunity-feed-first product intelligence |
+| Mar 6, 2026 | Chapterhouse scoring model chosen | Three formal scores: store, curriculum, and content |
+| Mar 6, 2026 | Chapterhouse workflow posture chosen | Once-daily brief, approval gates, staging-first document updates, and reviewed-calendar content flow |
+| Mar 6, 2026 | Chapterhouse coding plan established | Added phased implementation plan, testing stack, F12 debugging workflow, tool recommendations, and model evaluation approach |
 | Mar 6, 2026 | Internal system naming established | The internal operating system is now called **Chapterhouse** across the documentation |
+| Mar 6, 2026 | Chapterhouse Phase 0 decisions locked | Added MVP build checklist and settled the first implementation defaults |
+| Mar 6, 2026 | Chapterhouse app scaffold created | Initialized the Next.js app in `web/` with the documented route structure and first shell |
 
 ---
 
@@ -253,7 +263,7 @@ Defines the execution sequence for building Chapterhouse. Covers phase-by-phase 
 - [ ] Which of Scott's 5 web apps become products first?
 - [ ] Launch date target (before June 1? June 15?)
 - [ ] Mt. Drum — subjects/grades for local classes?
-- [ ] Command-center implementation order — scaffold immediately after spec review, or pause for one final architecture sanity pass?
+- [x] Chapterhouse implementation order — scaffold immediately after spec review
 - [ ] Production vendor setup — create and configure Supabase, Qdrant, Upstash, Trigger.dev, and Vercel projects
 - [ ] Initial competitor ingestion method — direct page parsing, email ingestion, or mixed first-pass pipeline?
 - [ ] Initial data seeding source — first from our planned catalog, first from competitors, or blended import pass?
