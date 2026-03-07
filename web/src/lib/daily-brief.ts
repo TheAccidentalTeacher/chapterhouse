@@ -1,5 +1,8 @@
 import { dailyBriefSections as fallbackSections } from "@/lib/mock-data";
-import { getSupabaseServerClient } from "@/lib/supabase-server";
+import {
+  getSupabaseServerClient,
+  getSupabaseServiceRoleClient,
+} from "@/lib/supabase-server";
 
 type PersistedBriefItem = {
   headline: string;
@@ -101,7 +104,8 @@ function normalizeSections(input: unknown): PersistedBriefSection[] {
 }
 
 export async function getLatestDailyBrief(): Promise<LatestDailyBrief> {
-  const supabase = await getSupabaseServerClient();
+  const supabase =
+    getSupabaseServiceRoleClient() || (await getSupabaseServerClient());
 
   if (!supabase) {
     return {

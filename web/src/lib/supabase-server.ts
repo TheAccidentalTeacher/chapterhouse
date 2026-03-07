@@ -1,3 +1,4 @@
+import { createClient } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { getPublicSupabaseEnv } from "@/lib/env";
@@ -24,6 +25,22 @@ export async function getSupabaseServerClient() {
           }
         });
       },
+    },
+  });
+}
+
+export function getSupabaseServiceRoleClient() {
+  const env = getPublicSupabaseEnv();
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!env || !serviceRoleKey) {
+    return null;
+  }
+
+  return createClient(env.url, serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
     },
   });
 }
