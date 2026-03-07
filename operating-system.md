@@ -63,13 +63,13 @@ The long game. Personalized curriculum, tools, systems, and software.
 | [edgy-names.md](edgy-names.md) | Brand personality edge exploration |
 | [ai-operating-principles.md](ai-operating-principles.md) | Rules for using AI without becoming idiots at scale |
 | [external-intelligence-log.md](external-intelligence-log.md) | Intake log for outside ideas, tools, and platform advice |
-| [living-knowledge-base-blueprint.md](living-knowledge-base-blueprint.md) | High-level blueprint for Chapterhouse and the living knowledge base |
-| [private-ai-workspace-spec.md](private-ai-workspace-spec.md) | Product definition for Chapterhouse |
-| [data-model-spec.md](data-model-spec.md) | Core schema and memory structure for Chapterhouse |
-| [workflow-spec.md](workflow-spec.md) | Operational loops for Chapterhouse briefs, research, opportunities, review, content, and tasks |
-| [ui-spec.md](ui-spec.md) | Screen-by-screen UI structure for Chapterhouse |
-| [technical-architecture-spec.md](technical-architecture-spec.md) | Hosting stack, service boundaries, flows, and deployment logic |
-| [intelligence-engine-spec.md](intelligence-engine-spec.md) | Prompting, retrieval, scoring, and ingestion behavior |
+| [chapterhouse-knowledge-base-blueprint.md](chapterhouse-knowledge-base-blueprint.md) | High-level blueprint for Chapterhouse and the living knowledge base |
+| [chapterhouse-product-spec.md](chapterhouse-product-spec.md) | Product definition for Chapterhouse |
+| [chapterhouse-data-model-spec.md](chapterhouse-data-model-spec.md) | Core schema and memory structure for Chapterhouse |
+| [chapterhouse-workflow-spec.md](chapterhouse-workflow-spec.md) | Operational loops for Chapterhouse briefs, research, opportunities, review, content, and tasks |
+| [chapterhouse-ui-spec.md](chapterhouse-ui-spec.md) | Screen-by-screen UI structure for Chapterhouse |
+| [chapterhouse-technical-architecture-spec.md](chapterhouse-technical-architecture-spec.md) | Hosting stack, service boundaries, flows, and deployment logic |
+| [chapterhouse-intelligence-engine-spec.md](chapterhouse-intelligence-engine-spec.md) | Prompting, retrieval, scoring, and ingestion behavior |
 | [README.md](README.md) | Project index, decision log, open questions |
 
 ---
@@ -88,13 +88,13 @@ Primary source docs:
 This includes Chapterhouse, the internal AI system for Scott and Anna: document memory, research intelligence, market tracking, opportunity scoring, content planning, review workflows, and task conversion.
 
 Primary source docs:
-- [living-knowledge-base-blueprint.md](living-knowledge-base-blueprint.md)
-- [private-ai-workspace-spec.md](private-ai-workspace-spec.md)
-- [data-model-spec.md](data-model-spec.md)
-- [workflow-spec.md](workflow-spec.md)
-- [ui-spec.md](ui-spec.md)
-- [technical-architecture-spec.md](technical-architecture-spec.md)
-- [intelligence-engine-spec.md](intelligence-engine-spec.md)
+- [chapterhouse-knowledge-base-blueprint.md](chapterhouse-knowledge-base-blueprint.md)
+- [chapterhouse-product-spec.md](chapterhouse-product-spec.md)
+- [chapterhouse-data-model-spec.md](chapterhouse-data-model-spec.md)
+- [chapterhouse-workflow-spec.md](chapterhouse-workflow-spec.md)
+- [chapterhouse-ui-spec.md](chapterhouse-ui-spec.md)
+- [chapterhouse-technical-architecture-spec.md](chapterhouse-technical-architecture-spec.md)
+- [chapterhouse-intelligence-engine-spec.md](chapterhouse-intelligence-engine-spec.md)
 
 These two tracks support each other. Chapterhouse exists in part to make the storefront smarter, faster, and more coherent.
 

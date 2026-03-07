@@ -210,11 +210,11 @@ The blueprint started broad. The current first-pass stack is now more specific.
 
 ### Why this matters
 The app has now moved from a private-workspace idea into an actual documented Chapterhouse architecture. For implementation details, see:
-- [technical-architecture-spec.md](technical-architecture-spec.md)
-- [data-model-spec.md](data-model-spec.md)
-- [workflow-spec.md](workflow-spec.md)
-- [ui-spec.md](ui-spec.md)
-- [intelligence-engine-spec.md](intelligence-engine-spec.md)
+- [chapterhouse-technical-architecture-spec.md](chapterhouse-technical-architecture-spec.md)
+- [chapterhouse-data-model-spec.md](chapterhouse-data-model-spec.md)
+- [chapterhouse-workflow-spec.md](chapterhouse-workflow-spec.md)
+- [chapterhouse-ui-spec.md](chapterhouse-ui-spec.md)
+- [chapterhouse-intelligence-engine-spec.md](chapterhouse-intelligence-engine-spec.md)
 
 ### Frontend
 - Next.js

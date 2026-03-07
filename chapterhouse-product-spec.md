@@ -22,11 +22,11 @@ This is an internal operating system for Next Chapter Homeschool Outpost and the
 
 ### Companion implementation specs
 This product spec is now supported by:
-- [data-model-spec.md](data-model-spec.md)
-- [workflow-spec.md](workflow-spec.md)
-- [ui-spec.md](ui-spec.md)
-- [technical-architecture-spec.md](technical-architecture-spec.md)
-- [intelligence-engine-spec.md](intelligence-engine-spec.md)
+- [chapterhouse-data-model-spec.md](chapterhouse-data-model-spec.md)
+- [chapterhouse-workflow-spec.md](chapterhouse-workflow-spec.md)
+- [chapterhouse-ui-spec.md](chapterhouse-ui-spec.md)
+- [chapterhouse-technical-architecture-spec.md](chapterhouse-technical-architecture-spec.md)
+- [chapterhouse-intelligence-engine-spec.md](chapterhouse-intelligence-engine-spec.md)
 
 That means this document defines **what Chapterhouse is**, while the companion docs define how it will be structured, behave, look, think, and run.
 

@@ -135,42 +135,42 @@ The master operating guide that turns the current document stack into a usable d
 *Date: March 6, 2026*
 The living intake log for outside research from sources like HubSpot, Substack, Shopify, Kit, Beehiiv, Pinterest, and operator case studies. Provides an evidence scale, research buckets, a decision framework, and a reusable entry template so outside advice gets translated into strategy instead of clutter.
 
-#### [living-knowledge-base-blueprint.md](living-knowledge-base-blueprint.md)
+#### [chapterhouse-knowledge-base-blueprint.md](chapterhouse-knowledge-base-blueprint.md)
 **Living Knowledge Base Blueprint — Chapterhouse + Daily Intelligence System**
 *Date: March 6, 2026*
 The architectural blueprint for building Chapterhouse around the brand guide documents. Covers core memory, working memory, fresh intelligence ingestion, daily brief generation, recommended stack, source quality rules, and the build sequence for turning the current document set into a real operating brain.
 
-#### [private-ai-workspace-spec.md](private-ai-workspace-spec.md)
+#### [chapterhouse-product-spec.md](chapterhouse-product-spec.md)
 **Product Spec — Chapterhouse**
 *Date: March 6, 2026*
 The product specification for Chapterhouse itself. Captures the workspace model, persona structure, governance rules, morning brief design, competitive intelligence model, scoring system, opportunity engine, channel approval philosophy, manual overrides, and the permanent founder truths the system must always keep loaded.
 
-#### [data-model-spec.md](data-model-spec.md)
+#### [chapterhouse-data-model-spec.md](chapterhouse-data-model-spec.md)
 **Data Model Spec — First-Pass Schema for Chapterhouse**
 *Date: March 6, 2026*
 The first substantial schema design for Chapterhouse. Defines the core entities, required fields, relationships, history strategy, brief storage model, task linking model, settings layer, and recommended implementation order so the app can be built on structured memory instead of loose text blobs.
 
-#### [workflow-spec.md](workflow-spec.md)
+#### [chapterhouse-workflow-spec.md](chapterhouse-workflow-spec.md)
 **Workflow Spec — The Core Operating Loops of Chapterhouse**
 *Date: March 6, 2026*
 Defines the six major system loops inside Chapterhouse: daily brief, research, product opportunity, content, document update, and task execution. Specifies cadence, inputs, steps, outputs, escalation logic, review touchpoints, persistence rules, and recommended workflow build order.
 
-#### [ui-spec.md](ui-spec.md)
+#### [chapterhouse-ui-spec.md](chapterhouse-ui-spec.md)
 **UI Spec — Screen-by-Screen Structure for Chapterhouse**
 *Date: March 6, 2026*
 Defines the first detailed interface plan for Chapterhouse, including navigation, theme posture, adaptive density, global UI elements, and the layouts, modules, actions, filters, and empty-state behavior for Home, Daily Brief, Research, Product Intelligence, Content Studio, Review Queue, Tasks, Documents, and Settings.
 
-#### [technical-architecture-spec.md](technical-architecture-spec.md)
+#### [chapterhouse-technical-architecture-spec.md](chapterhouse-technical-architecture-spec.md)
 **Technical Architecture Spec — Chapterhouse Hosting, Services, Flows, and Build Order**
 *Date: March 6, 2026*
 Defines the recommended infrastructure stack for Chapterhouse: Vercel, Supabase, Qdrant, Upstash, and Trigger.dev. Explains what each service is for, what data belongs where, how interactive and scheduled flows should work, how background jobs and ingestion are separated from the UI, and the phased implementation path from foundation to controlled automation.
 
-#### [intelligence-engine-spec.md](intelligence-engine-spec.md)
+#### [chapterhouse-intelligence-engine-spec.md](chapterhouse-intelligence-engine-spec.md)
 **Intelligence Engine Spec — Chapterhouse Prompting, Retrieval, Scoring, and Ingestion Rules**
 *Date: March 6, 2026*
 Defines the cognitive layer of Chapterhouse: layered prompt architecture, persona roles, model routing, hybrid retrieval strategy, source hierarchy, ingestion discipline, embedding rules, opportunity scoring logic, output contracts, and hallucination-risk controls.
 
-#### [coding-plan.md](coding-plan.md)
+#### [chapterhouse-coding-plan.md](chapterhouse-coding-plan.md)
 **Coding Plan — Phase-by-Phase Chapterhouse Build, Testing, and Debugging Roadmap**
 *Date: March 6, 2026*
 Defines the execution sequence for building Chapterhouse. Covers phase-by-phase implementation, deliverables, testing strategy, browser-console debugging workflow, recommended developer tooling, model-evaluation guidance for which AI should do the actual coding work, and the immediate next steps before scaffolding begins.
