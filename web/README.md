@@ -43,6 +43,11 @@ Then open <http://localhost:3000>.
 4. ingest core documents into structured metadata
 5. add retrieval and citations
 
+## Supabase migration setup
+
+- SQL migrations live in [supabase/migrations](supabase/migrations)
+- setup notes are in [supabase/README.md](supabase/README.md)
+
 ## Related Docs
 
 - [../chapterhouse-mvp-build-checklist.md](../chapterhouse-mvp-build-checklist.md)

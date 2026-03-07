@@ -1,26 +1,37 @@
 import { PageFrame } from "@/components/page-frame";
-import { dailyBriefSections } from "@/lib/mock-data";
+import { getLatestDailyBrief } from "@/lib/daily-brief";
 
-export default function DailyBriefPage() {
+export default async function DailyBriefPage() {
+  const brief = await getLatestDailyBrief();
+
   return (
     <PageFrame
       eyebrow="Daily Brief"
       title="Morning intelligence, ready for action."
-      description="This is the first vertical slice target. It will become the place where Chapterhouse assembles fresh signals, ranks what matters, and routes action without making you swim through raw internet sludge."
+      description="This is the first persisted vertical slice. Chapterhouse now attempts to load the latest published brief from Supabase and falls back to seeded data when no published record exists yet."
       actions={
         <>
-          <button className="rounded-full border border-border bg-card px-4 py-2 text-sm font-medium transition hover:bg-muted-surface">
-            Regenerate brief
-          </button>
-          <button className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground transition hover:opacity-90">
-            Review actions
-          </button>
+          <span className="rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted">
+            Source: {brief.source === "supabase" ? "Supabase" : "Mock fallback"}
+          </span>
+          {brief.asOf ? (
+            <span className="rounded-full bg-accent px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-accent-foreground">
+              As of {brief.asOf}
+            </span>
+          ) : null}
         </>
       }
     >
       <div className="grid gap-4 xl:grid-cols-[1.45fr_0.9fr]">
         <div className="space-y-4">
-          {dailyBriefSections.map((section) => (
+          {brief.summary ? (
+            <section className="glass-panel rounded-3xl p-6">
+              <h2 className="text-lg font-semibold">Summary</h2>
+              <p className="mt-3 text-sm leading-7 text-muted">{brief.summary}</p>
+            </section>
+          ) : null}
+
+          {brief.sections.map((section) => (
             <section key={section.title} className="glass-panel rounded-3xl p-6">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-lg font-semibold">{section.title}</h2>
