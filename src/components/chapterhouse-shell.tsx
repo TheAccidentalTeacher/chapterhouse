@@ -13,9 +13,9 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="grid min-h-screen lg:grid-cols-[280px_minmax(0,1fr)_320px]">
-        <aside className="border-b border-border bg-sidebar/90 px-4 py-6 lg:border-b-0 lg:border-r lg:px-5">
+    <div className="h-screen overflow-hidden bg-background">
+      <div className="grid h-full lg:grid-cols-[280px_minmax(0,1fr)_320px]">
+          <aside className="overflow-y-auto border-b border-border bg-sidebar/90 px-4 py-6 lg:border-b-0 lg:border-r lg:px-5">
           <div className="mx-auto flex h-full max-w-sm flex-col gap-6">
             <div className="rounded-3xl border border-border bg-card/80 p-5">
               <div className="flex items-center gap-3">
@@ -79,7 +79,7 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
           </div>
         </aside>
 
-        <main className="min-w-0 border-b border-border/70 bg-background lg:border-b-0 lg:border-r">
+        <main className="flex min-h-0 min-w-0 flex-col border-b border-border/70 bg-background lg:border-b-0 lg:border-r">
           <div className="sticky top-0 z-10 border-b border-border/70 bg-background/80 px-4 py-4 backdrop-blur sm:px-6 lg:px-8">
             <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex items-center gap-3 rounded-full border border-border bg-card/80 px-4 py-3 text-sm text-muted">
@@ -102,8 +102,8 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
           {children}
         </main>
 
-        <aside className="hidden bg-rail/70 px-5 py-6 lg:block">
-          <div className="sticky top-6 space-y-4">
+        <aside className="hidden overflow-y-auto bg-rail/70 px-5 py-6 lg:block">
+          <div className="space-y-4">
             <div className="glass-panel rounded-3xl p-5">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">Build status</p>
               <div className="mt-4 space-y-3 text-sm">
