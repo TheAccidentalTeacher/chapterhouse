@@ -124,7 +124,6 @@ Be direct. No filler.`;
       .insert({
         url: targetUrl,
         title: analysis.title,
-        raw_text: text,
         summary: analysis.summary,
         verdict: analysis.verdict,
         tags: analysis.tags ?? [],
