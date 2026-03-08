@@ -293,8 +293,11 @@ Locks the first practical implementation decisions for Chapterhouse: app locatio
 - [ ] Auth gate — Supabase magic link, locked to Scott + Anna email addresses *(known gap, intentionally deferred — app is internal-only for now)*
 - [ ] `research_items` table — SQL migration at `supabase/migrations/20260307_003_create_research_items.sql` needs to be run in Supabase dashboard
 - [ ] Shopify store build — theme, products, catalog (separate track)
-- [ ] Initial competitor ingestion — start using the Research screen with competitor URLs
+- [ ] Initial competitor ingestion — start using the Research screen with competitor URLs (rainbowresource.com, masterbooks.com, sonlightcurriculum.com, memoriapress.com)
 - [ ] Initial data seeding source — first from our planned catalog, first from competitors, or blended import pass?
+- [ ] **Search Atlas integration** — Start a Search Atlas trial ($99/mo) once the Shopify store is live. Use it for keyword gap analysis vs. Rainbow Resource and Sonlight, rank tracking, and site auditing. Pipe findings into Chapterhouse Research so the AI can interpret what the numbers mean for Next Chapter specifically. Don't try to replicate it — use it as a data source feeding Chapterhouse.
+- [ ] **LLM visibility tracking** — Build a scheduled check inside Chapterhouse that periodically asks GPT/Claude "what are the best homeschool resources for [topic]?" and logs whether Next Chapter appears. This is the homeschool parent discovery channel that matters most right now and no tool tracks it well. Can be built inside Chapterhouse without a third-party subscription.
+- [ ] **Keyword rank tracking** — Once the Shopify store has pages worth ranking, add rank tracking (via Search Atlas or similar) so Chapterhouse can report on position movement for target keywords week over week.
 
 ---
 
