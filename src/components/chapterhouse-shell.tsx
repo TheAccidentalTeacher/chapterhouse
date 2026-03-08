@@ -105,27 +105,23 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
         <aside className="hidden bg-rail/70 px-5 py-6 lg:block">
           <div className="sticky top-6 space-y-4">
             <div className="glass-panel rounded-3xl p-5">
-              <p className="section-title text-xs font-semibold uppercase tracking-[0.2em] text-muted">
-                Context rail
-              </p>
-              <h2 className="mt-3 text-lg font-semibold">What this shell proves</h2>
-              <ul className="mt-4 space-y-3 text-sm leading-6 text-muted">
-                <li>Navigation matches the documented Chapterhouse structure.</li>
-                <li>The app shell is now ready for real data wiring.</li>
-                <li>The first vertical slice can target Daily Brief without redoing layout.</li>
-              </ul>
-            </div>
-            <div className="glass-panel rounded-3xl p-5">
-              <p className="text-sm font-semibold">Next build targets</p>
-              <div className="mt-4 space-y-3 text-sm text-muted">
-                <div className="rounded-2xl border border-border/70 bg-muted-surface px-4 py-3">
-                  Supabase auth and schema scaffold
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">Build status</p>
+              <div className="mt-4 space-y-3 text-sm">
+                <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-muted-surface px-4 py-3">
+                  <span className="status-dot bg-success shrink-0" />
+                  <span className="text-muted">Daily Brief — live</span>
                 </div>
-                <div className="rounded-2xl border border-border/70 bg-muted-surface px-4 py-3">
-                  Daily Brief seeded data and server flow
+                <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-muted-surface px-4 py-3">
+                  <span className="status-dot bg-muted shrink-0" />
+                  <span className="text-muted">Auth — not yet</span>
                 </div>
-                <div className="rounded-2xl border border-border/70 bg-muted-surface px-4 py-3">
-                  Documents screen with ingest-ready metadata
+                <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-muted-surface px-4 py-3">
+                  <span className="status-dot bg-muted shrink-0" />
+                  <span className="text-muted">Research — not yet</span>
+                </div>
+                <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-muted-surface px-4 py-3">
+                  <span className="status-dot bg-muted shrink-0" />
+                  <span className="text-muted">Documents — not yet</span>
                 </div>
               </div>
             </div>
