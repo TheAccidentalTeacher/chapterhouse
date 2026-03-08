@@ -55,11 +55,17 @@ The second track is no longer vague. It now has documented:
 - intelligence-engine behavior
 - MVP build checklist
 
-It also now has a real application scaffold in [web/README.md](web/README.md) and [web/package.json](web/package.json).
+It also now has a **live, deployed application** at [chapterhouse.vercel.app](https://chapterhouse.vercel.app).
+
+As of March 7, 2026, Chapterhouse is running in production with:
+- Chat interface backed by GPT-5.4 (OpenAI Responses API) and Claude Opus/Sonnet 4.6
+- Daily Brief reading live from Supabase
+- Model switcher between all 5 models
+- F12 debug tooling and `/api/debug` health endpoint
 
 That means this folder is now both:
 - the brand guide
-- and the early operating manual for Chapterhouse, the internal system that will help run the brand
+- and the early operating manual for Chapterhouse, which is no longer hypothetical
 
 ---
 
@@ -242,6 +248,12 @@ Locks the first practical implementation decisions for Chapterhouse: app locatio
 | Mar 6, 2026 | Internal system naming established | The internal operating system is now called **Chapterhouse** across the documentation |
 | Mar 6, 2026 | Chapterhouse Phase 0 decisions locked | Added MVP build checklist and settled the first implementation defaults |
 | Mar 6, 2026 | Chapterhouse app scaffold created | Initialized the Next.js app in `web/` with the documented route structure and first shell |
+| Mar 7, 2026 | Chapterhouse deployed to production | App live at `chapterhouse.vercel.app` — fixed Vercel 404 by moving Next.js from `web/` subdirectory to repo root |
+| Mar 7, 2026 | Chat interface shipped as home screen | Full streaming chat UI, suggested prompts, auto-resize textarea — replaces all mock data panels |
+| Mar 7, 2026 | Multi-model support wired | GPT-5.4 (default), GPT-5.4 Pro, GPT-5 Mini (OpenAI) + Claude Opus 4.6, Claude Sonnet 4.6 (Anthropic) with model switcher |
+| Mar 7, 2026 | Daily Brief reading live from Supabase | Server-side Supabase query confirmed working in production — "Source: Supabase" badge verified |
+| Mar 7, 2026 | F12 debug tooling added | `debug-logger.ts` + `/api/debug` health endpoint + full chat instrumentation; `window.chapterhouseDebug` console helpers |
+| Mar 7, 2026 | Switched OpenAI to Responses API | `gpt-5.x` models require `/v1/responses` not `/v1/chat/completions` — fixes chat 500 error |
 
 ---
 
@@ -264,10 +276,14 @@ Locks the first practical implementation decisions for Chapterhouse: app locatio
 - [ ] Launch date target (before June 1? June 15?)
 - [ ] Mt. Drum — subjects/grades for local classes?
 - [x] Chapterhouse implementation order — scaffold immediately after spec review
-- [ ] Production vendor setup — create and configure Supabase, Qdrant, Upstash, Trigger.dev, and Vercel projects
+- [x] Production vendor setup — Vercel and Supabase live; Qdrant, Upstash, Trigger.dev deferred to later phases
+- [x] First deployment goal — app is live at `chapterhouse.vercel.app`
+- [ ] Auth gate — Supabase magic link, locked to Scott + Anna email addresses
+- [ ] Daily Brief write path — UI to create/generate new briefs without touching Supabase dashboard
+- [ ] Research screen — real source ingestion UI (currently placeholder)
+- [ ] Documents screen — connect to brand guide doc store (currently placeholder)
 - [ ] Initial competitor ingestion method — direct page parsing, email ingestion, or mixed first-pass pipeline?
 - [ ] Initial data seeding source — first from our planned catalog, first from competitors, or blended import pass?
-- [ ] First deployment goal — internal localhost prototype, password-protected staging app, or hosted working alpha?
 
 ---
 
@@ -291,4 +307,4 @@ Locks the first practical implementation decisions for Chapterhouse: app locatio
 
 ---
 
-*Last updated: March 6, 2026 — This document is the map. Keep it current.*
+*Last updated: March 7, 2026 — This document is the map. Keep it current.*
