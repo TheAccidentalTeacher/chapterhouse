@@ -1,7 +1,12 @@
 import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
+});
+
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
 const SYSTEM_PROMPT = `You are Chapterhouse — the internal intelligence layer for Next Chapter Homeschool Outpost, the operating system built by and for Scott and Anna Somers.
@@ -36,19 +41,52 @@ Lead with clarity. Land with honesty. Wisecrack when it fits. Never waste his ti
 
 export async function POST(request: Request) {
   try {
-    const { messages } = await request.json();
+    const { messages, model = "gpt-5.4" } = await request.json();
 
+    const encoder = new TextEncoder();
+
+    // Route to Anthropic if claude model requested
+    if (model.startsWith("claude")) {
+      const stream = anthropic.messages.stream({
+        model,
+        max_tokens: 2048,
+        system: SYSTEM_PROMPT,
+        messages,
+      });
+
+      const readable = new ReadableStream({
+        async start(controller) {
+          for await (const chunk of stream) {
+            if (
+              chunk.type === "content_block_delta" &&
+              chunk.delta.type === "text_delta"
+            ) {
+              controller.enqueue(encoder.encode(chunk.delta.text));
+            }
+          }
+          controller.close();
+        },
+      });
+
+      return new Response(readable, {
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+          "Transfer-Encoding": "chunked",
+          "Cache-Control": "no-cache",
+        },
+      });
+    }
+
+    // OpenAI
     const stream = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         ...messages,
       ],
       stream: true,
-      max_tokens: 1000,
+      max_tokens: 2048,
     });
-
-    const encoder = new TextEncoder();
 
     const readable = new ReadableStream({
       async start(controller) {

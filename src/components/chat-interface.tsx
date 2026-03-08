@@ -1,12 +1,25 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowUp, Bot, Loader2 } from "lucide-react";
+import { ArrowUp, Bot, ChevronDown, Loader2 } from "lucide-react";
 
 type Message = {
   role: "user" | "assistant";
   content: string;
 };
+
+type ModelOption = {
+  id: string;
+  label: string;
+  provider: "openai" | "anthropic";
+};
+
+const MODELS: ModelOption[] = [
+  { id: "gpt-5.4", label: "GPT-5.4", provider: "openai" },
+  { id: "gpt-5.4-pro", label: "GPT-5.4 Pro", provider: "openai" },
+  { id: "claude-opus-4-6", label: "Claude Opus 4.6", provider: "anthropic" },
+  { id: "claude-sonnet-4-6", label: "Claude Sonnet 4.6", provider: "anthropic" },
+];
 
 const SUGGESTED_PROMPTS = [
   "What should I be focused on this week?",
@@ -19,6 +32,8 @@ export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<ModelOption>(MODELS[0]);
+  const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -52,7 +67,7 @@ export function ChatInterface() {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: newMessages }),
+        body: JSON.stringify({ messages: newMessages, model: selectedModel.id }),
       });
 
       if (!response.ok || !response.body) {
@@ -188,9 +203,33 @@ export function ChatInterface() {
               )}
             </button>
           </div>
-          <p className="mt-2 text-center text-xs text-muted">
-            Shift+Enter for new line · Enter to send
-          </p>
+          <div className="mt-2 flex items-center justify-between px-1">
+            <div className="relative">
+              <button
+                onClick={() => setModelPickerOpen((o) => !o)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-card/60 px-3 py-1 text-xs text-muted transition hover:border-accent/40 hover:text-foreground"
+              >
+                <span className={`h-1.5 w-1.5 rounded-full ${selectedModel.provider === "openai" ? "bg-green-400" : "bg-orange-400"}`} />
+                {selectedModel.label}
+                <ChevronDown className="h-3 w-3" />
+              </button>
+              {modelPickerOpen && (
+                <div className="absolute bottom-full left-0 mb-2 min-w-48 overflow-hidden rounded-2xl border border-border bg-card shadow-xl shadow-black/20">
+                  {MODELS.map((m) => (
+                    <button
+                      key={m.id}
+                      onClick={() => { setSelectedModel(m); setModelPickerOpen(false); }}
+                      className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition hover:bg-muted-surface ${m.id === selectedModel.id ? "text-accent" : "text-foreground"}`}
+                    >
+                      <span className={`h-1.5 w-1.5 rounded-full ${m.provider === "openai" ? "bg-green-400" : "bg-orange-400"}`} />
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-muted">Shift+Enter for new line · Enter to send</p>
+          </div>
         </div>
       </div>
     </div>
