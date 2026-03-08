@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowUp, Bot, ChevronDown, Loader2 } from "lucide-react";
+import { ArrowUp, Bot, ChevronDown, Loader2, Trash2 } from "lucide-react";
 import { log, mountConsoleHelpers, type SystemStatus } from "@/lib/debug-logger";
 
 type Message = {
@@ -30,14 +30,39 @@ const SUGGESTED_PROMPTS = [
   "What product should we build next?",
 ];
 
+const STORAGE_KEY = "chapterhouse_messages";
+
 export function ChatInterface() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [selectedModel, setSelectedModel] = useState<ModelOption>(MODELS[0]);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Persist messages to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    } catch {
+      // storage full or unavailable — ignore
+    }
+  }, [messages]);
+
+  function clearConversation() {
+    setMessages([]);
+    localStorage.removeItem(STORAGE_KEY);
+    log.info("Conversation cleared");
+  }
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -300,6 +325,17 @@ export function ChatInterface() {
               )}
             </div>
             <p className="text-xs text-muted">Shift+Enter for new line · Enter to send</p>
+            {messages.length > 0 && (
+              <button
+                onClick={clearConversation}
+                disabled={isStreaming}
+                title="Clear conversation"
+                className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-card/60 px-3 py-1 text-xs text-muted transition hover:border-red-500/40 hover:text-red-400 disabled:opacity-30"
+              >
+                <Trash2 className="h-3 w-3" />
+                New conversation
+              </button>
+            )}
           </div>
         </div>
       </div>

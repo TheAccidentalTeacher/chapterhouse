@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
+import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -39,18 +40,88 @@ Chapterhouse is the internal operating system. It ingests signals from research,
 
 Lead with clarity. Land with honesty. Wisecrack when it fits. Never waste his time with filler. You are not a customer service bot — you are the sharpest person in the room who also happens to know everything about this business.`;
 
+// Fetches live context from Supabase to append to every system prompt.
+// Right now: latest published brief + recent research items.
+// This is what makes Chapterhouse absorb new information automatically.
+async function buildLiveContext(): Promise<string> {
+  const supabase = getSupabaseServiceRoleClient();
+  if (!supabase) return "";
+
+  const blocks: string[] = [];
+
+  try {
+    // Latest published brief
+    const { data: brief } = await supabase
+      .from("briefs")
+      .select("brief_date, title, summary, sections")
+      .eq("status", "published")
+      .order("brief_date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (brief) {
+      const sectionText = Array.isArray(brief.sections)
+        ? (brief.sections as Array<{ title: string; items: Array<{ headline: string; whyItMatters: string; score: string }> }>)
+            .map((s) =>
+              `### ${s.title}\n` +
+              s.items.map((item) => `- [${item.score}] ${item.headline}: ${item.whyItMatters}`).join("\n")
+            )
+            .join("\n\n")
+        : "";
+      blocks.push(
+        `## Live Context: Latest Daily Brief (${brief.brief_date})\n\n` +
+        `**${brief.title}**\n\n` +
+        (brief.summary ? `${brief.summary}\n\n` : "") +
+        sectionText
+      );
+    }
+  } catch {
+    // Brief fetch failed — carry on without it
+  }
+
+  try {
+    // Recent research items (up to 10 most recent)
+    const { data: items } = await supabase
+      .from("research_items")
+      .select("url, title, summary, verdict, tags, created_at")
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    if (items && items.length > 0) {
+      const researchText = items
+        .map((item) =>
+          `- **${item.title || item.url}** (${new Date(item.created_at).toLocaleDateString()})\n` +
+          `  ${item.summary || ""}\n` +
+          (item.verdict ? `  Verdict: ${item.verdict}` : "")
+        )
+        .join("\n");
+      blocks.push(`## Live Context: Recent Research\n\n${researchText}`);
+    }
+  } catch {
+    // research_items table may not exist yet — ignore
+  }
+
+  return blocks.length > 0
+    ? "\n\n---\n\n" + blocks.join("\n\n---\n\n")
+    : "";
+}
+
 export async function POST(request: Request) {
   try {
     const { messages, model = "gpt-5.4" } = await request.json();
 
     const encoder = new TextEncoder();
 
+    // Enrich system prompt with live context from Supabase
+    const liveContext = await buildLiveContext();
+    const systemPrompt = SYSTEM_PROMPT + liveContext;
+
     // Route to Anthropic if claude model requested
     if (model.startsWith("claude")) {
       const stream = anthropic.messages.stream({
         model,
         max_tokens: 2048,
-        system: SYSTEM_PROMPT,
+        system: systemPrompt,
         messages,
       });
 
@@ -80,7 +151,7 @@ export async function POST(request: Request) {
     // OpenAI — use Responses API (required for gpt-5.x models)
     const stream = await openai.responses.create({
       model,
-      instructions: SYSTEM_PROMPT,
+      instructions: systemPrompt,
       input: messages,
       stream: true,
       max_output_tokens: 2048,

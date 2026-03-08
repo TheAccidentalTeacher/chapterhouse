@@ -111,17 +111,17 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
                   <span className="status-dot bg-success shrink-0" />
                   <span>Daily Brief — live</span>
                 </Link>
+                <Link href="/research" className="flex items-center gap-3 rounded-2xl border border-border/70 bg-muted-surface px-4 py-3 transition hover:border-accent/40 hover:text-accent">
+                  <span className="status-dot bg-success shrink-0" />
+                  <span>Research — live</span>
+                </Link>
+                <Link href="/documents" className="flex items-center gap-3 rounded-2xl border border-border/70 bg-muted-surface px-4 py-3 transition hover:border-accent/40 hover:text-accent">
+                  <span className="status-dot bg-success shrink-0" />
+                  <span>Documents — live</span>
+                </Link>
                 <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-muted-surface px-4 py-3">
                   <span className="status-dot bg-muted shrink-0" />
-                  <span className="text-muted">Auth — not yet</span>
-                </div>
-                <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-muted-surface px-4 py-3">
-                  <span className="status-dot bg-muted shrink-0" />
-                  <span className="text-muted">Research — not yet</span>
-                </div>
-                <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-muted-surface px-4 py-3">
-                  <span className="status-dot bg-muted shrink-0" />
-                  <span className="text-muted">Documents — not yet</span>
+                  <span className="text-muted">Auth — deferred</span>
                 </div>
               </div>
             </div>

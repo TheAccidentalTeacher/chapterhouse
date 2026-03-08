@@ -59,7 +59,11 @@ It also now has a **live, deployed application** at [chapterhouse.vercel.app](ht
 
 As of March 7, 2026, Chapterhouse is running in production with:
 - Chat interface backed by GPT-5.4 (OpenAI Responses API) and Claude Opus/Sonnet 4.6
-- Daily Brief reading live from Supabase
+- Conversation memory persisted across refreshes (localStorage)
+- Live context enrichment — every chat message now carries the latest brief and recent research items from Supabase in the system prompt
+- Daily Brief reading and writing live from Supabase (Generate with AI or write manually)
+- Research screen: paste any URL → Chapterhouse fetches, summarizes, saves, and auto-loads into chat context
+- Documents screen: all brand guide `.md` files readable inside the app
 - Model switcher between all 5 models
 - F12 debug tooling and `/api/debug` health endpoint
 
@@ -254,6 +258,11 @@ Locks the first practical implementation decisions for Chapterhouse: app locatio
 | Mar 7, 2026 | Daily Brief reading live from Supabase | Server-side Supabase query confirmed working in production — "Source: Supabase" badge verified |
 | Mar 7, 2026 | F12 debug tooling added | `debug-logger.ts` + `/api/debug` health endpoint + full chat instrumentation; `window.chapterhouseDebug` console helpers |
 | Mar 7, 2026 | Switched OpenAI to Responses API | `gpt-5.x` models require `/v1/responses` not `/v1/chat/completions` — fixes chat 500 error |
+| Mar 7, 2026 | Chat conversation persistence added | Messages stored in `localStorage`, survive page refreshes; "New conversation" button to clear |
+| Mar 7, 2026 | Live context enrichment wired | Every chat request now fetches latest brief + recent research items from Supabase and injects them into the system prompt — adding data to Chapterhouse now updates what it knows in chat |
+| Mar 7, 2026 | Daily Brief write path built | `/api/briefs` POST route + `/api/briefs/generate` AI generation route + New Brief panel on Daily Brief page (Generate with AI or write manually) |
+| Mar 7, 2026 | Research screen live | URL paste-and-ingest UI: fetches page, AI summarizes with brand lens, saves to Supabase `research_items`; saved items feed into chat context automatically |
+| Mar 7, 2026 | Documents screen live | Reads all brand guide `.md` files from the repo root; searchable grid with full inline content expansion |
 
 ---
 
@@ -278,11 +287,13 @@ Locks the first practical implementation decisions for Chapterhouse: app locatio
 - [x] Chapterhouse implementation order — scaffold immediately after spec review
 - [x] Production vendor setup — Vercel and Supabase live; Qdrant, Upstash, Trigger.dev deferred to later phases
 - [x] First deployment goal — app is live at `chapterhouse.vercel.app`
-- [ ] Auth gate — Supabase magic link, locked to Scott + Anna email addresses
-- [ ] Daily Brief write path — UI to create/generate new briefs without touching Supabase dashboard
-- [ ] Research screen — real source ingestion UI (currently placeholder)
-- [ ] Documents screen — connect to brand guide doc store (currently placeholder)
-- [ ] Initial competitor ingestion method — direct page parsing, email ingestion, or mixed first-pass pipeline?
+- [x] Daily Brief write path — Generate with AI or write manually from inside Chapterhouse
+- [x] Research screen — URL ingestion live: paste → fetch → AI summary → Supabase → feeds chat context
+- [x] Documents screen — all brand guide `.md` files readable inside Chapterhouse
+- [ ] Auth gate — Supabase magic link, locked to Scott + Anna email addresses *(known gap, intentionally deferred — app is internal-only for now)*
+- [ ] `research_items` table — SQL migration at `supabase/migrations/20260307_003_create_research_items.sql` needs to be run in Supabase dashboard
+- [ ] Shopify store build — theme, products, catalog (separate track)
+- [ ] Initial competitor ingestion — start using the Research screen with competitor URLs
 - [ ] Initial data seeding source — first from our planned catalog, first from competitors, or blended import pass?
 
 ---

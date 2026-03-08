@@ -1,4 +1,5 @@
 import { PageFrame } from "@/components/page-frame";
+import { NewBriefPanel } from "@/components/new-brief-panel";
 import { getLatestDailyBrief } from "@/lib/daily-brief";
 
 export default async function DailyBriefPage() {
@@ -8,7 +9,7 @@ export default async function DailyBriefPage() {
     <PageFrame
       eyebrow="Daily Brief"
       title="Morning intelligence, ready for action."
-      description="This is the first persisted vertical slice. Chapterhouse now attempts to load the latest published brief from Supabase and falls back to seeded data when no published record exists yet."
+      description="Latest brief from Supabase. Use Generate to create a new one with AI, or write one manually."
       actions={
         <>
           <span className="rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted">
@@ -22,6 +23,7 @@ export default async function DailyBriefPage() {
         </>
       }
     >
+      <NewBriefPanel />
       <div className="grid gap-4 xl:grid-cols-[1.45fr_0.9fr]">
         <div className="space-y-4">
           {brief.summary ? (
