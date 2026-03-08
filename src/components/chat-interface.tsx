@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowUp, Bot, ChevronDown, Loader2 } from "lucide-react";
+import { log, mountConsoleHelpers, type SystemStatus } from "@/lib/debug-logger";
 
 type Message = {
   role: "user" | "assistant";
@@ -42,6 +43,38 @@ export function ChatInterface() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Mount: fetch system status, log it, attach console helpers
+  useEffect(() => {
+    mountConsoleHelpers(MODELS);
+    fetch("/api/debug")
+      .then((r) => r.json())
+      .then((data) => {
+        const status: SystemStatus = {
+          env: data.env,
+          buildTime: data.timestamp,
+          openai: data.openai?.apiReachable ?? (data.openai?.configured ? "unknown" : false),
+          anthropic: data.anthropic?.configured ?? false,
+          supabase: data.supabase?.connected ?? false,
+          models: MODELS.map((m) => `${m.id} (${m.provider})`),
+          errors: [
+            !data.openai?.configured ? "OPENAI_API_KEY not set" : null,
+            !data.anthropic?.configured ? "ANTHROPIC_API_KEY not set" : null,
+            !data.supabase?.urlConfigured ? "NEXT_PUBLIC_SUPABASE_URL not set" : null,
+            !data.supabase?.serviceRoleConfigured ? "SUPABASE_SERVICE_ROLE_KEY not set" : null,
+            data.supabase?.error ? `Supabase error: ${data.supabase.error}` : null,
+            data.openai?.error ? `OpenAI error: ${data.openai.error}` : null,
+          ].filter(Boolean) as string[],
+        };
+        log.systemStatus(status);
+        // Pin full raw response too
+        console.log("%c  Full debug payload:", "color:#6b7280", data);
+      })
+      .catch((e) => {
+        log.error("Failed to fetch /api/debug", e);
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function autoResize() {
     const el = textareaRef.current;
     if (!el) return;
@@ -62,18 +95,36 @@ export function ChatInterface() {
     if (textareaRef.current) textareaRef.current.style.height = "auto";
     setIsStreaming(true);
 
+    const t0 = performance.now();
+    let firstChunkTime: number | null = null;
+    let totalChars = 0;
+    let chunkCount = 0;
+
+    log.group(`Chat → ${selectedModel.label}`);
+    log.data("Model",    selectedModel.id);
+    log.data("Provider", selectedModel.provider);
+    log.data("Messages in context", newMessages.length);
+    log.data("User prompt", trimmed.slice(0, 120) + (trimmed.length > 120 ? "…" : ""));
+
     setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
     try {
+      log.info("Sending request to /api/chat...");
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: newMessages, model: selectedModel.id }),
       });
 
+      log.data("HTTP status", `${response.status} ${response.statusText}`);
+
       if (!response.ok || !response.body) {
-        throw new Error("Request failed");
+        const errorText = await response.text().catch(() => "(no body)");
+        log.error(`Request failed — ${response.status}`, errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
+
+      log.success("Stream opened");
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -82,27 +133,42 @@ export function ChatInterface() {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        accumulated += decoder.decode(value, { stream: true });
+
+        const chunk = decoder.decode(value, { stream: true });
+        accumulated += chunk;
+        chunkCount++;
+        totalChars += chunk.length;
+
+        if (firstChunkTime === null) {
+          firstChunkTime = performance.now();
+          log.timing("Time to first token", Math.round(firstChunkTime - t0));
+        }
+
         const captured = accumulated;
         setMessages((prev) => {
           const updated = [...prev];
-          updated[updated.length - 1] = {
-            role: "assistant",
-            content: captured,
-          };
+          updated[updated.length - 1] = { role: "assistant", content: captured };
           return updated;
         });
       }
-    } catch {
+
+      const totalTime = Math.round(performance.now() - t0);
+      log.success("Stream complete");
+      log.data("Chunks received", chunkCount);
+      log.data("Characters received", totalChars);
+      log.data("Est. tokens (~4 chars/token)", Math.round(totalChars / 4));
+      log.timing("Total response time", totalTime);
+
+    } catch (e) {
+      const errorMsg = e instanceof Error ? e.message : String(e);
+      log.error("Chat failed", errorMsg);
       setMessages((prev) => {
         const updated = [...prev];
-        updated[updated.length - 1] = {
-          role: "assistant",
-          content: "Something went wrong. Try again.",
-        };
+        updated[updated.length - 1] = { role: "assistant", content: `Error: ${errorMsg}` };
         return updated;
       });
     } finally {
+      log.groupEnd();
       setIsStreaming(false);
     }
   }
@@ -219,7 +285,11 @@ export function ChatInterface() {
                   {MODELS.map((m) => (
                     <button
                       key={m.id}
-                      onClick={() => { setSelectedModel(m); setModelPickerOpen(false); }}
+                      onClick={() => {
+                        log.info(`Model switched → ${m.id} (${m.provider})`);
+                        setSelectedModel(m);
+                        setModelPickerOpen(false);
+                      }}
                       className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition hover:bg-muted-surface ${m.id === selectedModel.id ? "text-accent" : "text-foreground"}`}
                     >
                       <span className={`h-1.5 w-1.5 rounded-full ${m.provider === "openai" ? "bg-green-400" : "bg-orange-400"}`} />
