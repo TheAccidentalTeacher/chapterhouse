@@ -77,23 +77,23 @@ export async function POST(request: Request) {
       });
     }
 
-    // OpenAI
-    const stream = await openai.chat.completions.create({
+    // OpenAI — use Responses API (required for gpt-5.x models)
+    const stream = await openai.responses.create({
       model,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        ...messages,
-      ],
+      instructions: SYSTEM_PROMPT,
+      input: messages,
       stream: true,
-      max_tokens: 2048,
+      max_output_tokens: 2048,
     });
 
     const readable = new ReadableStream({
       async start(controller) {
-        for await (const chunk of stream) {
-          const delta = chunk.choices[0]?.delta?.content;
-          if (delta) {
-            controller.enqueue(encoder.encode(delta));
+        for await (const event of stream) {
+          if (
+            event.type === "response.output_text.delta" &&
+            event.delta
+          ) {
+            controller.enqueue(encoder.encode(event.delta));
           }
         }
         controller.close();
