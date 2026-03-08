@@ -107,10 +107,10 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
             <div className="glass-panel rounded-3xl p-5">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">Build status</p>
               <div className="mt-4 space-y-3 text-sm">
-                <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-muted-surface px-4 py-3">
+                <Link href="/daily-brief" className="flex items-center gap-3 rounded-2xl border border-border/70 bg-muted-surface px-4 py-3 transition hover:border-accent/40 hover:text-accent">
                   <span className="status-dot bg-success shrink-0" />
-                  <span className="text-muted">Daily Brief — live</span>
-                </div>
+                  <span>Daily Brief — live</span>
+                </Link>
                 <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-muted-surface px-4 py-3">
                   <span className="status-dot bg-muted shrink-0" />
                   <span className="text-muted">Auth — not yet</span>

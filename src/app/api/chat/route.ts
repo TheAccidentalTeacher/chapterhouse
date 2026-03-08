@@ -41,7 +41,7 @@ Lead with clarity. Land with honesty. Wisecrack when it fits. Never waste his ti
 
 export async function POST(request: Request) {
   try {
-    const { messages, model = "gpt-5.4" } = await request.json();
+    const { messages, model = "gpt-4o" } = await request.json();
 
     const encoder = new TextEncoder();
 
