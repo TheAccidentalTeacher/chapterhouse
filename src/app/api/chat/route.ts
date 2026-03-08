@@ -101,6 +101,29 @@ async function buildLiveContext(): Promise<string> {
     // research_items table may not exist yet — ignore
   }
 
+  try {
+    // Top open opportunities
+    const { data: opps } = await supabase
+      .from("opportunities")
+      .select("title, description, category, store_score, curriculum_score, content_score, action, status")
+      .in("status", ["open", "in-progress"])
+      .order("created_at", { ascending: false })
+      .limit(8);
+
+    if (opps && opps.length > 0) {
+      const oppText = opps
+        .map((o) =>
+          `- **${o.title}** [${o.category}] — Store: ${o.store_score}, Curriculum: ${o.curriculum_score}, Content: ${o.content_score}\n` +
+          `  ${o.description}\n` +
+          (o.action ? `  Next action: ${o.action}` : "")
+        )
+        .join("\n");
+      blocks.push(`## Live Context: Open Opportunities\n\n${oppText}`);
+    }
+  } catch {
+    // opportunities table may not exist yet — ignore
+  }
+
   return blocks.length > 0
     ? "\n\n---\n\n" + blocks.join("\n\n---\n\n")
     : "";

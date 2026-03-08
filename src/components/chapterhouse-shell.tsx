@@ -115,6 +115,10 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
                   <span className="status-dot bg-success shrink-0" />
                   <span>Research — live</span>
                 </Link>
+                <Link href="/product-intelligence" className="flex items-center gap-3 rounded-2xl border border-border/70 bg-muted-surface px-4 py-3 transition hover:border-accent/40 hover:text-accent">
+                  <span className="status-dot bg-success shrink-0" />
+                  <span>Product Intel — live</span>
+                </Link>
                 <Link href="/documents" className="flex items-center gap-3 rounded-2xl border border-border/70 bg-muted-surface px-4 py-3 transition hover:border-accent/40 hover:text-accent">
                   <span className="status-dot bg-success shrink-0" />
                   <span>Documents — live</span>

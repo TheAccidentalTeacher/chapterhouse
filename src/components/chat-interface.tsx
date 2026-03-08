@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowUp, Bot, ChevronDown, Loader2, Trash2 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { log, mountConsoleHelpers, type SystemStatus } from "@/lib/debug-logger";
 
 type Message = {
@@ -255,8 +257,44 @@ export function ChatInterface() {
                       : "glass-panel border border-border/70"
                   }`}
                 >
-                  {msg.content || (
-                    <Loader2 className="h-4 w-4 animate-spin text-muted" />
+                  {msg.role === "assistant" ? (
+                    msg.content ? (
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
+                          h1: ({ children }) => <h1 className="mb-3 mt-4 text-lg font-semibold first:mt-0">{children}</h1>,
+                          h2: ({ children }) => <h2 className="mb-2 mt-4 text-base font-semibold first:mt-0">{children}</h2>,
+                          h3: ({ children }) => <h3 className="mb-2 mt-3 text-sm font-semibold first:mt-0">{children}</h3>,
+                          ul: ({ children }) => <ul className="mb-3 ml-4 list-disc space-y-1 last:mb-0">{children}</ul>,
+                          ol: ({ children }) => <ol className="mb-3 ml-4 list-decimal space-y-1 last:mb-0">{children}</ol>,
+                          li: ({ children }) => <li className="leading-6">{children}</li>,
+                          strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+                          em: ({ children }) => <em className="italic">{children}</em>,
+                          code: ({ children, className }) => {
+                            const isInline = !className;
+                            return isInline ? (
+                              <code className="rounded bg-muted-surface px-1.5 py-0.5 font-mono text-xs">{children}</code>
+                            ) : (
+                              <code className="block overflow-x-auto rounded-xl bg-muted-surface px-4 py-3 font-mono text-xs leading-5">{children}</code>
+                            );
+                          },
+                          pre: ({ children }) => <pre className="mb-3 last:mb-0">{children}</pre>,
+                          blockquote: ({ children }) => <blockquote className="mb-3 border-l-2 border-accent/50 pl-4 text-muted last:mb-0">{children}</blockquote>,
+                          hr: () => <hr className="my-4 border-border/50" />,
+                          a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-accent underline underline-offset-2 hover:opacity-80">{children}</a>,
+                          table: ({ children }) => <div className="mb-3 overflow-x-auto last:mb-0"><table className="min-w-full text-xs">{children}</table></div>,
+                          th: ({ children }) => <th className="border border-border/70 bg-muted-surface px-3 py-2 text-left font-semibold">{children}</th>,
+                          td: ({ children }) => <td className="border border-border/70 px-3 py-2">{children}</td>,
+                        }}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
+                    ) : (
+                      <Loader2 className="h-4 w-4 animate-spin text-muted" />
+                    )
+                  ) : (
+                    msg.content
                   )}
                 </div>
               </div>
