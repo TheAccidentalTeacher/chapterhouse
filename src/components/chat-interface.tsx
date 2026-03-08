@@ -15,8 +15,9 @@ type ModelOption = {
 };
 
 const MODELS: ModelOption[] = [
-  { id: "gpt-4o", label: "GPT-4o", provider: "openai" },
-  { id: "gpt-4-turbo", label: "GPT-4 Turbo", provider: "openai" },
+  { id: "gpt-5.4", label: "GPT-5.4", provider: "openai" },
+  { id: "gpt-5.4-pro", label: "GPT-5.4 Pro", provider: "openai" },
+  { id: "gpt-5-mini", label: "GPT-5 Mini", provider: "openai" },
   { id: "claude-opus-4-6", label: "Claude Opus 4.6", provider: "anthropic" },
   { id: "claude-sonnet-4-6", label: "Claude Sonnet 4.6", provider: "anthropic" },
 ];
