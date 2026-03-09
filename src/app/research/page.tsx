@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowUp, ExternalLink, Loader2, Tag, PenLine, X, Link2, ClipboardPaste, StickyNote } from "lucide-react";
+import { ArrowUp, ExternalLink, Loader2, Tag, PenLine, X, Link2, ClipboardPaste, StickyNote, Camera, ImageIcon } from "lucide-react";
 
-type InputTab = "url" | "paste" | "note";
+type InputTab = "url" | "paste" | "note" | "image";
 
 type ResearchItem = {
   id: string;
@@ -45,6 +45,14 @@ export default function ResearchPage() {
   const [noteText, setNoteText] = useState("");
   const [savingNote, setSavingNote] = useState(false);
   const [noteError, setNoteError] = useState<string | null>(null);
+
+  // Screenshot / image tab
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageLabel, setImageLabel] = useState("");
+  const [savingImage, setSavingImage] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [imageDragOver, setImageDragOver] = useState(false);
 
   useEffect(() => {
     fetch("/api/research")
@@ -143,6 +151,56 @@ export default function ResearchPage() {
     }
   }
 
+  function handleImageFile(file: File) {
+    if (!file.type.startsWith("image/")) {
+      setImageError("Please upload an image file (PNG, JPG, WEBP, etc.)");
+      return;
+    }
+    setImageFile(file);
+    setImageError(null);
+    const reader = new FileReader();
+    reader.onload = (ev) => setImagePreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  }
+
+  async function handleImage(e: React.FormEvent) {
+    e.preventDefault();
+    if (!imageFile || savingImage) return;
+    setSavingImage(true);
+    setImageError(null);
+    try {
+      // Convert to base64 (strip the data:image/...;base64, prefix)
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const result = ev.target?.result as string;
+          resolve(result.split(",")[1]);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(imageFile);
+      });
+      const res = await fetch("/api/research", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageBase64: base64,
+          imageType: imageFile.type,
+          sourceLabel: imageLabel || "Screenshot",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || res.statusText);
+      setItems((prev) => [data.item, ...prev]);
+      setImageFile(null);
+      setImagePreview(null);
+      setImageLabel("");
+    } catch (e) {
+      setImageError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSavingImage(false);
+    }
+  }
+
   async function handleNote(e: React.FormEvent) {
     e.preventDefault();
     if (!noteText.trim() || savingNote) return;
@@ -192,6 +250,7 @@ export default function ResearchPage() {
               { id: "url", label: "URL", Icon: Link2 },
               { id: "paste", label: "Paste text", Icon: ClipboardPaste },
               { id: "note", label: "Quick note", Icon: StickyNote },
+              { id: "image", label: "Screenshot", Icon: Camera },
             ] as { id: InputTab; label: string; Icon: React.ElementType }[]).map(({ id, label, Icon }) => (
               <button
                 key={id}
@@ -301,6 +360,78 @@ export default function ResearchPage() {
                 </button>
               </div>
               {noteError && <p className="text-xs text-red-400">{noteError}</p>}
+            </form>
+          )}
+
+          {/* Screenshot / image tab */}
+          {tab === "image" && (
+            <form onSubmit={handleImage} className="space-y-3">
+              <label className="block text-xs font-semibold uppercase tracking-[0.12em] text-muted">
+                Upload a screenshot — Instagram post, carousel, competitor content, anything visual
+              </label>
+              {/* Drop zone */}
+              <div
+                onDragOver={(e) => { e.preventDefault(); setImageDragOver(true); }}
+                onDragLeave={() => setImageDragOver(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setImageDragOver(false);
+                  const file = e.dataTransfer.files[0];
+                  if (file) handleImageFile(file);
+                }}
+                onClick={() => document.getElementById("image-upload")?.click()}
+                className={`relative flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed transition ${
+                  imageDragOver
+                    ? "border-accent/60 bg-accent/5"
+                    : imagePreview
+                    ? "border-border/40 bg-muted-surface/50"
+                    : "border-border/50 bg-muted-surface/30 hover:border-accent/40 hover:bg-accent/5"
+                } ${imagePreview ? "min-h-0 p-2" : "min-h-[140px] p-6"}`}
+              >
+                <input
+                  id="image-upload"
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageFile(f); }}
+                />
+                {imagePreview ? (
+                  <div className="relative w-full">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={imagePreview} alt="Preview" className="max-h-64 w-full rounded-xl object-contain" />
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setImageFile(null); setImagePreview(null); }}
+                      className="absolute right-2 top-2 rounded-full bg-background/80 p-1 text-muted hover:text-foreground"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <ImageIcon className="mb-2 h-8 w-8 text-muted/50" />
+                    <p className="text-sm text-muted">Drop an image here, or click to choose</p>
+                    <p className="mt-1 text-xs text-muted/60">PNG, JPG, WEBP, HEIC — any screenshot works</p>
+                  </>
+                )}
+              </div>
+              <input
+                value={imageLabel}
+                onChange={(e) => setImageLabel(e.target.value)}
+                placeholder="What is this? (optional — e.g. 'Rainbow Resource Instagram carousel, March 2026')"
+                className="w-full rounded-xl border border-border/70 bg-muted-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-accent/40 focus:outline-none"
+              />
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={!imageFile || savingImage}
+                  className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-accent-foreground shadow shadow-accent/25 transition hover:opacity-90 disabled:opacity-40"
+                >
+                  {savingImage ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+                  {savingImage ? "Analyzing image…" : "Analyze image"}
+                </button>
+              </div>
+              {imageError && <p className="text-xs text-red-400">{imageError}</p>}
             </form>
           )}
         </div>
