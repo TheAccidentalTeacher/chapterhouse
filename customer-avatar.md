@@ -263,6 +263,8 @@ When we combine both messaging tests with the name and color data, the entire av
 #### 1. Personalization
 She wants to feel like this store *sees her child.* The #1 slogan (#44) and #1 offer tagline (#35) both use the word "unique" tied to *her children specifically*. "What works for your homeschool kid won't work for mine" (#20) was an upper-tier pain point for the same reason — it names the frustration that the industry never accounts for her child's individuality. But "Uniquely designed with your student in mind" (#58) was the *worst* slogan. The difference: #44 and #20 state a belief she already holds, while #58 pitches a marketing claim at her. **She wants a shared belief, not a sales pitch.**
 
+Critically, the personalization she wants is **philosophical, not technical.** She wants a brand that *believes* her child is unique — not an algorithm that *tracks* her child. She chose homeschooling in part to protect her children from data collection, institutional surveillance, and systems that treat kids as data points. Any language that sounds like adaptive learning platforms, user profiling, or behavioral targeting will trigger deep distrust. **Individualized means: we curated this *for a child like yours.* It never means: we're watching yours.**
+
 #### 2. Resources That Fit Her Child
 "Built around your child. Not the other way around" (#47) performed well because it promises the reversal of the system she left. But "Learning that fits — not learning that forces" (#55) performed *poorly*, and "Decision fatigue: Every homeschool parent's worst nightmare" (#31) was near the bottom. She already *knows* the pain. She doesn't need it narrated back at her. **She responds to the positive vision of what she's building, not the negative framing of what she escaped.**
 
@@ -492,6 +494,22 @@ The data proves it. Anna's natural voice — warm, encouraging, book-loving, fai
 
 ### 7. Never Call Her a Teacher
 The pain point test confirmed it clearly: teacher-identity framing consistently underperforms parent-identity framing. She is a mom who chose to take charge of her child's education — not a professional educator performing a role. Calling her a "homeschool teacher" (even admiringly) can trigger the exact inadequacy and pressure she homeschools to *escape*. Use: mom, parent, guide, you. Never: teacher, educator, instructor.
+
+### 8. Personalization Is Philosophical, Not Technological — Never Cross the Privacy Line
+She chose homeschooling in part to *get out* of systems that surveil, sort, and data-profile her children. She is deeply suspicious of platforms that track behavior, adapt algorithmically, or collect information about her kids. The word "personalized" won in the messaging test because it means *this feels like it was made for a child like mine* — not because it means *we're monitoring your child's progress.*
+
+Avoid at all costs:
+- Language that implies tracking, profiling, or adaptive monitoring: "personalized learning path," "adapts to your child's performance," "built on your child's data"
+- App-culture or edtech-culture framing: dashboards, analytics, progress reports, smart recommendations
+- Anything that sounds like a school information system or a tech platform
+
+Use instead:
+- "For a child who learns like yours" — philosophical fit, not algorithmic fit
+- "Handpicked" — a human made this choice, not a system
+- "Designed for kids who don't fit the mold" — belief statement, not product feature
+- "No tracking. No dashboards. Just good books." — if ever needed, say it plainly
+
+The brand's entire value proposition is curation by a *human* who loves books and knows kids. That is the opposite of surveillance. Lead with the human. Never let the language drift toward the algorithm.
 
 ---
 
