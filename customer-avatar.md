@@ -1,7 +1,7 @@
 # Customer Avatar: Alaskan Annie
 ### The Definitive Target Customer for Next Chapter Homeschool Outpost
 
-> *This is the single-source-of-truth customer avatar for all brand, marketing, product, and visual decisions at Next Chapter Homeschool Outpost. It is built from real behavioral data — a Facebook ad click test of 19 name variants and a color click test, both conducted by Anna Somers in March 2026, independently analyzed by Chapterhouse AI and Anna (via Gemini), and merged with market research and personal experience. People voted with their thumbs. All marketing copy, product curation, and brand decisions should be filtered through this lens.*
+> *This is the single-source-of-truth customer avatar for all brand, marketing, product, and visual decisions at Next Chapter Homeschool Outpost. It is built from real behavioral data — a Facebook ad click test of 19 name variants, a color click test, a slogan click test, and an "offer" messaging click test — all conducted by Anna Somers in March 2026, independently analyzed by Chapterhouse AI and Anna (via Gemini), and merged with market research and personal experience. People voted with their thumbs. All marketing copy, product curation, and brand decisions should be filtered through this lens.*
 
 ---
 
@@ -159,33 +159,92 @@ Based on the combined name + color click test data:
 
 ---
 
-## Part 5: What She Responds To — Combined View
+## Part 5: The Data — Messaging Click Tests
 
-| She Is Attracted To | She Is Repelled By |
-|---------------------|-------------------|
-| **Calm & Relief:** Chill, Refuge, Delight, Your Way | **Aggression & Intensity:** Rogue, Forged, Advantage |
-| **Nature & Place:** Rosewood, Mt. Drum, Fireweed, Northern Lights | **Corporate & Generic:** Limitless, Tomorrow's, Outpost |
-| **Story & Structure:** Next Chapter, Basecamp (safe adventure) | **Abstract & High-Pressure:** Limitless, Forged, Advantage |
-| **Identity Language:** Homeschool*er* (who she is) | **Institutional Language:** Homeschool (where she shops) |
-| **Specific & Honest:** "This book made my kid snort-laugh" | **Aspirational & Vague:** "Unlock your child's potential" |
-| **Warm, Earthy Colors:** Reds, sage greens, dusty blues, creams | **Cold, Corporate Colors:** Navy, gray, neon, sterile white |
-| **Natural Textures:** Wood, linen, cotton, paper | **Industrial Textures:** Metal, glass, plastic, chrome |
+Two additional Facebook ad click tests were conducted to discover what *promises* and *positioning language* Annie responds to. These tests go beyond identity (the name test) and emotion (the color test) to reveal what she actually wants to *hear* from a homeschool store.
 
-This tells us she is looking for a **sanctuary**, not a **battleground**. She wants a partner who will help her write the next beautiful chapter of her family's story, not a tool to "forge" a "rogue" warrior with a "limitless advantage."
+### Test A: Slogan Click Test
 
-### Psychographic Map
+**Method:** Various slogans displayed as Facebook ad creatives. #44 = best performer, #58 = worst performer. Performance declined as the numbers increased.
 
-| Dimension | Where Annie Lives |
-|-----------|------------------|
-| Rebel ←→ **Refuge-Builder** | Hard right. Not fighting the system. Building shelter from it. |
-| Aspirational ←→ **Grounded** | Hard right. Wants to be shown what's real, not told what's possible. |
-| Edge ←→ **Warmth** | Hard right. Chill, Rosewood, Refuge — not Forged, Rogue, Outpost. |
-| Institution ←→ **Identity** | Hard right. Wants to BE a chill homeschooler, not SHOP at one. |
-| Grit ←→ **Beauty** | Right of center. Functional is necessary; beautiful earns her loyalty. |
-| Marketed-to ←→ **Trusted** | Hard right. Honest specific language > benefit-driven buzzwords. |
-| Pressure ←→ **Permission** | Hard right. Craves permission to exhale, not another standard to meet. |
-| Competition ←→ **Community** | Hard right. Dislikes aggressive education marketing and competitive framing. |
-| Corporate ←→ **Cottage** | Hard right. Warm reds, sage greens, wood textures — not navy, chrome, glass. |
+| Rank | Slogan | Performance |
+|------|--------|-------------|
+| #44 | **"Your child's unique. Their homeschool curriculum should be too."** | **BEST** |
+| #47 | "Built around your child. Not the other way around." | UPPER |
+| #49 | "Your child's unique." (variant) | UPPER |
+| #50 | "Every kid learns differently. Finally, there's a store that knows that." | MID |
+| #53 | "Your kids aren't one-size-fits-all." | MID-LOW |
+| #54 | "Uniquely designed with your child in mind." | LOW |
+| #55 | "Learning that fits — not learning that forces." | LOW |
+| #58 | "Uniquely designed with your student in mind." | **WORST** |
+
+### Test B: "What We Offer" Click Test
+
+**Method:** Value-proposition taglines displayed as Facebook ad creatives on identical red backgrounds. #35 = best performer (left), #42 = worst performer (right).
+
+| Rank | Tagline | Performance |
+|------|---------|-------------|
+| #35 | **"A homeschool outpost that's as unique as your children"** | **BEST** |
+| #36 | "The last homeschool store you'll ever need" | UPPER |
+| #37 | "The only homeschool store you'll ever need" | UPPER |
+| #38 | "Homeschool books you'll love and cherish" | MID |
+| #39 | "Resources for today's homeschool family" | MID |
+| #40 | "Homeschool resources as unique as your children" | MID-LOW |
+| #41 | "Homeschool resources you'll love and cherish" | MID-LOW |
+| #42 | **"Your one-stop homeschool shop"** | **WORST** |
+
+---
+
+### The 6 Core Desires — What Annie Actually Wants
+
+When we combine both messaging tests with the name and color data, the entire avatar collapses into **six things Annie is looking for:**
+
+#### 1. Personalization
+She wants to feel like this store *sees her child.* The #1 slogan (#44) and #1 offer tagline (#35) both use the word "unique" tied to *her children specifically*. But — critically — "Uniquely designed with your student in mind" (#58) was the *worst* slogan. The difference: #44 states a belief she already holds ("Your child's unique"), while #58 pitches a marketing claim at her. **She wants a shared belief, not a sales pitch.**
+
+#### 2. Resources That Fit Her Child
+"Built around your child. Not the other way around" (#47) performed well because it promises the reversal of the system she left — one that forced her child to adapt. But "Learning that fits — not learning that forces" (#55) performed *poorly*. She doesn't want to be reminded of the "force" and the struggle. **She responds to the positive vision of what she's building, not the negative framing of what she escaped.**
+
+#### 3. Simplification
+"The last homeschool store you'll ever need" (#36) and "The only homeschool store you'll ever need" (#37) both performed in the upper tier. These promise an *end to the search*. She is drowning in options — Rainbow Resource, Christianbook, Amazon, Facebook group recommendations. She doesn't want more choices. She wants someone to say: **"Stop looking. We already found the good ones."**
+
+#### 4. A Place That Reduces Overwhelm
+"Your one-stop homeschool shop" (#42) was the worst-performing offer tagline. On the surface it promises convenience — but it sounds like Walmart, not a warm bookshop. Generic retail language repels her. Meanwhile, "A homeschool outpost that's as unique as your children" (#35) won — because it promises *understanding*, not just selection. **She doesn't want a warehouse. She wants a refuge.**
+
+#### 5. Emotional Connection
+"Homeschool books you'll love and cherish" (#38) outperformed "Homeschool resources you'll love and cherish" (#41). Same structure, different first word. "Books" is warm, specific, tactile — she can picture it. "Resources" is corporate, vague, institutional. "Every kid learns differently. Finally, there's a store that knows that" (#50) — the word "Finally" carries so much emotional weight. **She wants to feel understood, not marketed to.**
+
+#### 6. Books & Materials That Become Part of Family Life
+The combined pattern from both tests is clear: she is not buying *products*. She is buying *pieces of her family's story*. "Love and cherish" language works. "One-stop shop" language fails. She wants books her kids will read under the covers with a flashlight. She wants a science kit that becomes a Wednesday tradition. **She is curating a life, not filling a shelf.**
+
+---
+
+### Messaging Signals — What the Tests Prove
+
+**Signal 1: Shared Belief Beats Sales Pitch.**
+"Your child's unique" (#44, BEST) vs. "Uniquely designed with your student in mind" (#58, WORST). Same core word. Opposite results. When the brand *affirms her belief*, she clicks. When the brand *claims to have the solution*, she scrolls past. Lead with empathy, not capability.
+
+**Signal 2: Positive Framing Beats Negative Framing.**
+"Built around your child" (#47, UPPER) vs. "Not learning that forces" (#55, LOW). She doesn't want to hear about the system she left. She wants to hear about the sanctuary she's building. Never lead with pain. Lead with the promise of peace.
+
+**Signal 3: Specific Beats Generic — Every Time.**
+"Books" > "Resources." "Your children" > "your student." "Outpost that's as unique as your children" > "One-stop homeschool shop." The more specific, warm, and human the language, the better it performs. Generic retail language is death.
+
+**Signal 4: "Unique" Is Powerful — But Fragile.**
+The word "unique" appears in the #1 slogan AND the #1 offer tagline. But it also appears in the WORST slogan (#58). It works when it's about *her child*. It fails when it's a *brand claim*. Use it to reflect her, never to describe yourself.
+
+**Signal 5: She Wants an End to the Search.**
+"The last store you'll ever need" and "the only store you'll ever need" both performed well. She is exhausted by the search. The brand that can credibly promise "You can stop looking now" wins her loyalty — not just her click.
+
+### Combined Insight: The Six-Word Brand Promise
+
+The name test told us *who she wants to be* (a Chill Homeschooler). The color test told us *how she wants to feel* (warm, natural, at ease). The messaging tests tell us *what she wants to hear.*
+
+It all collapses into six words:
+
+> **"We see your child. Breathe easy."**
+
+That's the brand promise. Personalization + simplification + emotional connection + relief. Everything in the store — every product description, every email, every social post — should make her feel these six words are true.
 
 ---
 
