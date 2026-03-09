@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowUp, ExternalLink, Loader2, Tag, PenLine, X, Link2, ClipboardPaste, StickyNote, Camera, ImageIcon } from "lucide-react";
+import { ArrowUp, ExternalLink, Loader2, Tag, PenLine, X, Link2, ClipboardPaste, StickyNote, Camera, ImageIcon, Trash2, RotateCcw } from "lucide-react";
 
 type InputTab = "url" | "paste" | "note" | "image";
 
@@ -20,6 +20,8 @@ export default function ResearchPage() {
   const [items, setItems] = useState<ResearchItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<InputTab>("url");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [reanalyzingId, setReanalyzingId] = useState<string | null>(null);
 
   // URL tab
   const [url, setUrl] = useState("");
@@ -512,19 +514,45 @@ export default function ResearchPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <h2 className="font-medium leading-snug">{item.title || item.url}</h2>
-                    <a
-                      href={item.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted hover:text-accent"
-                    >
-                      {item.url.replace(/^https?:\/\//, "").split("/")[0]}
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
+                    {item.url.startsWith("http") && (
+                      <a
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted hover:text-accent"
+                      >
+                        {item.url.replace(/^https?:\/\//, "").split("/")[0]}
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
                   </div>
-                  <span className="shrink-0 text-xs text-muted">
-                    {new Date(item.created_at).toLocaleDateString()}
-                  </span>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <span className="text-xs text-muted">
+                      {new Date(item.created_at).toLocaleDateString()}
+                    </span>
+                    {item.url.startsWith("http") && (
+                      <button
+                        onClick={() => handleReanalyze(item)}
+                        disabled={reanalyzingId === item.id || !!deletingId}
+                        title="Re-analyze with current context"
+                        className="rounded-lg p-1.5 text-muted transition hover:text-accent disabled:opacity-30"
+                      >
+                        {reanalyzingId === item.id
+                          ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          : <RotateCcw className="h-3.5 w-3.5" />}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleDelete(item.id)}
+                      disabled={deletingId === item.id || !!reanalyzingId}
+                      title="Delete"
+                      className="rounded-lg p-1.5 text-muted transition hover:text-red-400 disabled:opacity-30"
+                    >
+                      {deletingId === item.id
+                        ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        : <Trash2 className="h-3.5 w-3.5" />}
+                    </button>
+                  </div>
                 </div>
 
                 {item.summary && (
@@ -544,7 +572,13 @@ export default function ResearchPage() {
                     {item.tags.map((tag) => (
                       <span
                         key={tag}
-                        className="rounded-full border border-border/70 bg-muted-surface px-2.5 py-0.5 text-xs text-muted"
+                        className={`rounded-full border px-2.5 py-0.5 text-xs ${
+                          tag === "vibe-coding"
+                            ? "border-accent/40 bg-accent/10 text-accent"
+                            : tag === "competitor"
+                            ? "border-orange-500/30 bg-orange-500/10 text-orange-400"
+                            : "border-border/70 bg-muted-surface text-muted"
+                        }`}
                       >
                         {tag}
                       </span>
