@@ -23,10 +23,11 @@ export async function GET() {
   return Response.json({ items: data ?? [] });
 }
 
-// POST /api/research — ingest a URL
+// POST /api/research — ingest a URL, or save manually
 export async function POST(request: Request) {
   try {
-    const { url } = await request.json();
+    const body = await request.json();
+    const { url, manual, title, summary, verdict, tags } = body;
 
     if (!url || typeof url !== "string") {
       return Response.json({ error: "url is required" }, { status: 400 });
@@ -35,6 +36,29 @@ export async function POST(request: Request) {
     // Normalize URL
     const targetUrl = url.startsWith("http") ? url : `https://${url}`;
 
+    // --- Manual save path (site blocked fetch, user wrote their own notes) ---
+    if (manual) {
+      const supabase = getSupabaseServiceRoleClient();
+      if (!supabase) {
+        return Response.json({ error: "Database not available" }, { status: 503 });
+      }
+      const { data, error } = await supabase
+        .from("research_items")
+        .insert({
+          url: targetUrl,
+          title: title || targetUrl,
+          summary: summary || null,
+          verdict: verdict || null,
+          tags: tags ?? [],
+          status: "review",
+        })
+        .select("id, url, title, summary, verdict, tags, status, created_at")
+        .single();
+      if (error) return Response.json({ error: error.message }, { status: 500 });
+      return Response.json({ item: data }, { status: 201 });
+    }
+
+    // --- Auto-fetch path ---
     // Fetch the page
     let rawHtml: string;
     try {
@@ -44,7 +68,7 @@ export async function POST(request: Request) {
       });
       rawHtml = await res.text();
     } catch (e) {
-      return Response.json({ error: `Could not fetch URL: ${String(e)}` }, { status: 422 });
+      return Response.json({ error: `Could not fetch URL: ${String(e)}`, fetchFailed: true }, { status: 422 });
     }
 
     // Strip HTML tags, collapse whitespace, take first 4000 chars of readable text
