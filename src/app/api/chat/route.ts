@@ -57,10 +57,27 @@ If Scott says he added something and you don't see it, say so specifically — a
 
 Lead with clarity. Land with honesty. Wisecrack when it fits. Never waste his time with filler. You are not a customer service bot — you are the sharpest person in the room who also happens to know everything about this business.`;
 
+// Scores a research item against the user's message using keyword overlap.
+// Higher = more relevant to what Scott is asking about right now.
+function scoreRelevance(item: { title?: string; summary?: string; verdict?: string; tags?: string[] }, query: string): number {
+  if (!query) return 0;
+  const words = query.toLowerCase().split(/\W+/).filter((w) => w.length > 3);
+  if (words.length === 0) return 0;
+  const text = [
+    item.title ?? "",
+    item.summary ?? "",
+    item.verdict ?? "",
+    (item.tags ?? []).join(" "),
+  ]
+    .join(" ")
+    .toLowerCase();
+  return words.reduce((score, word) => score + (text.includes(word) ? 1 : 0), 0);
+}
+
 // Fetches live context from Supabase to append to every system prompt.
-// Right now: latest published brief + recent research items.
+// Right now: latest published brief + recent research items (ranked by relevance to userMessage).
 // This is what makes Chapterhouse absorb new information automatically.
-async function buildLiveContext(): Promise<string> {
+async function buildLiveContext(userMessage: string = ""): Promise<string> {
   const supabase = getSupabaseServiceRoleClient();
   if (!supabase) return "";
 
@@ -114,22 +131,29 @@ async function buildLiveContext(): Promise<string> {
   }
 
   try {
-    // Recent research items (up to 10 most recent)
-    const { data: items } = await supabase
+    // Fetch up to 100 research items, then rank by relevance to the user's message
+    const { data: allItems } = await supabase
       .from("research_items")
       .select("url, title, summary, verdict, tags, created_at")
       .order("created_at", { ascending: false })
-      .limit(10);
+      .limit(100);
 
-    if (items && items.length > 0) {
-      const researchText = items
+    if (allItems && allItems.length > 0) {
+      // Score each item, then sort descending. Fall back to recency order (score=0 for all) when no message.
+      const scored = allItems
+        .map((item) => ({ item, score: scoreRelevance(item, userMessage) }))
+        .sort((a, b) => b.score - a.score || 0); // stable: recency order preserved for ties
+
+      const top10 = scored.slice(0, 10).map((s) => s.item);
+
+      const researchText = top10
         .map((item) =>
           `- **${item.title || item.url}** (${new Date(item.created_at).toLocaleDateString()})\n` +
           `  ${item.summary || ""}\n` +
           (item.verdict ? `  Verdict: ${item.verdict}` : "")
         )
         .join("\n");
-      blocks.push(`## Live Context: Recent Research\n\n${researchText}`);
+      blocks.push(`## Live Context: Research (top 10 by relevance)\n\n${researchText}`);
     }
   } catch {
     // research_items table may not exist yet — ignore
@@ -169,8 +193,12 @@ export async function POST(request: Request) {
 
     const encoder = new TextEncoder();
 
-    // Enrich system prompt with live context from Supabase
-    const liveContext = await buildLiveContext();
+    // Extract the last user message for relevance scoring
+    const lastUserMsg: string =
+      [...messages].reverse().find((m: { role: string; content: string }) => m.role === "user")?.content ?? "";
+
+    // Enrich system prompt with live context from Supabase (research ranked by relevance to this message)
+    const liveContext = await buildLiveContext(lastUserMsg);
     const systemPrompt = SYSTEM_PROMPT + liveContext;
 
     // Route to Anthropic if claude model requested
