@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   try {
     const { messages } = await request.json();
 
-    if (!messages || messages.length < 2) {
+    if (!messages || messages.length < 1) {
       return Response.json({ extracted: [] });
     }
 

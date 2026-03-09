@@ -149,6 +149,25 @@ export function ChatInterface() {
     if (textareaRef.current) textareaRef.current.style.height = "auto";
     setIsStreaming(true);
 
+    // Fire extraction immediately on the user's message — runs in parallel with the AI call.
+    // This means facts from message N are in the DB before Scott finishes reading the response
+    // and types message N+1. No lag, no /remember needed.
+    setIsLearning(true);
+    fetch("/api/extract-learnings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: newMessages }),
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.extracted && d.extracted.length > 0) {
+          setLearnedCount((n) => n + d.extracted.length);
+          log.success(`Auto-learned ${d.extracted.length} fact(s) from user message`);
+        }
+      })
+      .catch(() => null)
+      .finally(() => setIsLearning(false));
+
     const t0 = performance.now();
     let firstChunkTime: number | null = null;
     let totalChars = 0;
@@ -212,24 +231,6 @@ export function ChatInterface() {
       log.data("Characters received", totalChars);
       log.data("Est. tokens (~4 chars/token)", Math.round(totalChars / 4));
       log.timing("Total response time", totalTime);
-
-      // Auto-learn: silently extract facts from this exchange and save to founder memory
-      const finalMessages = [...newMessages, { role: "assistant" as const, content: accumulated }];
-      setIsLearning(true);
-      fetch("/api/extract-learnings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: finalMessages }),
-      })
-        .then((r) => r.json())
-        .then((d) => {
-          if (d.extracted && d.extracted.length > 0) {
-            setLearnedCount((n) => n + d.extracted.length);
-            log.success(`Auto-learned ${d.extracted.length} fact(s) from this exchange`);
-          }
-        })
-        .catch(() => null)
-        .finally(() => setIsLearning(false));
 
     } catch (e) {
       const errorMsg = e instanceof Error ? e.message : String(e);
@@ -424,7 +425,7 @@ export function ChatInterface() {
                 </span>
               )}
               <p className="text-xs text-muted">
-                <span className="font-mono">/remember [fact]</span> saves to founder memory · Shift+Enter for new line
+                Brain learns from every message · <span className="font-mono">/remember [fact]</span> to save explicitly · Shift+Enter for new line
               </p>
             </div>
             {messages.length > 0 && (
