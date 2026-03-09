@@ -159,6 +159,36 @@ That includes:
 
 ---
 
+## Shopify Track (Anna-managed)
+
+The Shopify storefront build is **Anna's domain**. Scott owns Chapterhouse. The two tracks run in parallel but have separate owners. Scott will hand off Shopify automation tools once an API key is available and the store is live enough to warrant it.
+
+**Confirmed decisions:**
+- Theme: **Kidu** (OS 2.0, book/education oriented) ✅
+- Fulfillment: Ingram Spark dropship ✅
+- Product: Curriculum guides are legal companion works, ~95% margin ✅
+
+**AI items Scott will build (when Shopify API key is available):**
+- [ ] **AI Product Description Generator** — batch-generate brand-voice descriptions for all products; run before launch
+- [ ] **AI Curriculum Guide Generator** — 10–20 guides before launch; Scott's highest-margin product; builds from book title + grade + angle input
+- [ ] **Bulk Importer + Metafield Manager** — CSV → Shopify via Admin GraphQL; sets grade_level, faith_flag, allotment_eligible, etc.
+- [ ] **Digital Product Delivery Automation** — webhook listener for `orders/paid`; triggers branded email with download link
+
+**Anna's items (she manages directly, Chapterhouse supports with intelligence):**
+- Kidu theme configuration and storefront design
+- Catalog curation and product selection
+- Faith/secular filter setup
+- Alaska Allotment filter and badge
+- Grade Level Quick-Nav
+- Curriculum Guide Upsell block
+- Ingram Spark account and catalog sync
+- Trisha Goyer product integration
+
+**When Shopify API key arrives:**
+Pipe the store's catalog metadata into Chapterhouse Research so AI can interpret product performance, keyword gaps, and competitor pricing in context.
+
+---
+
 ## Supabase Tables (Live)
 | Table | Status | Notes |
 |-------|--------|-------|
@@ -176,11 +206,20 @@ That includes:
 
 ---
 
-## Immediate Next Actions
+## Immediate Next Actions — Chapterhouse Build Order
 
-1. **Review Queue screen** — highest-value missing screen; completes the research → judgment loop
-2. **Tasks screen** — converts approved items into execution
-3. **Auth gate** — before any external sharing or Shopify store launch
-4. **Content Studio** — before Anna starts drafting content through the system
-5. **Stage 3 summarization** — when research library exceeds ~50 items
+This is the working sequence. Do these in order. Don't skip ahead.
+
+| # | Item | What it unlocks |
+|---|------|-----------------|
+| 1 | **Review Queue screen** | Turns research + opportunities into actual decisions; wire real DB, approve/reject/snooze/convert-to-task |
+| 2 | **Tasks screen** | Converts approved queue items into execution; state machine + source linking |
+| 3 | **Auth gate** | Supabase magic link locked to Scott + Anna emails; required before Anna uses the system or before Shopify work links to it |
+| 4 | **Content Studio screen** | Anna's drafting workflow; channel-aware content with brand-voice grounding from core docs |
+| 5 | **Stage 3: Summarization pass** | Condenses large research library into summaries by tag; prevents context ceiling; build when research > ~50 items |
+| 6 | **SSRF fix + metadata extraction** | Security hardening for research URL fetch; pull page title, meta description, og:site_name, published date |
+| 7 | **Stage 4: pgvector embeddings** | Semantic similarity replaces keyword scoring; `text-embedding-3-small` on save; upgrade `buildLiveContext()` to vector search |
+| 8 | **Option A: Inline chat URL detection** | Detect URL in chat message → `/api/fetch-url` (no-save) → inject into that turn's context; the "inspect a webpage from chat" capability |
+| 9 | **Scheduled brief generation** | Trigger.dev cron job for automatic morning brief; needs Trigger.dev account setup |
+| 10 | **Option B: Agentic research** | "Research X" intent → search API (Brave or Serper, ~$5/mo) → multi-URL fetch → synthesis loop → Research saved automatically |
 
