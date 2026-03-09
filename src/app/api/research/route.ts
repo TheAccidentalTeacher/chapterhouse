@@ -35,6 +35,27 @@ export async function DELETE(request: Request) {
   return Response.json({ ok: true });
 }
 
+// PATCH /api/research?id=xxx — update status (approve → saved, reject → rejected)
+export async function PATCH(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+  if (!id) return Response.json({ error: "id required" }, { status: 400 });
+
+  const body = await request.json();
+  const supabase = getSupabaseServiceRoleClient();
+  if (!supabase) return Response.json({ error: "Database not available" }, { status: 503 });
+
+  const { data, error } = await supabase
+    .from("research_items")
+    .update({ ...body, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) return Response.json({ error: error.message }, { status: 500 });
+  return Response.json({ item: data });
+}
+
 // POST /api/research — ingest a URL, or save manually
 // Helper: run AI analysis on any text block
 async function analyzeText(text: string, sourceLabel: string) {
