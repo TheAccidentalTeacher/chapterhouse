@@ -240,11 +240,11 @@ The word "unique" appears in the #1 slogan AND the #1 offer tagline. But it also
 
 The name test told us *who she wants to be* (a Chill Homeschooler). The color test told us *how she wants to feel* (warm, natural, at ease). The messaging tests tell us *what she wants to hear.*
 
-It all collapses into six words:
+It all collapses into one promise:
 
-> **"We see your child. Breathe easy."**
+> **"We found the good ones. You can exhale."**
 
-That's the brand promise. Personalization + simplification + emotional connection + relief. Everything in the store — every product description, every email, every social post — should make her feel these six words are true.
+That's the brand promise. Curation + simplification + emotional connection + relief. Everything in the store — every product description, every email, every social post — should make her feel this is true.
 
 ---
 
