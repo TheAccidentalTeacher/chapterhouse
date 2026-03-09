@@ -99,7 +99,9 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
               </div>
             </div>
           </div>
-          {children}
+          <div className="flex-1 overflow-y-auto">
+            {children}
+          </div>
         </main>
 
         <aside className="hidden overflow-y-auto bg-rail/70 px-5 py-6 lg:block">

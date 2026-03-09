@@ -57,13 +57,16 @@ The second track is no longer vague. It now has documented:
 
 It also now has a **live, deployed application** at [chapterhouse.vercel.app](https://chapterhouse.vercel.app).
 
-As of March 7, 2026, Chapterhouse is running in production with:
+As of March 9, 2026, Chapterhouse is running in production with:
 - Chat interface backed by GPT-5.4 (OpenAI Responses API) and Claude Opus/Sonnet 4.6
 - Conversation memory persisted across refreshes (localStorage)
-- Live context enrichment — every chat message now carries the latest brief and recent research items from Supabase in the system prompt
+- Live context enrichment — every chat message now carries the latest brief, recent research items, and open opportunities from Supabase in the system prompt
 - Daily Brief reading and writing live from Supabase (Generate with AI or write manually)
-- Research screen: paste any URL → Chapterhouse fetches, summarizes, saves, and auto-loads into chat context
+- Research screen fully live: paste any URL → auto-fetch + AI summary, or manual save fallback if site blocks the fetch. Sites that block server-side requests (Cloudflare-protected) trigger an amber fallback form to write your own notes manually.
+- 4 competitors ingested: Rainbow Resource Center, Master Books, Sonlight, Memoria Press
 - Documents screen: all brand guide `.md` files readable inside the app
+- Product Intelligence screen: AI opportunity scoring — runs analysis across all research items and brief, scores each opportunity A+/B/C across Store/Curriculum/Content tracks
+- Markdown rendering in all assistant chat messages
 - Model switcher between all 5 models
 - F12 debug tooling and `/api/debug` health endpoint
 
@@ -263,6 +266,12 @@ Locks the first practical implementation decisions for Chapterhouse: app locatio
 | Mar 7, 2026 | Daily Brief write path built | `/api/briefs` POST route + `/api/briefs/generate` AI generation route + New Brief panel on Daily Brief page (Generate with AI or write manually) |
 | Mar 7, 2026 | Research screen live | URL paste-and-ingest UI: fetches page, AI summarizes with brand lens, saves to Supabase `research_items`; saved items feed into chat context automatically |
 | Mar 7, 2026 | Documents screen live | Reads all brand guide `.md` files from the repo root; searchable grid with full inline content expansion |
+| Mar 7, 2026 | Product Intelligence screen live | Opportunity scoring engine: reads all research + brief, generates 3-6 scored opportunities (A+ through C) across Store/Curriculum/Content tracks; status controls (open/in-progress/done/passed); opportunities injected into chat context |
+| Mar 7, 2026 | Markdown rendering in chat | Assistant messages now render full markdown via `react-markdown` + `remark-gfm` |
+| Mar 9, 2026 | `research_items` table rebuilt | Schema was partially created in production; dropped and recreated with correct columns: `id`, `url`, `title`, `summary`, `verdict`, `tags`, `status`, `created_at`, `updated_at` |
+| Mar 9, 2026 | Manual save fallback added to Research | When a site blocks server-side fetch (Cloudflare, bot protection), UI now shows amber fallback form for manual title/summary/verdict entry instead of dead error |
+| Mar 9, 2026 | 4 competitors ingested | Rainbow Resource Center, Master Books, Sonlight, Memoria Press — all saved in Research and feeding chat context |
+| Mar 9, 2026 | Research page scroll fixed | Main content area was missing `overflow-y-auto`; pages with long content now scroll correctly |
 
 ---
 
@@ -291,9 +300,9 @@ Locks the first practical implementation decisions for Chapterhouse: app locatio
 - [x] Research screen — URL ingestion live: paste → fetch → AI summary → Supabase → feeds chat context
 - [x] Documents screen — all brand guide `.md` files readable inside Chapterhouse
 - [ ] Auth gate — Supabase magic link, locked to Scott + Anna email addresses *(known gap, intentionally deferred — app is internal-only for now)*
-- [ ] `research_items` table — SQL migration at `supabase/migrations/20260307_003_create_research_items.sql` needs to be run in Supabase dashboard
+- [x] `research_items` table — rebuilt in production with complete schema (March 9)
 - [ ] Shopify store build — theme, products, catalog (separate track)
-- [ ] Initial competitor ingestion — start using the Research screen with competitor URLs (rainbowresource.com, masterbooks.com, sonlightcurriculum.com, memoriapress.com)
+- [x] Initial competitor ingestion — Rainbow Resource, Master Books, Sonlight, Memoria Press all ingested (March 9)
 - [ ] Initial data seeding source — first from our planned catalog, first from competitors, or blended import pass?
 - [ ] **Search Atlas integration** — Start a Search Atlas trial ($99/mo) once the Shopify store is live. Use it for keyword gap analysis vs. Rainbow Resource and Sonlight, rank tracking, and site auditing. Pipe findings into Chapterhouse Research so the AI can interpret what the numbers mean for Next Chapter specifically. Don't try to replicate it — use it as a data source feeding Chapterhouse.
 - [ ] **LLM visibility tracking** — Build a scheduled check inside Chapterhouse that periodically asks GPT/Claude "what are the best homeschool resources for [topic]?" and logs whether Next Chapter appears. This is the homeschool parent discovery channel that matters most right now and no tool tracks it well. Can be built inside Chapterhouse without a third-party subscription.
@@ -321,4 +330,4 @@ Locks the first practical implementation decisions for Chapterhouse: app locatio
 
 ---
 
-*Last updated: March 7, 2026 — This document is the map. Keep it current.*
+*Last updated: March 9, 2026 — This document is the map. Keep it current.*
