@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Bell, Search, Settings2, Sparkles } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Bell, LogOut, Search, Settings2, Sparkles } from "lucide-react";
 import { navigationItems } from "@/lib/navigation";
+import { getSupabaseBrowserClient } from "@/lib/supabase";
+import { useEffect, useState } from "react";
 
 type ChapterhouseShellProps = {
   children: React.ReactNode;
@@ -11,6 +13,26 @@ type ChapterhouseShellProps = {
 
 export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const client = getSupabaseBrowserClient();
+    if (!client) return;
+    client.auth.getUser().then(({ data }) => {
+      if (data.user?.email) setUserEmail(data.user.email);
+    });
+  }, []);
+
+  async function handleSignOut() {
+    await fetch("/api/auth/signout", { method: "POST" });
+    router.push("/login");
+  }
+
+  // Auth pages render without the shell
+  if (pathname === "/login" || pathname.startsWith("/auth/")) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="h-screen overflow-hidden bg-background">
@@ -93,9 +115,16 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
                 <button className="rounded-full border border-border bg-card px-3 py-2 text-muted transition hover:bg-muted-surface hover:text-foreground">
                   <Settings2 className="h-4 w-4" />
                 </button>
-                <div className="rounded-full border border-border bg-card px-4 py-2 text-muted">
-                  Scott · internal alpha
+                <div className="rounded-full border border-border bg-card px-4 py-2 text-muted text-sm truncate max-w-[200px]">
+                  {userEmail ?? "Chapterhouse"}
                 </div>
+                <button
+                  onClick={handleSignOut}
+                  title="Sign out"
+                  className="rounded-full border border-border bg-card px-3 py-2 text-muted transition hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-400"
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
               </div>
             </div>
           </div>
@@ -125,10 +154,10 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
                   <span className="status-dot bg-success shrink-0" />
                   <span>Documents — live</span>
                 </Link>
-                <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-muted-surface px-4 py-3">
-                  <span className="status-dot bg-muted shrink-0" />
-                  <span className="text-muted">Auth — deferred</span>
-                </div>
+                <Link href="/login" className="flex items-center gap-3 rounded-2xl border border-border/70 bg-muted-surface px-4 py-3 transition hover:border-accent/40 hover:text-accent">
+                  <span className="status-dot bg-success shrink-0" />
+                  <span>Auth — live</span>
+                </Link>
               </div>
             </div>
           </div>
