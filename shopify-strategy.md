@@ -177,7 +177,7 @@ These are Scott's competitive moat. Nobody else in the homeschool market is buil
 #### 11. AI Curriculum Guide Generator
 - **What it does:** Takes book title, author, grade level, subject focus, and any custom angle — outputs a full formatted curriculum guide document
 - **Workflow:** Scott feeds it inputs → AI drafts → Scott edits the 20% that makes it genuinely good → exported to PDF → uploaded to Shopify as digital product
-- **Build stack:** Python + OpenAI API (GPT-4o) + document generation (WeasyPrint or ReportLab for PDF)
+- **Build stack:** Python + OpenAI API (GPT-5.4) + document generation (WeasyPrint or ReportLab for PDF)
 - **Cost to run:** Pennies per guide
 - **Output value:** $9.99 digital product with 95% margin
 - **Priority:** HIGH — Scott should be building guides before launch
@@ -222,7 +222,7 @@ Scott's contract ends May 24, 2026. Revenue needs to be meaningful by August. Pe
 ```
 Python 3.11+
 ├── shopify-api (official Shopify Python library)
-├── openai (GPT-4o for AI tools)
+├── openai (GPT-5.4 for AI tools)
 ├── pandas (CSV/spreadsheet processing)
 ├── flask or fastapi (webhook listener for digital delivery)
 ├── weasyprint or reportlab (PDF generation for curriculum guides)
