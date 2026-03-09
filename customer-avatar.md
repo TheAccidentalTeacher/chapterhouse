@@ -1,13 +1,13 @@
-# Customer Avatar: Alaskan Annie
+# Customer Avatar: Annie
 ### The Definitive Target Customer for Next Chapter Homeschool Outpost
 
 > *This is the single-source-of-truth customer avatar for all brand, marketing, product, and visual decisions at Next Chapter Homeschool Outpost. It is built from real behavioral data — a Facebook ad click test of 19 name variants, a color click test, a slogan click test, and an "offer" messaging click test — all conducted by Anna Somers in March 2026, independently analyzed by Chapterhouse AI and Anna (via Gemini), and merged with market research and personal experience. People voted with their thumbs. All marketing copy, product curation, and brand decisions should be filtered through this lens.*
 
 ---
 
-## Part 1: Meet Alaskan Annie
+## Part 1: Meet Annie
 
-We call our avatar **"Alaskan Annie."** Not because every customer is in Alaska — but because she represents the core psychographics of the audience that clicked, and because Alaska is where the people who built this brand actually live.
+We call our avatar **"Annie."** She represents the core psychographics of the homeschool mom audience that clicked across every test — a national audience, suburban to rural, from every region of the country. She is not defined by geography. She is defined by how she feels about homeschooling.
 
 | Attribute | Description |
 |-----------|-------------|
@@ -16,9 +16,9 @@ We call our avatar **"Alaskan Annie."** Not because every customer is in Alaska 
 | **Gender** | Female (80%+ of homeschool purchasing decisions; Facebook ad audience skews heavily female) |
 | **Role** | Homeschool mom, often with multiple children of varying ages |
 | **Family** | 2–4 children, at least one in K–8 range |
-| **Location** | Primarily USA — suburban to rural. A significant and highly valued segment in Alaska |
+| **Location** | USA-wide — suburban to rural, every region. The brand ships nationally and the click test audience was national. |
 | **Education** | Some college to college-educated; values learning as a way of life |
-| **Income** | Middle class; budget-conscious but willing to invest in quality. For the Alaskan segment, state allotment money ($2,000) is a major purchasing driver |
+| **Income** | Middle class; budget-conscious but willing to invest in quality. Will spend when trust is established and the product clearly fits her child. |
 | **Faith** | Faith-adjacent. Likely a person of faith (Christian), but wary of curriculum that is overly dogmatic or low-quality. Values resources that align with her values without sacrificing academic rigor. Turned off by brands that feel like a "Christian subculture" product. Not looking for her homeschool supplies to be a theological statement |
 | **Homeschool stage** | 1–5 years in; past the panic phase, into the "find what works and stick with it" season |
 
@@ -33,7 +33,7 @@ Annie's primary challenge is **decision fatigue.** She is responsible for her ch
 - **Overwhelmed by choice:** The homeschool market is saturated with massive catalogs (Rainbow Resource, Christianbook). She spends hours scrolling, reading reviews, and comparing options, terrified of making the "wrong" choice that will leave her kids behind.
 - **Seeking a guide, not a catalog:** She doesn't want 100 options for 3rd-grade math. She wants a trusted, experienced guide (a real teacher, like Scott) to tell her, "Here are the two best options, and here's why."
 - **Wants to enjoy homeschooling:** She started this journey with a vision of delightful, connected learning with her kids. The reality is often stressful and demanding. She craves a return to that initial joy.
-- **Budget-conscious and allotment-savvy:** She manages the family budget carefully. For the Alaskan segment, eligibility for state homeschool allotments is a key factor. She's looking for value: high-quality, effective resources that don't break the bank.
+- **Budget-conscious but not price-led:** She manages the family budget carefully and expects to spend on homeschooling — but price is not her primary emotional trigger. She will invest when she trusts the source and believes the resource will actually work for her child. She's looking for value: high-quality, effective resources that don't require a second purchase when the first one doesn't fit.
 - **Tired of the "Mom Wars":** She feels pressure from all sides — public school advocates, other homeschool moms with different philosophies, her own internal critic. She is not looking for a brand that adds to this pressure.
 
 ### The Emotional Landscape
@@ -97,7 +97,7 @@ The warmest name won (#1 Chill Homeschooler). The edgiest name came in dead last
 "Next Chapter Homeschool" (#3) taps into personal story language — growth, seasons of life, turning pages, family narrative. She's made a *story-level decision* about her family's life. Language that works: the next chapter, your homeschool story, the journey, new seasons.
 
 **Signal 4: Nature & Place Create Trust.**
-Rosewood (#2), Mt. Drum (#4), Fireweed (#7), Northern Lights (#8) — nature and place names that evoke wonder outperform purely geographic names. She connects to outdoor lifestyle, slow living, beauty, simplicity. The Alaska origin story is an asset — lead with the wonder, not the GPS coordinates.
+Rosewood (#2), Mt. Drum (#4), Fireweed (#7), Northern Lights (#8) — nature and place names that evoke wonder outperform purely geographic names. She connects to outdoor lifestyle, slow living, beauty, simplicity. The brand's Alaskan origin is an asset — it communicates authenticity, grit, and a love of wild beauty that resonates far beyond Alaska. Lead with the wonder, not the GPS coordinates.
 
 **Signal 5: Sanctuary, Not Adventure.**
 Refuge (#5) beat Basecamp (#12), Outpost (#16), and Forged (#18). She's building a refuge, not a base camp. Her homeschool is a warm room full of books, not a military staging area. Adventure language can work only if it still feels safe and supportive.
@@ -316,7 +316,7 @@ That's the brand promise. Curation + simplification + emotional connection + rel
 
 Based on everything above, **Next Chapter Homeschool Outpost** should be positioned as:
 
-> **The calm, curated homeschool store from a real Alaskan teacher.**
+> **The calm, curated homeschool store built by a real teacher.**
 
 ### The One-Paragraph Positioning Statement
 
@@ -337,7 +337,7 @@ Everything — brand voice, website design, marketing copy, product descriptions
 We carry faith-based resources because our founder is a person of faith and knows what's good. But we are not a "Christian store." We are a great homeschool store that is welcoming to people of all backgrounds. Families of faith will find resources that align with their values. Everyone else will find excellent resources that don't alienate them. Labels are clear. Nothing is pushed.
 
 **5. Value-Driven.**
-We leverage public domain texts, companion guides, and smart curation to provide affordable, high-quality options. For Alaskans, allotment-eligibility is a key feature, not an afterthought.
+We leverage public domain texts, companion guides, and smart curation to provide affordable, high-quality options. Value is demonstrated through quality and fit — not discounting.
 
 ### Core Messages Annie Needs to Hear
 
@@ -462,7 +462,7 @@ The click test confirms "Next Chapter Homeschool" (#3 rank) resonates strongly:
 - Warm, not aggressive
 - Identity-adjacent: she's writing her next chapter
 
-**The "Outpost" modifier:** "Homeschool Outpost" on its own ranked #16 — bottom quarter. But as a modifier on an already-warm name, it adds frontier charm and Alaskan authenticity without standalone harshness. "Next Chapter" carries it. However:
+**The "Outpost" modifier:** "Homeschool Outpost" on its own ranked #16 — bottom quarter. But as a modifier on an already-warm name, it adds frontier charm and a sense of discovery without standalone harshness. "Next Chapter" carries it. However:
 
 - In quick-hit contexts (favicon, social profiles, short links), lead with **Next Chapter**
 - Let **Outpost** be the supporting detail, not the headline
@@ -511,7 +511,7 @@ Annie is not a stranger you have to find. She's someone who already knows Anna's
 
 ## How to Use This Document
 
-Filter every brand decision through Alaskan Annie:
+Filter every brand decision through Annie:
 
 | Decision | The Annie Test |
 |----------|---------------|
