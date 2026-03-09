@@ -24,13 +24,80 @@ export async function GET() {
 }
 
 // POST /api/research — ingest a URL, or save manually
+// Helper: run AI analysis on any text block
+async function analyzeText(text: string, sourceLabel: string) {
+  const prompt = `You are analyzing content for relevance to Next Chapter Homeschool Outpost — a homeschool curriculum store and content brand run by Scott and Anna Somers.
+
+Source: ${sourceLabel}
+
+Content:
+${text.slice(0, 4000)}
+
+Respond with ONLY valid JSON:
+{
+  "title": "string — a clear descriptive title for this piece",
+  "summary": "string — 2-3 sentences summarizing what this is about",
+  "verdict": "string — 1 sentence on whether and how this is relevant to Next Chapter",
+  "tags": ["string"] — 2-5 tags from: competitor, market, curriculum, content, product, audience, platform, pricing, distribution, social, news, tools, ai, strategy
+}
+
+Be direct. No filler.`;
+
+  const aiResponse = await openai.responses.create({
+    model: "gpt-5.4",
+    instructions: "You output only valid JSON. No markdown fences.",
+    input: prompt,
+    max_output_tokens: 512,
+  });
+
+  const rawText = aiResponse.output
+    .filter((block) => block.type === "message")
+    .flatMap((block) => (block as { type: "message"; content: Array<{ type: string; text: string }> }).content)
+    .filter((part) => part.type === "output_text")
+    .map((part) => part.text)
+    .join("");
+
+  try {
+    return JSON.parse(rawText) as { title: string; summary: string; verdict: string; tags: string[] };
+  } catch {
+    const match = rawText.match(/```(?:json)?\s*([\s\S]+?)```/);
+    if (match) return JSON.parse(match[1]) as { title: string; summary: string; verdict: string; tags: string[] };
+    return { title: sourceLabel, summary: text.slice(0, 200), verdict: "Could not analyze.", tags: [] };
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { url, manual, title, summary, verdict, tags } = body;
+    const { url, manual, title, summary, verdict, tags, pasteText, sourceLabel } = body;
+
+    // --- Paste-text path (no URL needed — email, Instagram caption, article excerpt, notes) ---
+    if (pasteText && typeof pasteText === "string") {
+      if (pasteText.trim().length < 10) {
+        return Response.json({ error: "Paste some text first" }, { status: 400 });
+      }
+      const label = sourceLabel?.trim() || "Pasted content";
+      const analysis = await analyzeText(pasteText, label);
+      const supabase = getSupabaseServiceRoleClient();
+      if (!supabase) return Response.json({ error: "Database not available" }, { status: 503 });
+      const { data, error } = await supabase
+        .from("research_items")
+        .insert({
+          url: `paste://${Date.now()}`,
+          title: title?.trim() || analysis.title,
+          summary: analysis.summary,
+          verdict: analysis.verdict,
+          tags: analysis.tags ?? [],
+          status: "review",
+        })
+        .select("id, url, title, summary, verdict, tags, status, created_at")
+        .single();
+      if (error) return Response.json({ error: error.message }, { status: 500 });
+      return Response.json({ item: data }, { status: 201 });
+    }
 
     if (!url || typeof url !== "string") {
-      return Response.json({ error: "url is required" }, { status: 400 });
+      return Response.json({ error: "url or pasteText is required" }, { status: 400 });
     }
 
     // Normalize URL
@@ -88,54 +155,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "Page returned too little readable text" }, { status: 422 });
     }
 
-    // Ask the AI to analyze this content through the Next Chapter lens
-    const analysisPrompt = `You are analyzing a web page for relevance to Next Chapter Homeschool Outpost.
-
-The page URL: ${targetUrl}
-
-Page content (truncated):
-${text}
-
-Respond with ONLY valid JSON matching this schema:
-{
-  "title": "string — the page title or best description of what this is",
-  "summary": "string — 2-3 sentences summarizing what this page is about",
-  "verdict": "string — 1 sentence: is this relevant to Next Chapter? Why or why not?",
-  "tags": ["string", "string"] — 2-5 relevant category tags from: competitor, market, curriculum, content, product, audience, platform, pricing, distribution, social, news, tools
-}
-
-Be direct. No filler.`;
-
-    const aiResponse = await openai.responses.create({
-      model: "gpt-5.4",
-      instructions: "You output only valid JSON. No markdown fences.",
-      input: analysisPrompt,
-      max_output_tokens: 512,
-    });
-
-    const rawText = aiResponse.output
-      .filter((block) => block.type === "message")
-      .flatMap((block) => (block as { type: "message"; content: Array<{ type: string; text: string }> }).content)
-      .filter((part) => part.type === "output_text")
-      .map((part) => part.text)
-      .join("");
-
-    let analysis: { title: string; summary: string; verdict: string; tags: string[] };
-    try {
-      analysis = JSON.parse(rawText);
-    } catch {
-      const match = rawText.match(/```(?:json)?\s*([\s\S]+?)```/);
-      if (match) {
-        analysis = JSON.parse(match[1]);
-      } else {
-        analysis = {
-          title: targetUrl,
-          summary: text.slice(0, 200),
-          verdict: "Could not analyze — AI returned non-JSON output.",
-          tags: [],
-        };
-      }
-    }
+    const analysis = await analyzeText(text, targetUrl);
 
     // Save to Supabase
     const supabase = getSupabaseServiceRoleClient();
