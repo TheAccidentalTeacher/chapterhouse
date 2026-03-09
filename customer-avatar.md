@@ -215,6 +215,45 @@ Two additional Facebook ad click tests were conducted to discover what *promises
 | #31 | "Decision fatigue: Every homeschool parent's worst nightmare..." | LOW |
 | #32 | **"My kid needs a learning program that adapts to their strengths."** | **WORST** |
 
+#### What the Top Performers Reveal
+
+**1. Their #1 frustration is chaos — not academics.**
+The top two pain points (#18 and #19) are about the *feeling* of the day. Not test scores, not curriculum quality, not college readiness. The house is chaos. She just wants one calm day. This audience is primarily motivated by **daily-life overwhelm**, not educational anxiety. Messaging about calm homeschool days, peaceful rhythms, and simplifying the *life* of homeschooling will always outperform messaging about academic outcomes.
+
+**2. They believe existing products weren't designed for their child.**
+"What works for your kid won't work for mine" (#20) and the mid-tier appearance of "These other companies have obviously never met my kid" (#30) both confirm what the slogan test showed: she feels invisible to the industry. The market treats her child as a generic learner. She is looking for a brand that treats her child as an individual. This is the single most consistent signal across every test.
+
+**3. Curriculum selection exhausts them — but they want the exit, not the sympathy.**
+"Does selecting materials leave you exhausted?" (#21) performed MID-HIGH. But "Choosing the right curriculum shouldn't be this overwhelming" (#29) performed LOW, and "Decision fatigue: Every homeschool parent's worst nightmare" (#31) performed LOW. **Same pain, different frame.** A question that opens a door performed far better than a statement that names the condition. She wants to be led to relief, not handed a diagnosis.
+
+**4. Time pressure is real but secondary.**
+The time-pressure pain points (#26, #27) landed in MID-LOW. She feels the time crunch, but it is not her primary emotional trigger. Her root pain is mental overload and the feeling that nothing fits — not the clock. Messaging about "saving time" will work, but it should support the primary promise of calm and fit, not lead with it.
+
+#### What the Bottom Performers Reveal
+
+The bottom third of this test is equally valuable. These are the messages she **did not click** — and that tells us just as much.
+
+**1. She rejects educational industry language.**
+"Learning program that adapts to their strengths" (#32, WORST) and "Choosing the right curriculum" (#29, LOW) sound like they were written by a curriculum company or school administrator, not a real mom. She thinks in terms of *her life*, not *educational frameworks*. Use plain language: "books her kids will actually finish" not "resources aligned to her child's learning profile."
+
+**2. "Decision fatigue" is jargon — even if it's her reality.**
+The phrase "decision fatigue" (#31) performed LOW. It's trendy marketing vocabulary. She doesn't call it that. She says "I don't know what to pick" or "I'm so tired of researching." **Use the words she uses, not the words marketers use to describe her.**
+
+**3. Improvement and optimization messaging falls flat.**
+"I could be a great homeschool teacher if I had ten more hours" (#27) and "My kid needs a program that adapts to their strengths" (#32) are both about *becoming better*. They underperformed significantly. This audience is not in optimization mode. They are in **survival and relief mode**. They don't want to be a better teacher. They want today to feel manageable.
+
+**4. She does not identify as a teacher.**
+"I could be a great homeschool teacher..." (#27) landed MID-LOW. "How do other homeschool *teachers* stay so organized?" (#22) landed MID. The teacher-identity framing is consistently weaker than parent-identity framing. She sees herself as a **mom**, not an educator. She is guiding her child, not performing a professional role. **Never call her a teacher in marketing copy. Call her a mom, a guide, a parent — never a teacher.**
+
+**5. Financial pain is real but not the emotional hook.**
+Cost-related pain points (#24, #25, #28) all landed MID to LOW. She expects to spend money on homeschooling. Price messaging won't drive her initial engagement. It can *support* a purchase decision but it will not *start* one. Lead with calm and fit. Let her discover the value later.
+
+**6. Humor entertains but doesn't convert like emotional validation.**
+The lottery joke (#25) and grocery budget joke (#24) landed MID. Funny, relatable — but not clicking at the same rate as "my house is in chaos" (#18) or "Dear God, all I want is a calm day" (#19). Humor can warm her up; emotional validation closes her. Use humor in social content freely. Lead with emotional truth in ads.
+
+**7. She is defensive about implied inadequacy.**
+"I could be a great homeschool teacher *if*..." implies she currently isn't. That framing triggers defensiveness. "My house is in chaos" (#18) works because it's communal — *we're* in this together. "I could be great *if*" puts the failure on her. **Never imply she is falling short. Always imply she is doing something right in a hard situation.**
+
 ---
 
 ### The 6 Core Desires — What Annie Actually Wants
@@ -450,6 +489,9 @@ This audience left the system. They don't need to be told it was the right decis
 
 ### 6. Anna's Warmth Is the Competitive Advantage
 The data proves it. Anna's natural voice — warm, encouraging, book-loving, faith-present-but-not-pushy — IS the brand voice this audience wants. The click test audience already overlaps with Anna's existing audience. This is not a coincidence. The store doesn't have to find its first customers — Anna can *introduce* them.
+
+### 7. Never Call Her a Teacher
+The pain point test confirmed it clearly: teacher-identity framing consistently underperforms parent-identity framing. She is a mom who chose to take charge of her child's education — not a professional educator performing a role. Calling her a "homeschool teacher" (even admiringly) can trigger the exact inadequacy and pressure she homeschools to *escape*. Use: mom, parent, guide, you. Never: teacher, educator, instructor.
 
 ---
 
