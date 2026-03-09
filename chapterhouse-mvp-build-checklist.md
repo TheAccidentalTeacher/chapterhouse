@@ -98,72 +98,89 @@ That includes:
 
 ## Build Sequence
 
-### Step 1 — Scaffold the shell
-- create the Next.js app in `web/`
-- configure base metadata and theme tokens
-- add left sidebar navigation
-- add placeholder routes from the UI spec
+### Step 1 — Scaffold the shell ✅ DONE (March 6–7)
+- [x] Create the Next.js app at repo root (moved from `web/`)
+- [x] Left sidebar navigation with all 9 routes
+- [x] Vercel deployment live at `chapterhouse.vercel.app`
 
-### Step 2 — Add typed foundations
-- shared app types
-- environment validation
-- provider client stubs
-- core domain constants
+### Step 2 — Add typed foundations ✅ DONE
+- [x] Shared app types
+- [x] Environment validation
+- [x] OpenAI (Responses API) + Anthropic SDK wired
+- [x] Supabase server-side client (`getSupabaseServiceRoleClient`)
 
-### Step 3 — Add Supabase integration
-- browser/server client utilities
-- auth-ready layout assumptions
-- placeholder persistence layer for MVP entities
+### Step 3 — Core screens ✅ DONE (March 7–9)
+- [x] Chat interface — streaming, model switcher, markdown rendering, conversation persistence
+- [x] Daily Brief — read + write + AI generate from Supabase
+- [x] Research — URL fetch, paste text, quick note, screenshot/GPT Vision, manual fallback, delete, re-analyze
+- [x] Documents — reads all `.md` files from repo root
+- [x] Product Intelligence — opportunity scoring engine (A+ through C across Store/Curriculum/Content)
 
-### Step 4 — Build the Daily Brief screen
-- summary cards
-- brief sections
-- source/citation rail
-- action buttons
+### Step 4 — Memory pipeline ✅ DONE (March 9)
+- [x] `founder_notes` Supabase table live
+- [x] `/api/extract-learnings` — extracts facts from every conversation in parallel
+- [x] Brain indicator (learning… / N learned pill)
+- [x] Founder memory injected into every chat system prompt
+- [x] `/api/founder-notes` GET / POST / DELETE confirmed working in production
 
-### Step 5 — Add basic document memory setup
-- show core docs in Documents
-- define ingestion placeholders
-- prepare document metadata shape
-
-### Step 6 — Prepare deployment
-- Vercel-ready app config
-- sanitized app env example
-- first local run validation
+### Step 5 — Context intelligence ✅ DONE (March 9)
+- [x] System prompt self-awareness — AI knows exactly what it can/cannot see
+- [x] Stage 2 relevance injection — research ranked by keyword overlap with user message (top 10 of 100)
+- [x] Research analysis prompt rewritten with full Scott context (vibe-coder, SomerSchool, Chapterhouse, Anna)
+- [x] `vibe-coding` tag renders in accent color as HIGH-relevance signal
 
 ---
 
-## MVP Entity Priority
+## Current Build Gaps (Prioritized)
 
-Build these first:
-- `documents`
-- `briefs`
-- `sources`
-- `research_items`
-- `tasks`
-- `settings`
+### P0 — Security
+- [ ] **Auth gate** — Supabase magic link, locked to Scott + Anna email addresses. App is currently open.
 
-Defer the rest until the shell is real.
+### P1 — Missing screens (nav items exist, screens empty)
+- [ ] **Review Queue** — approve/reject/snooze/convert-to-task interface for opportunities and research
+- [ ] **Tasks** — task list, state progression (open/in-progress/blocked/done/canceled), source linking
+- [ ] **Content Studio** — draft, queue, and shape outbound content; channel-aware drafting
+
+### P2 — Intelligence scaling
+- [ ] **Stage 3: Summarization pass** — `knowledge_summaries` table; `/api/summarize`; group by tag → condensed summaries; inject when research count > threshold
+- [ ] **Stage 4: pgvector** — `CREATE EXTENSION vector`; `text-embedding-3-small` on save; semantic similarity replaces keyword scoring in `buildLiveContext()`
+
+### P3 — Research hardening
+- [ ] **SSRF protection** — block 127.x, 192.168.x, 10.x, 169.254.x before outbound URL fetch
+- [ ] **Metadata extraction** — pull `<title>`, meta description, og:site_name, article:published_time from HTML
+
+### P4 — Agentic capability
+- [ ] **Option A: Inline chat URL detection** — detect URL in chat message → `/api/fetch-url` (no-save) → inject into that turn's context
+- [ ] **Scheduled brief generation** — Trigger.dev cron job for automatic morning brief
+- [ ] **Option B: Agentic research** — search API (Brave/Serper, needs key) + multi-URL fetch + synthesis loop
+
+### P5 — Settings screen
+- [ ] **Full Settings** — beyond founder memory panel: model routing config, source watchlist management, workspace settings
 
 ---
 
-## Definition of Done for MVP Foundation
+## Supabase Tables (Live)
+| Table | Status | Notes |
+|-------|--------|-------|
+| `briefs` | ✅ Live | Daily Brief read/write/generate |
+| `research_items` | ✅ Live | URL/paste/note/image ingestion |
+| `opportunities` | ✅ Live | Product Intelligence scoring |
+| `founder_notes` | ✅ Live | Auto-learn + /remember memory |
 
-The foundation is considered real when:
-- the app runs locally from `web/`
-- the sidebar and core routes work
-- the app validates required environment variables cleanly
-- the Daily Brief screen renders with realistic seeded data
-- the Documents screen exposes the core Chapterhouse docs
-- Supabase client plumbing is in place
-- the repo stays secret-safe
+## Deferred Infrastructure
+| Service | Status | When |
+|---------|--------|------|
+| Qdrant | Deferred | Stage 4 (pgvector first, Qdrant if scale demands) |
+| Upstash | Deferred | When caching/rate-limiting needed |
+| Trigger.dev | Deferred | Scheduled brief generation (P4) |
 
 ---
 
 ## Immediate Next Actions
 
-1. scaffold the app in `web/`
-2. replace starter UI with the Chapterhouse shell
-3. add environment validation and provider stubs
-4. add seeded Daily Brief and Documents screens
-5. commit the foundation before any deeper backend work
+1. **Review Queue screen** — highest-value missing screen; completes the research → judgment loop
+2. **Tasks screen** — converts approved items into execution
+3. **Auth gate** — before any external sharing or Shopify store launch
+4. **Content Studio** — before Anna starts drafting content through the system
+5. **Stage 3 summarization** — when research library exceeds ~50 items
+

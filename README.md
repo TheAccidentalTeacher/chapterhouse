@@ -60,15 +60,32 @@ It also now has a **live, deployed application** at [chapterhouse.vercel.app](ht
 As of March 9, 2026, Chapterhouse is running in production with:
 - Chat interface backed by GPT-5.4 (OpenAI Responses API) and Claude Opus/Sonnet 4.6
 - Conversation memory persisted across refreshes (localStorage)
-- Live context enrichment — every chat message now carries the latest brief, recent research items, and open opportunities from Supabase in the system prompt
+- **Auto-learn memory** — every message is analyzed in parallel with the AI response; extracted facts saved to `founder_notes` table; no `/remember` required
+- **Brain indicator** — pulsing "learning…" pill while extraction runs; "N learned" count after
+- **Founder memory injected into every chat** — `founder_notes` rows prepend every system prompt as ground truth
+- **Relevance injection (Stage 2)** — research items scored by keyword overlap with the user's message; top 10 by relevance (not recency) injected into context
+- Live context enrichment — every chat message carries the latest brief, ranked research, and open opportunities from Supabase
 - Daily Brief reading and writing live from Supabase (Generate with AI or write manually)
-- Research screen fully live: paste any URL → auto-fetch + AI summary, or manual save fallback if site blocks the fetch. Sites that block server-side requests (Cloudflare-protected) trigger an amber fallback form to write your own notes manually.
+- Research screen fully live: URL auto-fetch + AI summary; paste text; quick notes; screenshot/image (GPT Vision analysis); manual fallback when sites block fetch
+- Research analysis prompt has full Scott context: vibe-coder, Chapterhouse builder, SomerSchool curriculum pipeline, Anna's content operation
+- Delete (🗑) and re-analyze (↺) buttons on every research item
+- `vibe-coding` tag renders in accent color as a first-class signal
 - 4 competitors ingested: Rainbow Resource Center, Master Books, Sonlight, Memoria Press
 - Documents screen: all brand guide `.md` files readable inside the app
 - Product Intelligence screen: AI opportunity scoring — runs analysis across all research items and brief, scores each opportunity A+/B/C across Store/Curriculum/Content tracks
 - Markdown rendering in all assistant chat messages
 - Model switcher between all 5 models
 - F12 debug tooling and `/api/debug` health endpoint
+- AI context self-awareness — system prompt explicitly defines what Chapterhouse can and cannot see so it answers context questions precisely
+
+**Known gaps (intentional defers):**
+- Auth gate — no login yet; app is internal-only, URL not advertised
+- Review Queue screen — nav item exists, screen not built
+- Tasks screen — nav item exists, screen not built
+- Content Studio — nav item exists, screen not built
+- Scheduled brief generation — currently manual only
+- Stage 3: Summarization pass — not yet built
+- Stage 4: pgvector embeddings — not yet built
 
 That means this folder is now both:
 - the brand guide
@@ -272,6 +289,14 @@ Locks the first practical implementation decisions for Chapterhouse: app locatio
 | Mar 9, 2026 | Manual save fallback added to Research | When a site blocks server-side fetch (Cloudflare, bot protection), UI now shows amber fallback form for manual title/summary/verdict entry instead of dead error |
 | Mar 9, 2026 | 4 competitors ingested | Rainbow Resource Center, Master Books, Sonlight, Memoria Press — all saved in Research and feeding chat context |
 | Mar 9, 2026 | Research page scroll fixed | Main content area was missing `overflow-y-auto`; pages with long content now scroll correctly |
+| Mar 9, 2026 | Auto-learn memory shipped | `founder_notes` Supabase table confirmed live; `/api/extract-learnings` extracts facts from every conversation parallel to AI response; Brain indicator shows learning status |
+| Mar 9, 2026 | Screenshot tab added to Research | 4th tab: drag-and-drop or click-to-upload image; GPT Vision analyzes and saves as research item — built for Instagram/visual competitor intel |
+| Mar 9, 2026 | Research context rewritten | `analyzeText()` and image analysis prompts now carry full Scott context (vibe-coder, SomerSchool, Anna, Chapterhouse); `vibe-coding` is now a HIGH-relevance tag |
+| Mar 9, 2026 | Delete + re-analyze on research items | 🗑 removes item; ↺ on URL items deletes and re-fetches with current prompt |
+| Mar 9, 2026 | System prompt self-awareness | SYSTEM_PROMPT now explicitly tells AI what it can/cannot see — answers "do you see X in your brain?" precisely instead of blanket-denying |
+| Mar 9, 2026 | Extraction timing fixed | Auto-learn fires on message send (parallel to AI), not after stream — fact is in DB before Scott finishes reading the response |
+| Mar 9, 2026 | `founder_notes` confirmed in production | Live API test returned successful UUID; memory pipeline end-to-end confirmed working |
+| Mar 9, 2026 | Stage 2 relevance injection | `buildLiveContext()` now accepts user message; fetches up to 100 research items; `scoreRelevance()` ranks by keyword overlap; top 10 by relevance injected (falls back to recency if no keywords match) |
 
 ---
 
@@ -304,6 +329,16 @@ Locks the first practical implementation decisions for Chapterhouse: app locatio
 - [ ] Shopify store build — theme, products, catalog (separate track)
 - [x] Initial competitor ingestion — Rainbow Resource, Master Books, Sonlight, Memoria Press all ingested (March 9)
 - [ ] Initial data seeding source — first from our planned catalog, first from competitors, or blended import pass?
+- [ ] **Stage 3: Summarization pass** — `knowledge_summaries` table; `/api/summarize`; group research items by tag → condensed summaries; inject summaries when item count > threshold
+- [ ] **Stage 4: pgvector embeddings** — `CREATE EXTENSION vector`; embed on save with `text-embedding-3-small`; semantic similarity replaces keyword scoring in `buildLiveContext()`
+- [ ] **SSRF protection** — block private IPs (127.x, 192.168.x, 10.x, 169.254.x) in research URL fetch before request leaves server
+- [ ] **Metadata extraction** — pull `<title>`, meta description, og:site_name, article:published_time from HTML in research route
+- [ ] **Option A: Inline chat URL detection** — detect URL in chat message → `/api/fetch-url` (no-save version) → inject extracted content into that turn's context
+- [ ] **Review Queue screen** — nav item exists; build the approval/reject/snooze/convert-to-task interface
+- [ ] **Tasks screen** — nav item exists; build task list with state progression and source linking
+- [ ] **Content Studio screen** — nav item exists; draft, queue, and shape outbound content
+- [ ] **Scheduled brief generation** — Trigger.dev cron job for automatic morning brief
+- [ ] **Option B: Agentic research** — search API (Brave/Serper) + multi-fetch + synthesis loop; requires search API key
 - [ ] **Search Atlas integration** — Start a Search Atlas trial ($99/mo) once the Shopify store is live. Use it for keyword gap analysis vs. Rainbow Resource and Sonlight, rank tracking, and site auditing. Pipe findings into Chapterhouse Research so the AI can interpret what the numbers mean for Next Chapter specifically. Don't try to replicate it — use it as a data source feeding Chapterhouse.
 - [ ] **LLM visibility tracking** — Build a scheduled check inside Chapterhouse that periodically asks GPT/Claude "what are the best homeschool resources for [topic]?" and logs whether Next Chapter appears. This is the homeschool parent discovery channel that matters most right now and no tool tracks it well. Can be built inside Chapterhouse without a third-party subscription.
 - [ ] **Keyword rank tracking** — Once the Shopify store has pages worth ranking, add rank tracking (via Search Atlas or similar) so Chapterhouse can report on position movement for target keywords week over week.
