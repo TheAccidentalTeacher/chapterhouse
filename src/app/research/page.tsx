@@ -153,6 +153,40 @@ export default function ResearchPage() {
     }
   }
 
+  async function handleDelete(id: string) {
+    if (deletingId) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/research?id=${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Delete failed");
+      setItems((prev) => prev.filter((i) => i.id !== id));
+    } catch {
+      // silent
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  async function handleReanalyze(item: ResearchItem) {
+    if (reanalyzingId) return;
+    setReanalyzingId(item.id);
+    try {
+      await fetch(`/api/research?id=${item.id}`, { method: "DELETE" });
+      setItems((prev) => prev.filter((i) => i.id !== item.id));
+      const res = await fetch("/api/research", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: item.url }),
+      });
+      const data = await res.json();
+      if (res.ok) setItems((prev) => [data.item, ...prev]);
+    } catch {
+      // silent
+    } finally {
+      setReanalyzingId(null);
+    }
+  }
+
   function handleImageFile(file: File) {
     if (!file.type.startsWith("image/")) {
       setImageError("Please upload an image file (PNG, JPG, WEBP, etc.)");
