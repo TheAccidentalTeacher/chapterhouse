@@ -193,6 +193,28 @@ Two additional Facebook ad click tests were conducted to discover what *promises
 | #41 | "Homeschool resources you'll love and cherish" | MID-LOW |
 | #42 | **"Your one-stop homeschool shop"** | **WORST** |
 
+### Test C: Pain Point Click Test
+
+**Method:** Relatable pain-point statements displayed as Facebook ad creatives on identical red backgrounds. #18 = best performer (left), #32 = worst performer (right).
+
+| Rank | Statement | Performance |
+|------|-----------|-------------|
+| #18 | **"I homeschool ... so my house is in chaos."** | **BEST** |
+| #19 | "Dear God, all I want is a calm and peaceful homeschool day ..." | UPPER |
+| #20 | "What works for your homeschool kid won't work for mine." | UPPER |
+| #21 | "Does selecting your kids' homeschool materials leave you exhausted?" | MID-HIGH |
+| #22 | "How do other homeschool teachers stay so organized?" | MID |
+| #23 | "Homeschool and grade and clean and shuttle ... ain't nobody got time for that!" | MID |
+| #24 | "I homeschool ... which means half of my grocery budget goes to supplies." | MID |
+| #25 | "If I won the lottery, I'd buy homeschool supplies ..." | MID |
+| #26 | "There's not enough time to homeschool like I want to." | MID-LOW |
+| #27 | "I could be a great homeschool teacher if I had ten more hours every day ..." | MID-LOW |
+| #28 | "Why does homeschool curriculum have to be so expensive?" | LOW |
+| #29 | "Choosing the right curriculum shouldn't be this overwhelming." | LOW |
+| #30 | "These other homeschool companies have obviously never met my kid ..." | LOW |
+| #31 | "Decision fatigue: Every homeschool parent's worst nightmare..." | LOW |
+| #32 | **"My kid needs a learning program that adapts to their strengths."** | **WORST** |
+
 ---
 
 ### The 6 Core Desires — What Annie Actually Wants
@@ -200,41 +222,44 @@ Two additional Facebook ad click tests were conducted to discover what *promises
 When we combine both messaging tests with the name and color data, the entire avatar collapses into **six things Annie is looking for:**
 
 #### 1. Personalization
-She wants to feel like this store *sees her child.* The #1 slogan (#44) and #1 offer tagline (#35) both use the word "unique" tied to *her children specifically*. But — critically — "Uniquely designed with your student in mind" (#58) was the *worst* slogan. The difference: #44 states a belief she already holds ("Your child's unique"), while #58 pitches a marketing claim at her. **She wants a shared belief, not a sales pitch.**
+She wants to feel like this store *sees her child.* The #1 slogan (#44) and #1 offer tagline (#35) both use the word "unique" tied to *her children specifically*. "What works for your homeschool kid won't work for mine" (#20) was an upper-tier pain point for the same reason — it names the frustration that the industry never accounts for her child's individuality. But "Uniquely designed with your student in mind" (#58) was the *worst* slogan. The difference: #44 and #20 state a belief she already holds, while #58 pitches a marketing claim at her. **She wants a shared belief, not a sales pitch.**
 
 #### 2. Resources That Fit Her Child
-"Built around your child. Not the other way around" (#47) performed well because it promises the reversal of the system she left — one that forced her child to adapt. But "Learning that fits — not learning that forces" (#55) performed *poorly*. She doesn't want to be reminded of the "force" and the struggle. **She responds to the positive vision of what she's building, not the negative framing of what she escaped.**
+"Built around your child. Not the other way around" (#47) performed well because it promises the reversal of the system she left. But "Learning that fits — not learning that forces" (#55) performed *poorly*, and "Decision fatigue: Every homeschool parent's worst nightmare" (#31) was near the bottom. She already *knows* the pain. She doesn't need it narrated back at her. **She responds to the positive vision of what she's building, not the negative framing of what she escaped.**
 
 #### 3. Simplification
-"The last homeschool store you'll ever need" (#36) and "The only homeschool store you'll ever need" (#37) both performed in the upper tier. These promise an *end to the search*. She is drowning in options — Rainbow Resource, Christianbook, Amazon, Facebook group recommendations. She doesn't want more choices. She wants someone to say: **"Stop looking. We already found the good ones."**
+"The last homeschool store you'll ever need" (#36) and "The only homeschool store you'll ever need" (#37) both performed well — they promise an *end to the search*. Meanwhile, "Choosing the right curriculum shouldn't be this overwhelming" (#29) performed *low*, even though it names the exact same problem. The difference: one offers a solution, the other just labels the pain. **She wants relief, not recognition of her suffering.**
 
 #### 4. A Place That Reduces Overwhelm
-"Your one-stop homeschool shop" (#42) was the worst-performing offer tagline. On the surface it promises convenience — but it sounds like Walmart, not a warm bookshop. Generic retail language repels her. Meanwhile, "A homeschool outpost that's as unique as your children" (#35) won — because it promises *understanding*, not just selection. **She doesn't want a warehouse. She wants a refuge.**
+Her top pain point was #18: *"I homeschool ... so my house is in chaos."* Not a complaint framed as a question. Not a clinical label. A relatable truth said with a knowing laugh. She clicked it because it felt like a friend who *gets it* — and immediately, the promise of relief followed. Conversely, "Your one-stop homeschool shop" (#42) was the worst offer tagline. **She wants a refuge built by someone who knows her life, not a warehouse with convenient hours.**
 
 #### 5. Emotional Connection
-"Homeschool books you'll love and cherish" (#38) outperformed "Homeschool resources you'll love and cherish" (#41). Same structure, different first word. "Books" is warm, specific, tactile — she can picture it. "Resources" is corporate, vague, institutional. "Every kid learns differently. Finally, there's a store that knows that" (#50) — the word "Finally" carries so much emotional weight. **She wants to feel understood, not marketed to.**
+"Dear God, all I want is a calm and peaceful homeschool day" (#19) was the second-best pain point — a prayer, not a pitch. "Homeschool books you'll love and cherish" (#38) outperformed "Homeschool resources you'll love and cherish" (#41). "Books" is warm, tactile, personal. "Resources" is institutional. "My kid needs a learning program that adapts to their strengths" (#32) was the *worst* pain point — it sounds like a corporate IEP document, not a mom's real thought. **Warm, specific, human language creates emotional connection. Clinical language destroys it.**
 
 #### 6. Books & Materials That Become Part of Family Life
-The combined pattern from both tests is clear: she is not buying *products*. She is buying *pieces of her family's story*. "Love and cherish" language works. "One-stop shop" language fails. She wants books her kids will read under the covers with a flashlight. She wants a science kit that becomes a Wednesday tradition. **She is curating a life, not filling a shelf.**
+She is not buying products. She is buying pieces of her family's story. "Love and cherish" language works. "One-stop shop" language fails. "I homeschool... so my house is in chaos" won because the chaos is *evidence of a life well-lived*, not a failure. The books on her floor, the half-finished science kit on the table — these are her family's story. **She is curating a life, not filling a shelf. Sell her the life, not the item.**
 
 ---
 
 ### Messaging Signals — What the Tests Prove
 
 **Signal 1: Shared Belief Beats Sales Pitch.**
-"Your child's unique" (#44, BEST) vs. "Uniquely designed with your student in mind" (#58, WORST). Same core word. Opposite results. When the brand *affirms her belief*, she clicks. When the brand *claims to have the solution*, she scrolls past. Lead with empathy, not capability.
+"Your child's unique" (#44, BEST slogan) vs. "Uniquely designed with your student in mind" (#58, WORST slogan). Same core word. Opposite results. When the brand *affirms her belief*, she clicks. When the brand *claims to have the solution*, she scrolls past. Lead with empathy, not capability.
 
-**Signal 2: Positive Framing Beats Negative Framing.**
-"Built around your child" (#47, UPPER) vs. "Not learning that forces" (#55, LOW). She doesn't want to hear about the system she left. She wants to hear about the sanctuary she's building. Never lead with pain. Lead with the promise of peace.
+**Signal 2: Humor and Self-Recognition Beats Direct Pain Labeling.**
+"I homeschool ... so my house is in chaos" (#18, BEST pain point) vs. "Decision fatigue: Every homeschool parent's worst nightmare" (#31, near WORST). Both address the same underlying pain. One makes her laugh and feel *seen*. The other makes her feel pathologized. **Social media content, email subject lines, and ad copy should lead with warm humor and recognition — not clinical problem-naming.**
 
-**Signal 3: Specific Beats Generic — Every Time.**
-"Books" > "Resources." "Your children" > "your student." "Outpost that's as unique as your children" > "One-stop homeschool shop." The more specific, warm, and human the language, the better it performs. Generic retail language is death.
+**Signal 3: Positive Framing Beats Negative Framing.**
+"Built around your child" (#47, UPPER) vs. "Not learning that forces" (#55, LOW). "The last store you'll ever need" (#36, UPPER) vs. "Choosing the right curriculum shouldn't be this overwhelming" (#29, LOW). Both pairs address the same reality. The one that leads with *relief* wins every time. She already knows the pain. She's looking for the exit.
 
-**Signal 4: "Unique" Is Powerful — But Fragile.**
-The word "unique" appears in the #1 slogan AND the #1 offer tagline. But it also appears in the WORST slogan (#58). It works when it's about *her child*. It fails when it's a *brand claim*. Use it to reflect her, never to describe yourself.
+**Signal 4: Specific Beats Generic — Every Time.**
+"Books" > "Resources." "Your children" > "your student." "Outpost that's as unique as your children" > "One-stop homeschool shop." "My house is in chaos" > "Decision fatigue." The more specific, warm, human, and *lived-in* the language, the better it performs. Clinical and corporate language is death — even when talking about her own pain.
 
-**Signal 5: She Wants an End to the Search.**
-"The last store you'll ever need" and "the only store you'll ever need" both performed well. She is exhausted by the search. The brand that can credibly promise "You can stop looking now" wins her loyalty — not just her click.
+**Signal 5: "Unique" Is Powerful — But Fragile.**
+The word "unique" appears in both the #1 slogan AND the #1 offer tagline. But it also appears in the WORST slogan (#58). It works when it's about *her child*. It fails when it's a *brand claim*. Use it to reflect her, never to describe yourself.
+
+**Signal 6: She Wants an End to the Search — Not Recognition of the Search.**
+"The last store you'll ever need" (#36, UPPER) performed far better than "Choosing the right curriculum shouldn't be this overwhelming" (#29, LOW). She knows the search is overwhelming. She doesn't click on brands that agree with her complaint. She clicks on brands that *end* it.
 
 ### Combined Insight: The Six-Word Brand Promise
 
