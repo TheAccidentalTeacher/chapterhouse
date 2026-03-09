@@ -50,6 +50,23 @@ async function buildLiveContext(): Promise<string> {
   const blocks: string[] = [];
 
   try {
+    // Founder memory — personal facts about Scott, Anna, and the business
+    const { data: founderNotes } = await supabase
+      .from("founder_notes")
+      .select("content, category, created_at")
+      .order("created_at", { ascending: false });
+
+    if (founderNotes && founderNotes.length > 0) {
+      const notesText = founderNotes
+        .map((n) => `- [${n.category}] ${n.content}`)
+        .join("\n");
+      blocks.push(`## Live Context: Founder Memory\n\nThese are accumulated facts about Scott, Anna, and the business — treat them as ground truth:\n\n${notesText}`);
+    }
+  } catch {
+    // founder_notes table may not exist yet — ignore
+  }
+
+  try {
     // Latest published brief
     const { data: brief } = await supabase
       .from("briefs")

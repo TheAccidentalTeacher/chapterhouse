@@ -7,7 +7,7 @@ import remarkGfm from "remark-gfm";
 import { log, mountConsoleHelpers, type SystemStatus } from "@/lib/debug-logger";
 
 type Message = {
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "system";
   content: string;
 };
 
@@ -112,6 +112,31 @@ export function ChatInterface() {
   async function sendMessage(text: string) {
     const trimmed = text.trim();
     if (!trimmed || isStreaming) return;
+
+    // /remember command — save to founder memory, don't send to AI
+    const rememberMatch = trimmed.match(/^\/remember\s+(.+)/i);
+    if (rememberMatch) {
+      const note = rememberMatch[1].trim();
+      setInput("");
+      if (textareaRef.current) textareaRef.current.style.height = "auto";
+      try {
+        await fetch("/api/founder-notes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: note, source: "chat" }),
+        });
+        setMessages((prev) => [
+          ...prev,
+          { role: "system", content: `Saved to founder memory: "${note}"` },
+        ]);
+      } catch {
+        setMessages((prev) => [
+          ...prev,
+          { role: "system", content: `Failed to save: "${note}" — try again.` },
+        ]);
+      }
+      return;
+    }
 
     const newMessages: Message[] = [
       ...messages,
@@ -243,13 +268,21 @@ export function ChatInterface() {
             {messages.map((msg, i) => (
               <div
                 key={i}
-                className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}
+                className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : msg.role === "system" ? "justify-center" : "flex-row"}`}
               >
-                {msg.role === "assistant" && (
+                {/* System message — saved-to-memory confirmation */}
+                {msg.role === "system" && (
+                  <div className="flex items-center gap-2 rounded-full border border-border/50 bg-muted-surface px-4 py-1.5 text-xs text-muted">
+                    <span className="status-dot bg-success shrink-0" />
+                    {msg.content}
+                  </div>
+                )}
+                {msg.role !== "system" && msg.role === "assistant" && (
                   <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-accent text-accent-foreground shadow shadow-accent/20">
                     <Bot className="h-4 w-4" />
                   </div>
                 )}
+                {msg.role !== "system" && (
                 <div
                   className={`max-w-[80%] rounded-3xl px-5 py-4 text-sm leading-7 ${
                     msg.role === "user"
@@ -297,6 +330,7 @@ export function ChatInterface() {
                     msg.content
                   )}
                 </div>
+                )}
               </div>
             ))}
             <div ref={bottomRef} />
@@ -362,7 +396,9 @@ export function ChatInterface() {
                 </div>
               )}
             </div>
-            <p className="text-xs text-muted">Shift+Enter for new line · Enter to send</p>
+            <p className="text-xs text-muted">
+              <span className="font-mono">/remember [fact]</span> saves to founder memory · Shift+Enter for new line
+            </p>
             {messages.length > 0 && (
               <button
                 onClick={clearConversation}

@@ -1,6 +1,7 @@
 import { PageFrame } from "@/components/page-frame";
 import { getEnvironmentStatus } from "@/lib/env";
 import { hasSupabasePublicEnv } from "@/lib/env";
+import { FounderMemoryPanel } from "@/components/founder-memory-panel";
 
 export default function SettingsPage() {
   const environment = getEnvironmentStatus();
@@ -11,7 +12,10 @@ export default function SettingsPage() {
       title="Environment and provider posture."
       description="Secrets stay outside the repo. This screen only reports whether the app-level environment contract has been satisfied, without exposing any values."
     >
-      <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+      <div className="space-y-6">
+        <FounderMemoryPanel />
+
+        <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <section className="glass-panel rounded-3xl p-6">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-lg font-semibold">Environment status</h2>
@@ -46,6 +50,7 @@ export default function SettingsPage() {
             </div>
           </div>
         </section>
+      </div>
       </div>
     </PageFrame>
   );
