@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowUp, Bot, ChevronDown, Loader2, Trash2 } from "lucide-react";
+import { ArrowUp, Bot, Brain, ChevronDown, Loader2, Trash2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { log, mountConsoleHelpers, type SystemStatus } from "@/lib/debug-logger";
@@ -48,6 +48,8 @@ export function ChatInterface() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [selectedModel, setSelectedModel] = useState<ModelOption>(MODELS[0]);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
+  const [learnedCount, setLearnedCount] = useState(0); // new facts auto-saved this session
+  const [isLearning, setIsLearning] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -210,6 +212,24 @@ export function ChatInterface() {
       log.data("Characters received", totalChars);
       log.data("Est. tokens (~4 chars/token)", Math.round(totalChars / 4));
       log.timing("Total response time", totalTime);
+
+      // Auto-learn: silently extract facts from this exchange and save to founder memory
+      const finalMessages = [...newMessages, { role: "assistant" as const, content: accumulated }];
+      setIsLearning(true);
+      fetch("/api/extract-learnings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: finalMessages }),
+      })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.extracted && d.extracted.length > 0) {
+            setLearnedCount((n) => n + d.extracted.length);
+            log.success(`Auto-learned ${d.extracted.length} fact(s) from this exchange`);
+          }
+        })
+        .catch(() => null)
+        .finally(() => setIsLearning(false));
 
     } catch (e) {
       const errorMsg = e instanceof Error ? e.message : String(e);
@@ -396,9 +416,17 @@ export function ChatInterface() {
                 </div>
               )}
             </div>
-            <p className="text-xs text-muted">
-              <span className="font-mono">/remember [fact]</span> saves to founder memory · Shift+Enter for new line
-            </p>
+            <div className="flex items-center gap-2">
+              {(isLearning || learnedCount > 0) && (
+                <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition ${isLearning ? "border-accent/40 text-accent animate-pulse" : "border-border/50 text-muted"}`}>
+                  <Brain className="h-3 w-3" />
+                  {isLearning ? "learning…" : `${learnedCount} learned`}
+                </span>
+              )}
+              <p className="text-xs text-muted">
+                <span className="font-mono">/remember [fact]</span> saves to founder memory · Shift+Enter for new line
+              </p>
+            </div>
             {messages.length > 0 && (
               <button
                 onClick={clearConversation}
