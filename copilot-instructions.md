@@ -356,9 +356,8 @@ Use these when generating copy, landing pages, ad campaigns, email sequences, or
 ### Known Issues
 | Issue | Severity | Detail |
 |-------|----------|--------|
-| `ALLOWED_EMAILS` not set in Vercel | **P0** | Middleware checks it but env var is absent in production. Anyone with Supabase creds can access. Set to `scott@somers.com,anna@somers.com`. |
-| `/api/debug` unauthenticated | **P1** | Returns API key prefixes publicly. Add auth or remove. |
-| 6/9 RSS feeds fail | **P2** | Feeds blocked by server-side fetch. Not a code bug. |
+| `chat_threads` migration not run in production Supabase | **P0** | Chat works (best-effort fallback) but threads don’t persist. Run `supabase/migrations/20260309_006_create_chat_threads.sql` in Supabase SQL Editor. |
+| 6/9 RSS feeds fail | **P2** | Feeds blocked by server-side fetch. Not a code bug. Swap URLs or add Jina/Firecrawl fallback. |
 | No SSRF protection | **P3** | Research URL fetch doesn't block internal IPs. |
 | Migration schema conflicts | **P3** | `research_items` and `tasks` tables have competing CREATE TABLE IF NOT EXISTS across migration files. Production schema works but migration files are misleading. |
 

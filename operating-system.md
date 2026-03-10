@@ -103,14 +103,13 @@ This includes Chapterhouse, the internal AI system for Scott and Anna: document 
 | Documents | Server-rendered. Reads all .md from repo root. Search/filter. |
 | Settings | Env status checker. Founder Memory CRUD + auto-extraction from chat. |
 
-**Auth:** Supabase email/password. Middleware enforces `ALLOWED_EMAILS` allowlist (scott@somers.com, anna@somers.com). Login page with redirect. **Action needed:** set `ALLOWED_EMAILS` env var in Vercel production.
+**Auth:** Supabase email/password. Middleware enforces `ALLOWED_EMAILS` allowlist (scott@somers.com, anna@somers.com). Login page with redirect. `ALLOWED_EMAILS` is set in Vercel production. Auth gate is fully closed.
 
 **Daily Brief pipeline:** RSS feeds (3/9 working, 6 blocked server-side — not a code bug). GitHub API (11/11 repos checked). First real brief generated March 10. Vercel Cron registered. `GITHUB_TOKEN`, `CRON_SECRET`, `NEXT_PUBLIC_APP_URL` all set in Vercel.
 
 **Known issues:**
-- `ALLOWED_EMAILS` not set in Vercel (P0 — auth gate is open in production)
-- `/api/debug` returns API key prefixes without auth (P1)
-- 6/9 RSS feeds fail server-side (P2 — feed-side, not code)
+- 6/9 RSS feeds fail server-side (P2 — feed-side, not code; fix URLs or add Jina fallback)
+- `chat_threads` migration not yet run in production Supabase — chat works but threads don’t persist (P0 — run the SQL in Supabase dashboard)
 - No SSRF protection on research URL fetch (P3)
 
 Primary source docs:

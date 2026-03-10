@@ -147,17 +147,25 @@ That includes:
 - [x] Right sidebar: ingestion pipeline listing (9 feeds, 11 repos) + last brief stats panel
 - [x] `src/lib/daily-brief.ts` — `sourceCount` exposed from Supabase `source_count`
 
+### Step 8 — Security + Polish ✅ DONE (March 10)
+- [x] `ALLOWED_EMAILS` set in Vercel (`scott@somers.com,anna@somers.com`) — auth gate fully closed
+- [x] `/api/debug` secured with CRON_SECRET bearer token auth
+- [x] Top nav wired: search bar is a real `<input>` → routes to `/documents?q=...`. Bell → `/review-queue`. Settings gear → `/settings`.
+- [x] SVG favicon: dark bg, purple C arc, sparkle dot — matches app identity
+- [x] Help Guide: `chapterhouse-help-guide.md` + `/help` page + sidebar link
+- [x] Chat resilience: thread creation failure no longer silently blocks send — chat works without persistence, shows amber warning if threads unavailable
+- [ ] **`chat_threads` table needs to be created in production Supabase** — run migration SQL in Supabase dashboard (SQL Editor)
+
 ---
 
 ## Current Build Gaps (Prioritized)
 
-### P0 — Security
-- [ ] **Set `ALLOWED_EMAILS` in Vercel** — `scott@somers.com,anna@somers.com`. Middleware enforces this but the env var is NOT set in production. Without it, any Supabase user can access the full system.
-- [ ] **Secure or remove `/api/debug`** — currently returns API key prefixes with no auth check. Either add auth or delete the route.
+### P0 — Supabase Migration
+- [ ] **Run `chat_threads` migration in production Supabase** — go to supabase.com/dashboard/project/kqshlqvxvdmkygjhwbar/sql/new and run the SQL from `supabase/migrations/20260309_006_create_chat_threads.sql`. Without this, chat threads don't persist.
 
 ### P1 — Daily Brief Reliability
 - [ ] **Fix 6 failing RSS feeds** — Anthropic, OpenAI, HSLDA, Shopify, Christianity Today, Education Week feeds fail server-side. Swap for working URLs, add User-Agent rotation, or add Jina/Firecrawl fallback.
-- [ ] **Verify Vercel Cron fires** — Check tomorrow (March 11) that the 7am AKST brief auto-generates.
+- [ ] **Verify Vercel Cron fired** — Check that the 7am AKST brief auto-generated on March 11.
 
 ### P2 — Intelligence scaling
 - [ ] **Stage 3: Summarization pass** — `knowledge_summaries` table; `/api/summarize`; group by tag → condensed summaries; inject when research count > threshold
@@ -168,12 +176,15 @@ That includes:
 - [ ] **SSRF protection** — block 127.x, 192.168.x, 10.x, 169.254.x before outbound URL fetch
 - [ ] **Metadata extraction** — pull `<title>`, meta description, og:site_name, article:published_time from HTML
 
-### P4 — Agentic capability
+### P4 — Global search
+- [ ] **Real cross-table search** — `/api/search` querying tasks + research + threads + opportunities. Replace nav search bar's documents-only route with full-system results page.
+
+### P5 — Agentic capability
 - [ ] **Inline chat URL detection** — detect URL in chat message → `/api/fetch-url` (no-save) → inject into that turn's context
 - [ ] **Agentic research** — search API (Brave/Serper) + multi-URL fetch + synthesis loop
 - [ ] **Email delivery** — Send daily brief to `brief@buttercup.cfd` via Resend
 
-### P5 — Settings screen expansion
+### P6 — Settings screen expansion
 - [ ] Full Settings — model routing config, source watchlist management, workspace settings
 
 ---
@@ -243,15 +254,20 @@ This is the working sequence. Do these in order. Don't skip ahead.
 | 5 | ~~Tasks screen~~ | ✅ DONE | Full CRUD, status machine, source linking |
 | 6 | ~~Content Studio screen~~ | ✅ DONE | 3 modes: Newsletter, Curriculum Guide, Product Description via Claude |
 | 7 | ~~Brief item action buttons~~ | ✅ DONE | Convert to task + Send to review on every brief item |
-| 8 | **Set `ALLOWED_EMAILS` in Vercel** | 🔴 DO NOW | Without this, auth gate is open in production |
-| 9 | **Secure `/api/debug`** | 🔴 DO NOW | Leaks API key prefixes |
-| 10 | **Fix failing RSS feeds** | 🟡 NEXT | 6/9 feeds fail server-side. Swap URLs or add fallback |
-| 11 | **Verify Vercel Cron** | 🟡 NEXT | Check March 11 that 7am brief auto-generates |
-| 12 | **Stage 3: Summarization pass** | 🟢 LATER | When research items > ~50 |
-| 13 | **SSRF fix + metadata extraction** | 🟢 LATER | Security hardening for research URL fetch |
-| 14 | **Stage 4: pgvector embeddings** | 🟢 LATER | Semantic similarity search |
-| 15 | **Persist RSS to `sources` table** | 🟢 LATER | Make brief sources searchable |
-| 16 | **Email delivery** | 🟢 LATER | Daily brief to brief@buttercup.cfd via Resend |
-| 17 | **Inline chat URL detection** | 🟢 LATER | URL in chat → auto-fetch → inject into context |
-| 18 | **Agentic research** | 🟢 LATER | Search API + multi-URL synthesis loop |
+| 8 | ~~Set `ALLOWED_EMAILS` in Vercel~~ | ✅ DONE | Auth gate fully closed |
+| 9 | ~~Secure `/api/debug`~~ | ✅ DONE | CRON_SECRET bearer auth |
+| 10 | ~~Wire top nav (search, bell, settings gear)~~ | ✅ DONE | All functional |
+| 11 | ~~SVG favicon~~ | ✅ DONE | Brand identity in browser tab |
+| 12 | ~~Help guide + /help page~~ | ✅ DONE | Onboarding + docs |
+| 13 | **Run `chat_threads` migration in Supabase** | 🔴 DO NOW | Chat persistence broken until this runs |
+| 14 | **Fix failing RSS feeds** | 🟡 NEXT | 6/9 feeds fail server-side |
+| 15 | **Verify Vercel Cron** | 🟡 NEXT | Check March 11 7am auto-brief |
+| 16 | **SSRF fix + metadata extraction** | 🟢 LATER | Security hardening |
+| 17 | **Real cross-table search** | 🟢 LATER | Nav search bar covers all tables |
+| 18 | **Stage 3: Summarization pass** | 🟢 LATER | When research > ~50 items |
+| 19 | **Stage 4: pgvector embeddings** | 🟢 LATER | Semantic similarity |
+| 20 | **Persist RSS to `sources` table** | 🟢 LATER | Brief sources searchable |
+| 21 | **Email delivery** | 🟢 LATER | Daily brief to buttercup.cfd via Resend |
+| 22 | **Inline chat URL detection** | 🟢 LATER | URL in chat → inject into context |
+| 23 | **Agentic research** | 🟢 LATER | Search API + multi-URL synthesis |
 
