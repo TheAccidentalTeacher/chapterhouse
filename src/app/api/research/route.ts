@@ -244,6 +244,28 @@ export async function POST(request: Request) {
     // Normalize URL
     const targetUrl = url.startsWith("http") ? url : `https://${url}`;
 
+    // SSRF protection — block fetches to internal/private IP ranges
+    try {
+      const parsed = new URL(targetUrl);
+      const hostname = parsed.hostname;
+      if (
+        hostname === "localhost" ||
+        hostname === "127.0.0.1" ||
+        hostname === "0.0.0.0" ||
+        /^10\./.test(hostname) ||
+        /^192\.168\./.test(hostname) ||
+        /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||
+        /^169\.254\./.test(hostname) ||  // link-local / AWS metadata
+        /^::1$/.test(hostname) ||         // IPv6 loopback
+        /^fc00:/i.test(hostname) ||        // IPv6 unique local
+        !["http:", "https:"].includes(parsed.protocol)
+      ) {
+        return Response.json({ error: "URL not allowed" }, { status: 400 });
+      }
+    } catch {
+      return Response.json({ error: "Invalid URL" }, { status: 400 });
+    }
+
     // --- Manual save path (site blocked fetch, user wrote their own notes) ---
     if (manual) {
       const supabase = getSupabaseServiceRoleClient();
