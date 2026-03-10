@@ -87,6 +87,10 @@ Primary source docs:
 ### Track B — Chapterhouse
 This includes Chapterhouse, the internal AI system for Scott and Anna: document memory, research intelligence, market tracking, opportunity scoring, content planning, review workflows, and task conversion.
 
+**Chapterhouse is live at: https://chapterhouse.vercel.app**
+
+**Daily Brief status:** LIVE as of March 10, 2026. Ingests 9 RSS feeds (Anthropic, OpenAI, GitHub Changelog, Vercel, Hacker News, HSLDA, Shopify, Christianity Today, Education Week) + GitHub API (11 repos: security alerts, failed builds, open issues). Claude Sonnet 4.6 synthesizes into structured 🔴🟡🟢📊⚫ brief. Vercel Cron fires at 7am AKST daily.
+
 Primary source docs:
 - [chapterhouse-knowledge-base-blueprint.md](chapterhouse-knowledge-base-blueprint.md)
 - [chapterhouse-product-spec.md](chapterhouse-product-spec.md)
@@ -366,4 +370,4 @@ Everything else is just internet confetti.
 
 ---
 
-*Last updated: March 6, 2026 — This is the operating layer. Keep it alive or it becomes decorative.*
+*Last updated: March 10, 2026 — Daily Brief v1 live. Real RSS + GitHub ingestion. Claude Sonnet 4.6. Vercel Cron 7am AKST. Auth gate is P0 next step. Chapterhouse deployed at chapterhouse.vercel.app.*
