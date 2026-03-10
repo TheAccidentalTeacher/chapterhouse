@@ -32,6 +32,7 @@ export type LatestDailyBrief = {
   title: string;
   summary: string | null;
   sections: PersistedBriefSection[];
+  sourceCount: number;
 };
 
 function normalizeSections(input: unknown): PersistedBriefSection[] {
@@ -114,6 +115,7 @@ export async function getLatestDailyBrief(): Promise<LatestDailyBrief> {
       title: "Daily Brief",
       summary: "Supabase is not mapped yet for this app runtime.",
       sections: fallbackSections,
+      sourceCount: 0,
     };
   }
 
@@ -133,6 +135,7 @@ export async function getLatestDailyBrief(): Promise<LatestDailyBrief> {
       title: "Daily Brief",
       summary: "No published brief record found yet, showing seeded fallback data.",
       sections: fallbackSections,
+      sourceCount: 0,
     };
   }
 
@@ -142,5 +145,6 @@ export async function getLatestDailyBrief(): Promise<LatestDailyBrief> {
     title: data.title,
     summary: data.summary,
     sections: normalizeSections(data.sections),
+    sourceCount: data.source_count,
   };
 }

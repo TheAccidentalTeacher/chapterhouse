@@ -2,6 +2,32 @@ import { PageFrame } from "@/components/page-frame";
 import { NewBriefPanel } from "@/components/new-brief-panel";
 import { getLatestDailyBrief } from "@/lib/daily-brief";
 
+const RSS_FEEDS = [
+  "Anthropic Blog",
+  "OpenAI Blog",
+  "GitHub Changelog",
+  "Vercel Blog",
+  "Hacker News Top 10",
+  "HSLDA News",
+  "Shopify Changelog",
+  "Christianity Today",
+  "Education Week",
+];
+
+const GITHUB_REPOS = [
+  "roleplaying",
+  "chapterhouse",
+  "NextChapterHomeschool",
+  "agentsvercel",
+  "arms-of-deliverance",
+  "BibleSAAS",
+  "talesofoldendays",
+  "1stgradescienceexample",
+  "FoodHistory",
+  "mythology",
+  "2026worksheets",
+];
+
 export default async function DailyBriefPage() {
   const brief = await getLatestDailyBrief();
 
@@ -18,6 +44,11 @@ export default async function DailyBriefPage() {
           {brief.asOf ? (
             <span className="rounded-full bg-accent px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-accent-foreground">
               As of {brief.asOf}
+            </span>
+          ) : null}
+          {brief.sourceCount > 0 ? (
+            <span className="rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted">
+              {brief.sourceCount} items scanned
             </span>
           ) : null}
         </>
@@ -69,26 +100,77 @@ export default async function DailyBriefPage() {
           ))}
         </div>
 
+        {/* ── Right sidebar ── */}
         <div className="space-y-4">
+          {/* Ingestion status — shows what the pipeline monitors */}
           <div className="glass-panel rounded-3xl p-6">
-            <h2 className="text-lg font-semibold">Today&apos;s action posture</h2>
-            <ul className="mt-4 space-y-3 text-sm leading-6 text-muted">
-              <li className="rounded-2xl border border-border/70 bg-muted-surface px-4 py-3">
-                Review store-facing opportunities before adding more ingestion feeds.
-              </li>
-              <li className="rounded-2xl border border-border/70 bg-muted-surface px-4 py-3">
-                Validate source quality before automating any downstream actions.
-              </li>
-              <li className="rounded-2xl border border-border/70 bg-muted-surface px-4 py-3">
-                Keep the brief opinionated, not encyclopedic.
-              </li>
+            <div className="flex items-center justify-between gap-2 mb-4">
+              <h2 className="text-lg font-semibold">Ingestion pipeline</h2>
+              <span className="rounded-full bg-green-500/15 px-2.5 py-1 text-xs font-semibold text-green-400">
+                active
+              </span>
+            </div>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">
+              RSS feeds ({RSS_FEEDS.length})
+            </p>
+            <ul className="mb-4 space-y-1">
+              {RSS_FEEDS.map((feed) => (
+                <li key={feed} className="flex items-center gap-2 text-xs text-muted">
+                  <span className="h-1.5 w-1.5 rounded-full bg-muted-surface border border-border/70 shrink-0" />
+                  {feed}
+                </li>
+              ))}
+            </ul>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">
+              GitHub repos ({GITHUB_REPOS.length})
+            </p>
+            <ul className="space-y-1">
+              {GITHUB_REPOS.map((repo) => (
+                <li key={repo} className="flex items-center gap-2 text-xs text-muted font-mono">
+                  <span className="h-1.5 w-1.5 rounded-full bg-muted-surface border border-border/70 shrink-0" />
+                  {repo}
+                </li>
+              ))}
             </ul>
           </div>
+
+          {/* Last brief stats */}
           <div className="glass-panel rounded-3xl p-6">
-            <h2 className="text-lg font-semibold">Citation rail preview</h2>
-            <p className="mt-4 text-sm leading-7 text-muted">
-              This area will show source cards, confidence notes, and linked opportunities once retrieval and persistence are wired in.
-            </p>
+            <h2 className="mb-4 text-lg font-semibold">Last brief stats</h2>
+            <dl className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <dt className="text-muted">Source</dt>
+                <dd className="font-medium">{brief.source === "supabase" ? "Supabase ✓" : "Mock fallback"}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-muted">Date</dt>
+                <dd className="font-medium">{brief.asOf ?? "—"}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-muted">Items scanned</dt>
+                <dd className="font-medium">{brief.sourceCount > 0 ? brief.sourceCount : "—"}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-muted">Sections</dt>
+                <dd className="font-medium">{brief.sections.length}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-muted">Total items</dt>
+                <dd className="font-medium">{brief.sections.reduce((n, s) => n + s.items.length, 0)}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-muted">Cron schedule</dt>
+                <dd className="font-medium font-mono text-xs">0 15 * * * UTC</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-muted">= Alaska time</dt>
+                <dd className="font-medium">7:00am AKST</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-muted">Model</dt>
+                <dd className="font-medium text-xs">claude-sonnet-4-6</dd>
+              </div>
+            </dl>
           </div>
         </div>
       </div>
