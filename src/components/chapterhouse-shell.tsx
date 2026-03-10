@@ -3,10 +3,9 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Bell, HelpCircle, LogOut, Search, Settings2, Sparkles } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { navigationItems } from "@/lib/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
-import { useEffect, useRef, useState } from "react";
 
 type ChapterhouseShellProps = {
   children: React.ReactNode;
