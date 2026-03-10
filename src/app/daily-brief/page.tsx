@@ -1,5 +1,6 @@
 import { PageFrame } from "@/components/page-frame";
 import { NewBriefPanel } from "@/components/new-brief-panel";
+import { BriefItemCard } from "@/components/brief-item-card";
 import { getLatestDailyBrief } from "@/lib/daily-brief";
 
 const RSS_FEEDS = [
@@ -74,26 +75,11 @@ export default async function DailyBriefPage() {
               </div>
               <div className="mt-4 space-y-3">
                 {section.items.map((item) => (
-                  <article key={item.headline} className="rounded-2xl border border-border/70 bg-muted-surface p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <h3 className="font-medium text-balance">{item.headline}</h3>
-                      <span className="rounded-full bg-background/80 px-2.5 py-1 text-xs font-semibold text-muted">
-                        {item.score}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-sm leading-6 text-muted">{item.whyItMatters}</p>
-                    <div className="mt-4 flex flex-wrap gap-2 text-xs text-muted">
-                      <span className="rounded-full border border-border/70 px-2.5 py-1">
-                        {item.sources} sources
-                      </span>
-                      <span className="rounded-full border border-border/70 px-2.5 py-1">
-                        Convert to task
-                      </span>
-                      <span className="rounded-full border border-border/70 px-2.5 py-1">
-                        Send to review
-                      </span>
-                    </div>
-                  </article>
+                  <BriefItemCard
+                    key={item.headline}
+                    item={item}
+                    sectionTitle={section.title}
+                  />
                 ))}
               </div>
             </section>

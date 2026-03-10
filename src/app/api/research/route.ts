@@ -214,6 +214,29 @@ export async function POST(request: Request) {
       return Response.json({ item: data }, { status: 201 });
     }
 
+    // --- Brief item path (headline + whyItMatters from daily brief, no URL/AI needed) ---
+    if (body.briefItem) {
+      if (!title?.trim()) {
+        return Response.json({ error: "title is required" }, { status: 400 });
+      }
+      const supabase = getSupabaseServiceRoleClient();
+      if (!supabase) return Response.json({ error: "Database not available" }, { status: 503 });
+      const { data, error } = await supabase
+        .from("research_items")
+        .insert({
+          url: `brief://${Date.now()}`,
+          title: title.trim(),
+          summary: summary || null,
+          verdict: null,
+          tags: ["brief"],
+          status: "review",
+        })
+        .select("id, url, title, summary, verdict, tags, status, created_at")
+        .single();
+      if (error) return Response.json({ error: error.message }, { status: 500 });
+      return Response.json({ item: data }, { status: 201 });
+    }
+
     if (!url || typeof url !== "string") {
       return Response.json({ error: "url or pasteText is required" }, { status: 400 });
     }
