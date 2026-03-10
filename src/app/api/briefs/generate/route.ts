@@ -1,22 +1,31 @@
-import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
+import { fetchAllRssFeeds, formatRssItemsForPrompt } from "@/lib/sources/rss";
+import { fetchGitHubAlerts, formatGitHubAlertsForPrompt } from "@/lib/sources/github";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-const GENERATE_SYSTEM_PROMPT = `You generate daily intelligence briefs for the Chapterhouse operating system serving Next Chapter Homeschool Outpost.
+const SYSTEM_PROMPT = `You are the intelligence engine for Chapterhouse — the private ops brain of Scott Somers (TheAccidentalTeacher on GitHub).
 
-You output ONLY valid JSON — no markdown fences, no prose, no explanation. The JSON must match this exact schema:
+Scott is a middle school teacher in Glennallen, Alaska. His teaching contract ends May 24, 2026. He is building three businesses before that deadline:
+1. Next Chapter Homeschool Outpost — a curated Shopify homeschool store (launch before June 2026)
+2. SomerSchool on Epic Learning — online courses with Trisha Goyer
+3. BibleSaaS — AI-powered Bible study app (26/27 phases complete, ONE phase from launch)
+
+Your job: read the real news and GitHub data provided below, then produce ONE daily brief that tells Scott what matters TODAY. Filter ruthlessly. He has 47 repos, 3 businesses, and no time.
+
+You output ONLY valid JSON — no markdown fences, no prose, no explanation. Match this exact schema:
 
 {
-  "title": "string — a short title for today's brief",
-  "summary": "string — 2-3 sentences summarizing what Scott should know and do today",
+  "title": "string — a short punchy title for today's brief",
+  "summary": "string — 2-3 sentences: what happened, what Scott should do first, what he can ignore",
   "sections": [
     {
-      "title": "string — section name (e.g. Opportunities, Competitive Signals, Content Ideas)",
+      "title": "string — use these exact section names: '🔴 Action Required', '🟡 Worth Knowing', '🟢 Market Intel', '📊 My Repos', '⚫ Filtered Out'",
       "items": [
         {
-          "headline": "string — concise action-oriented headline",
-          "whyItMatters": "string — 1-2 sentences why this matters for Next Chapter right now",
+          "headline": "string — concise, action-oriented, specific",
+          "whyItMatters": "string — 1-2 sentences why this matters for Scott's three businesses RIGHT NOW",
           "score": "string — one of: A+, A, A-, B+, B, B-, C",
           "sources": 0
         }
@@ -25,45 +34,71 @@ You output ONLY valid JSON — no markdown fences, no prose, no explanation. The
   ]
 }
 
-Generate 2-3 sections with 2-4 items each. Be specific, be useful, be direct. No filler.`;
+Rules:
+- '🔴 Action Required' = things that need attention TODAY (security alerts, breaking API changes, expired deadlines, failed builds). If nothing qualifies, omit this section.
+- '🟡 Worth Knowing' = important developments, new tool releases, market trends. 2-4 items.
+- '🟢 Market Intel' = homeschool community activity, competitor moves, relevant faith/education policy news. 2-3 items.
+- '📊 My Repos' = GitHub health summary. If no issues, say so in one item. Include actual repo names.
+- '⚫ Filtered Out' = exactly ONE item summarizing how many articles were scanned and deemed irrelevant. Format: "Scanned X articles across Y sources. Z were not relevant today."
+- Be brutally specific. "Anthropic released Claude 4" is better than "there were AI developments."
+- If a source returned no data, skip it — do not hallucinate content.
+`;
+
+type BriefData = {
+  title: string;
+  summary: string;
+  sections: Array<{
+    title: string;
+    items: Array<{ headline: string; whyItMatters: string; score: string; sources: number }>;
+  }>;
+};
 
 export async function POST(request: Request) {
   try {
     const { context } = await request.json().catch(() => ({ context: "" }));
     const today = new Date().toISOString().split("T")[0];
 
-    const userPrompt = context
-      ? `Generate a daily brief for ${today}. Additional context from the user: ${context}`
-      : `Generate a daily brief for ${today} based on everthing you know about Next Chapter Homeschool Outpost, the current market, and what would be most useful for Scott to act on today.`;
+    // Fetch real data from both sources in parallel
+    const [rssResult, githubResult] = await Promise.all([
+      fetchAllRssFeeds(),
+      fetchGitHubAlerts(),
+    ]);
 
-    const response = await openai.responses.create({
-      model: "gpt-5.4",
-      instructions: GENERATE_SYSTEM_PROMPT,
-      input: userPrompt,
-      max_output_tokens: 2048,
+    const totalScanned = rssResult.scannedCount + githubResult.scannedCount;
+    const rssSection = formatRssItemsForPrompt(rssResult.items);
+    const githubSection = formatGitHubAlertsForPrompt(githubResult.alerts);
+
+    const userPrompt = [
+      `Daily brief date: ${today}`,
+      `Total items scanned: ${totalScanned} (${rssResult.scannedCount} RSS articles from ${rssResult.feedsSucceeded} feeds, ${githubResult.scannedCount} GitHub alerts across ${githubResult.reposChecked} repos)`,
+      context ? `\nAdditional context from Scott: ${context}` : "",
+      "\n---\n## LIVE DATA — RSS FEEDS",
+      rssSection || "(no RSS items returned — all feeds may be down)",
+      "\n---",
+      githubSection,
+      "\n---",
+      "Now generate the daily brief JSON.",
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    const message = await anthropic.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 2048,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: "user", content: userPrompt }],
     });
 
-    // Extract the text output
-    const rawText = response.output
-      .filter((block) => block.type === "message")
-      .flatMap((block) => (block as { type: "message"; content: Array<{ type: string; text: string }> }).content)
-      .filter((part) => part.type === "output_text")
-      .map((part) => part.text)
+    const rawText = message.content
+      .filter((block) => block.type === "text")
+      .map((block) => (block as { type: "text"; text: string }).text)
       .join("");
 
-    let briefData: {
-      title: string;
-      summary: string;
-      sections: Array<{
-        title: string;
-        items: Array<{ headline: string; whyItMatters: string; score: string; sources: number }>;
-      }>;
-    };
+    let briefData: BriefData;
 
     try {
       briefData = JSON.parse(rawText);
     } catch {
-      // Try to extract JSON if the model wrapped it in backticks anyway
       const match = rawText.match(/```(?:json)?\s*([\s\S]+?)```/);
       if (match) {
         briefData = JSON.parse(match[1]);
@@ -88,7 +123,7 @@ export async function POST(request: Request) {
         title: briefData.title,
         summary: briefData.summary,
         sections: briefData.sections,
-        source_count: 0,
+        source_count: totalScanned,
         status: "published",
       })
       .select()
@@ -98,7 +133,18 @@ export async function POST(request: Request) {
       return Response.json({ error: error.message }, { status: 500 });
     }
 
-    return Response.json({ brief: data }, { status: 201 });
+    return Response.json(
+      {
+        brief: data,
+        meta: {
+          rssFeeds: rssResult.feedsSucceeded,
+          rssFailed: rssResult.feedsFailed,
+          githubRepos: githubResult.reposChecked,
+          totalScanned,
+        },
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Brief generation error:", error);
     return Response.json({ error: String(error) }, { status: 500 });
