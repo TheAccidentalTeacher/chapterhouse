@@ -89,15 +89,23 @@ export function ChatInterface() {
   const messagesRef = useRef<Message[]>(messages);
   messagesRef.current = messages;
 
+  // Whether thread persistence is available (null = unknown, true = ok, false = unavailable)
+  const [threadsAvailable, setThreadsAvailable] = useState<boolean | null>(null);
+
   // ── Thread list operations ────────────────────────────────────────────────
 
   const fetchThreads = useCallback(async () => {
     try {
       const res = await fetch("/api/threads");
       const data = await res.json();
-      setThreads(data.threads ?? []);
+      if (res.ok) {
+        setThreads(data.threads ?? []);
+        setThreadsAvailable(true);
+      } else {
+        setThreadsAvailable(false);
+      }
     } catch {
-      // Threads table may not exist yet
+      setThreadsAvailable(false);
     } finally {
       setLoadingThreads(false);
     }
@@ -228,7 +236,8 @@ export function ChatInterface() {
   // ── Auto-save messages to DB (debounced) ──────────────────────────────────
 
   const saveMessages = useCallback(
-    (msgs: Message[], threadId: string) => {
+    (msgs: Message[], threadId: string | null) => {
+      if (!threadId) return; // persistence unavailable — skip save
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       saveTimerRef.current = setTimeout(async () => {
         try {
@@ -312,7 +321,7 @@ export function ChatInterface() {
     const trimmed = text.trim();
     if (!trimmed || isStreaming) return;
 
-    // If no active thread, create one first
+    // If no active thread, try to create one first (best-effort — chat works even if this fails)
     let threadId = activeThreadId;
     if (!threadId) {
       try {
@@ -326,17 +335,22 @@ export function ChatInterface() {
           }),
         });
         const data = await res.json();
-        if (data.thread) {
+        if (res.ok && data.thread) {
           threadId = data.thread.id;
           setThreads((prev) => [data.thread, ...prev]);
           setActiveThreadId(threadId);
+          setThreadsAvailable(true);
+        } else {
+          log.error("Thread creation failed — chat will work without persistence", data.error);
+          setThreadsAvailable(false);
         }
-      } catch {
-        log.error("Failed to create thread for message");
-        return;
+      } catch (e) {
+        log.error("Thread creation threw — chat will work without persistence", e);
+        setThreadsAvailable(false);
       }
     }
-    if (!threadId) return;
+
+    // Thread creation is best-effort — we continue regardless
 
     // /remember command
     const rememberMatch = trimmed.match(/^\/remember\s+(.+)/i);
@@ -377,7 +391,7 @@ export function ChatInterface() {
 
     // Auto-title on first user message
     const isFirstMessage = messages.filter((m) => m.role === "user").length === 0;
-    if (isFirstMessage) {
+    if (isFirstMessage && threadId) {
       autoTitle(threadId, trimmed);
     }
 
@@ -579,9 +593,17 @@ export function ChatInterface() {
           )}
 
           {!loadingThreads && threads.length === 0 && (
-            <p className="px-2 py-8 text-center text-xs text-muted/60">
-              No threads yet. Start chatting.
-            </p>
+            <div className="px-2 py-8 text-center">
+              {threadsAvailable === false ? (
+                <p className="text-xs text-amber-400/80">
+                  Thread storage unavailable — chat works but history won&apos;t be saved.
+                </p>
+              ) : (
+                <p className="text-xs text-muted/60">
+                  No threads yet. Start chatting.
+                </p>
+              )}
+            </div>
           )}
         </div>
       </div>
