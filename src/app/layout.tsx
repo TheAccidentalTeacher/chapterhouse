@@ -17,6 +17,10 @@ export const metadata: Metadata = {
   title: "Chapterhouse",
   description:
     "Internal operating system for research, briefs, documents, and execution.",
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
