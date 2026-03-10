@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, LogOut, Search, Settings2, Sparkles } from "lucide-react";
+import { Bell, HelpCircle, LogOut, Search, Settings2, Sparkles } from "lucide-react";
 import { navigationItems } from "@/lib/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { useEffect, useState } from "react";
@@ -82,6 +82,18 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
                 );
               })}
             </nav>
+
+            <Link
+              href="/help"
+              className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm transition ${
+                pathname === "/help"
+                  ? "border-accent/35 bg-accent/12 text-foreground shadow-sm"
+                  : "border-transparent text-muted hover:border-border hover:bg-card/75 hover:text-foreground"
+              }`}
+            >
+              <HelpCircle className={`h-4 w-4 ${pathname === "/help" ? "text-accent" : "text-muted"}`} />
+              <span className="font-medium">Help Guide</span>
+            </Link>
 
             <div className="mt-auto space-y-3 rounded-3xl border border-border bg-card/80 p-5 text-sm text-muted">
               <div className="flex items-center justify-between">
