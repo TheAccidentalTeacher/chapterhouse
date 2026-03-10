@@ -1,6 +1,13 @@
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
 
-export async function GET() {
+export async function GET(request: Request) {
+  // Auth check — only allow with CRON_SECRET bearer token
+  const authHeader = request.headers.get("authorization");
+  const expected = process.env.CRON_SECRET;
+  if (!expected || authHeader !== `Bearer ${expected}`) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const results: Record<string, unknown> = {
     env: process.env.NODE_ENV,
     timestamp: new Date().toISOString(),
