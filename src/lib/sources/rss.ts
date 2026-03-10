@@ -19,8 +19,8 @@ type FeedDefinition = {
 const FEEDS: FeedDefinition[] = [
   // AI & Dev Tools
   {
-    name: "Anthropic Blog",
-    url: "https://www.anthropic.com/rss.xml",
+    name: "MIT Technology Review AI",
+    url: "https://www.technologyreview.com/topic/artificial-intelligence/feed/",
     category: "AI & Dev Tools",
     maxItems: 5,
   },
@@ -50,29 +50,29 @@ const FEEDS: FeedDefinition[] = [
   },
   // Homeschool Market
   {
-    name: "HSLDA News",
-    url: "https://hslda.org/feed",
+    name: "The Homeschool Mom",
+    url: "https://www.thehomeschoolmom.com/feed/",
     category: "Homeschool Market",
     maxItems: 5,
   },
   // Shopify / Ecommerce
   {
-    name: "Shopify Changelog",
-    url: "https://changelog.shopify.com/changes.rss",
+    name: "Shopify News",
+    url: "https://news.shopify.com/feed",
     category: "Shopify & Ecommerce",
     maxItems: 5,
   },
   // Faith / Publishing
   {
-    name: "Christianity Today",
-    url: "https://www.christianitytoday.com/feeds/all.rss",
+    name: "The Gospel Coalition",
+    url: "https://www.thegospelcoalition.org/feed/",
     category: "Faith & Publishing",
     maxItems: 5,
   },
   // Education Policy
   {
-    name: "Education Week",
-    url: "https://www.edweek.org/feed/rss/news",
+    name: "Hechinger Report",
+    url: "https://hechingerreport.org/feed/",
     category: "Education Policy",
     maxItems: 5,
   },
