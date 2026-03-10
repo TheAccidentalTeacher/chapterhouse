@@ -137,40 +137,44 @@ That includes:
 - [x] `src/app/api/cron/daily-brief/route.ts` — cron endpoint, Bearer token auth via `CRON_SECRET`
 - [x] `vercel.json` — cron schedule `0 15 * * *` = 7:00am AKST daily
 - [x] `GITHUB_TOKEN`, `CRON_SECRET`, `NEXT_PUBLIC_APP_URL` set in local `.env` and `.env.local`
-- [ ] **PENDING:** Add these 3 env vars to Vercel dashboard → redeploy to activate cron
+- [x] All 3 env vars added to Vercel dashboard ✅
+- [x] **Tested in production** — Generate works. RSS: 3 feeds OK / 6 failed (feed-side). GitHub: 11 repos OK. 20 items → Claude → saved.
+
+### Step 7 — Brief UI + Action Buttons ✅ DONE (March 10)
+- [x] `src/components/new-brief-panel.tsx` — Generate always visible, manual write collapsible. Ingestion debug strip after generation.
+- [x] `src/components/brief-item-card.tsx` — client component. **Convert to task** creates row in `tasks` table. **Send to review** creates row in `research_items` table.
+- [x] `src/app/api/research/route.ts` — added `briefItem` fast path (skips AI analysis, inserts directly)
+- [x] Right sidebar: ingestion pipeline listing (9 feeds, 11 repos) + last brief stats panel
+- [x] `src/lib/daily-brief.ts` — `sourceCount` exposed from Supabase `source_count`
 
 ---
 
 ## Current Build Gaps (Prioritized)
 
 ### P0 — Security
-- [ ] **Auth gate** — Supabase magic link, locked to Scott + Anna email addresses. App is currently open to the internet. This is real.
+- [ ] **Set `ALLOWED_EMAILS` in Vercel** — `scott@somers.com,anna@somers.com`. Middleware enforces this but the env var is NOT set in production. Without it, any Supabase user can access the full system.
+- [ ] **Secure or remove `/api/debug`** — currently returns API key prefixes with no auth check. Either add auth or delete the route.
 
-### P0.5 — Daily Brief Activation
-- [ ] **Add env vars to Vercel dashboard** — `GITHUB_TOKEN`, `CRON_SECRET`, `NEXT_PUBLIC_APP_URL`. Without these, cron is wired but not running and generate will fail in production.
-- [ ] **Test Generate in production** — open chapterhouse.vercel.app/daily-brief → click Generate → verify RSS feeds return real articles, GitHub section populates, Claude output uses correct 🔴🟡🟢📊⚫ format.
-- [ ] **Verify Vercel Cron is registered** — Vercel project → Settings → Cron Jobs. Should show `/api/cron/daily-brief` at `0 15 * * *`.
-
-### P1 — Missing screens (nav items exist, screens empty)
-- [ ] **Review Queue** — approve/reject/snooze/convert-to-task interface for opportunities and research
-- [ ] **Tasks** — task list, state progression (open/in-progress/blocked/done/canceled), source linking
-- [ ] **Content Studio** — draft, queue, and shape outbound content; channel-aware drafting
+### P1 — Daily Brief Reliability
+- [ ] **Fix 6 failing RSS feeds** — Anthropic, OpenAI, HSLDA, Shopify, Christianity Today, Education Week feeds fail server-side. Swap for working URLs, add User-Agent rotation, or add Jina/Firecrawl fallback.
+- [ ] **Verify Vercel Cron fires** — Check tomorrow (March 11) that the 7am AKST brief auto-generates.
 
 ### P2 — Intelligence scaling
 - [ ] **Stage 3: Summarization pass** — `knowledge_summaries` table; `/api/summarize`; group by tag → condensed summaries; inject when research count > threshold
 - [ ] **Stage 4: pgvector** — `CREATE EXTENSION vector`; `text-embedding-3-small` on save; semantic similarity replaces keyword scoring in `buildLiveContext()`
+- [ ] **Persist RSS items to `sources` table** — Brief sources become searchable, linkable context
 
 ### P3 — Research hardening
 - [ ] **SSRF protection** — block 127.x, 192.168.x, 10.x, 169.254.x before outbound URL fetch
 - [ ] **Metadata extraction** — pull `<title>`, meta description, og:site_name, article:published_time from HTML
 
 ### P4 — Agentic capability
-- [ ] **Option A: Inline chat URL detection** — detect URL in chat message → `/api/fetch-url` (no-save) → inject into that turn's context
-- [ ] **Scheduled brief generation** — Trigger.dev cron job for automatic morning brief
-- [ ] **Option B: Agentic research** — search API (Brave/Serper, needs key) + multi-URL fetch + synthesis loop
+- [ ] **Inline chat URL detection** — detect URL in chat message → `/api/fetch-url` (no-save) → inject into that turn's context
+- [ ] **Agentic research** — search API (Brave/Serper) + multi-URL fetch + synthesis loop
+- [ ] **Email delivery** — Send daily brief to `brief@buttercup.cfd` via Resend
 
-### P5 — Settings screen
-- [ ] **Full Settings** — beyond founder memory panel: model routing config, source watchlist management, workspace settings
+### P5 — Settings screen expansion
+- [ ] Full Settings — model routing config, source watchlist management, workspace settings
 
 ---
 
@@ -207,11 +211,15 @@ Pipe the store's catalog metadata into Chapterhouse Research so AI can interpret
 ## Supabase Tables (Live)
 | Table | Status | Notes |
 |-------|--------|-------|
-| `briefs` | ✅ Live | Daily Brief read/write/generate. `source_count` now reflects real RSS+GitHub items. |
-| `research_items` | ✅ Live | URL/paste/note/image ingestion |
+| `briefs` | ✅ Live | Daily Brief read/write/generate. `source_count` reflects real RSS+GitHub items. |
+| `research_items` | ✅ Live | URL/paste/note/image ingestion + brief item forwarding |
 | `opportunities` | ✅ Live | Product Intelligence scoring |
 | `founder_notes` | ✅ Live | Auto-learn + /remember memory |
-| `sources` | ✅ Live (schema only) | Source records — nothing writes to it yet; RSS items currently passed directly to Claude as prompt context |
+| `tasks` | ✅ Live | Full CRUD with source linking (brief/opportunity/manual) |
+| `chat_threads` | ✅ Live | Persistent chat threads with messages JSONB |
+| `documents` | ✅ Schema only | Not used by code (Documents page reads filesystem) |
+| `sources` | ✅ Schema only | Nothing writes to it yet; RSS items go direct to Claude |
+| `settings` | ✅ Schema only | No code reads/writes to it |
 
 ## Deferred Infrastructure
 | Service | Status | When |
@@ -226,19 +234,24 @@ Pipe the store's catalog metadata into Chapterhouse Research so AI can interpret
 
 This is the working sequence. Do these in order. Don't skip ahead.
 
-| # | Item | What it unlocks |
-|---|------|-----------------|
-| 1 | **Add env vars to Vercel + redeploy** | Activates Vercel Cron; makes Generate work in production with real data |
-| 2 | **Test daily brief in production** | Confirm Claude + RSS + GitHub pipeline works end to end |
-| 3 | **Auth gate** | Supabase magic link locked to Scott + Anna emails; required before Anna uses the system or before Shopify work links to it |
-| 4 | **Review Queue screen** | Turns research + opportunities into actual decisions; wire real DB, approve/reject/snooze/convert-to-task |
-| 5 | **Tasks screen** | Converts approved queue items into execution; state machine + source linking |
-| 6 | **Content Studio screen** | Anna's drafting workflow; channel-aware content with brand-voice grounding from core docs |
-| 7 | **Stage 3: Summarization pass** | Condenses large research library into summaries by tag; prevents context ceiling; build when research > ~50 items |
-| 8 | **SSRF fix + metadata extraction** | Security hardening for research URL fetch; pull page title, meta description, og:site_name, published date |
-| 9 | **Stage 4: pgvector embeddings** | Semantic similarity replaces keyword scoring; `text-embedding-3-small` on save; upgrade `buildLiveContext()` to vector search |
-| 10 | **Persist RSS items to `sources` table** | Brief sources become searchable, linkable context — RSS items saved on ingest, referenced in brief items with `source_id` |
-| 11 | **Email delivery** | Send daily brief to `brief@buttercup.cfd` via Resend; Cloudflare catch-all forwards to Yahoo |
-| 12 | **Option A: Inline chat URL detection** | Detect URL in chat message → `/api/fetch-url` (no-save) → inject into that turn's context |
-| 13 | **Option B: Agentic research** | Search API (Brave/Serper, ~$5/mo) → multi-URL fetch → synthesis loop → Research saved automatically |
+| # | Item | Status | What it unlocks |
+|---|------|--------|----------------|
+| 1 | ~~Add env vars to Vercel + redeploy~~ | ✅ DONE | Cron active; Generate works in production |
+| 2 | ~~Test daily brief in production~~ | ✅ DONE | Pipeline confirmed working (3/9 RSS, 11/11 GitHub, Claude output correct) |
+| 3 | ~~Auth gate~~ | ✅ DONE | Middleware + allowlist. scott@somers.com + anna@somers.com |
+| 4 | ~~Review Queue screen~~ | ✅ DONE | Dual-feed: research + opportunities. Approve/reject/convert-to-task |
+| 5 | ~~Tasks screen~~ | ✅ DONE | Full CRUD, status machine, source linking |
+| 6 | ~~Content Studio screen~~ | ✅ DONE | 3 modes: Newsletter, Curriculum Guide, Product Description via Claude |
+| 7 | ~~Brief item action buttons~~ | ✅ DONE | Convert to task + Send to review on every brief item |
+| 8 | **Set `ALLOWED_EMAILS` in Vercel** | 🔴 DO NOW | Without this, auth gate is open in production |
+| 9 | **Secure `/api/debug`** | 🔴 DO NOW | Leaks API key prefixes |
+| 10 | **Fix failing RSS feeds** | 🟡 NEXT | 6/9 feeds fail server-side. Swap URLs or add fallback |
+| 11 | **Verify Vercel Cron** | 🟡 NEXT | Check March 11 that 7am brief auto-generates |
+| 12 | **Stage 3: Summarization pass** | 🟢 LATER | When research items > ~50 |
+| 13 | **SSRF fix + metadata extraction** | 🟢 LATER | Security hardening for research URL fetch |
+| 14 | **Stage 4: pgvector embeddings** | 🟢 LATER | Semantic similarity search |
+| 15 | **Persist RSS to `sources` table** | 🟢 LATER | Make brief sources searchable |
+| 16 | **Email delivery** | 🟢 LATER | Daily brief to brief@buttercup.cfd via Resend |
+| 17 | **Inline chat URL detection** | 🟢 LATER | URL in chat → auto-fetch → inject into context |
+| 18 | **Agentic research** | 🟢 LATER | Search API + multi-URL synthesis loop |
 

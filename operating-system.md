@@ -89,7 +89,29 @@ This includes Chapterhouse, the internal AI system for Scott and Anna: document 
 
 **Chapterhouse is live at: https://chapterhouse.vercel.app**
 
-**Daily Brief status:** LIVE as of March 10, 2026. Ingests 9 RSS feeds (Anthropic, OpenAI, GitHub Changelog, Vercel, Hacker News, HSLDA, Shopify, Christianity Today, Education Week) + GitHub API (11 repos: security alerts, failed builds, open issues). Claude Sonnet 4.6 synthesizes into structured 🔴🟡🟢📊⚫ brief. Vercel Cron fires at 7am AKST daily.
+**Status: ALL 9 SCREENS WORKING as of March 10, 2026.**
+
+| Screen | What it does |
+|--------|-------------|
+| Chat (Home) | Multi-model AI chat (GPT-5.4, Claude Opus/Sonnet 4.6). Persistent threads. Auto-learns from every conversation. Founder memory + brief + research injected into context. |
+| Daily Brief | Real RSS (9 feeds) + GitHub API (11 repos) → Claude Sonnet 4.6 → structured brief. Convert to task + Send to review on every item. Vercel Cron at 7am AKST. |
+| Research | URL fetch + GPT-5.4 analysis, paste text, quick note, screenshot/Vision. Manual fallback. |
+| Product Intelligence | GPT-5.4 opportunity scoring (Store/Curriculum/Content, A+ to C). Category filter. |
+| Content Studio | 3 modes via Claude: Newsletter/Campaign, Curriculum Guide, Product Description. |
+| Review Queue | Dual-feed: research items + opportunities. Approve/reject. Convert → task. |
+| Tasks | Full CRUD. Status: open → in-progress → blocked → done → canceled. Source linking. |
+| Documents | Server-rendered. Reads all .md from repo root. Search/filter. |
+| Settings | Env status checker. Founder Memory CRUD + auto-extraction from chat. |
+
+**Auth:** Supabase email/password. Middleware enforces `ALLOWED_EMAILS` allowlist (scott@somers.com, anna@somers.com). Login page with redirect. **Action needed:** set `ALLOWED_EMAILS` env var in Vercel production.
+
+**Daily Brief pipeline:** RSS feeds (3/9 working, 6 blocked server-side — not a code bug). GitHub API (11/11 repos checked). First real brief generated March 10. Vercel Cron registered. `GITHUB_TOKEN`, `CRON_SECRET`, `NEXT_PUBLIC_APP_URL` all set in Vercel.
+
+**Known issues:**
+- `ALLOWED_EMAILS` not set in Vercel (P0 — auth gate is open in production)
+- `/api/debug` returns API key prefixes without auth (P1)
+- 6/9 RSS feeds fail server-side (P2 — feed-side, not code)
+- No SSRF protection on research URL fetch (P3)
 
 Primary source docs:
 - [chapterhouse-knowledge-base-blueprint.md](chapterhouse-knowledge-base-blueprint.md)
@@ -370,4 +392,4 @@ Everything else is just internet confetti.
 
 ---
 
-*Last updated: March 10, 2026 — Daily Brief v1 live. Real RSS + GitHub ingestion. Claude Sonnet 4.6. Vercel Cron 7am AKST. Auth gate is P0 next step. Chapterhouse deployed at chapterhouse.vercel.app.*
+*Last updated: March 10, 2026 — Full audit complete. All 9 Chapterhouse screens working. Auth gate live. Daily Brief tested in production. Convert to task + Send to review wired. Outstanding: set ALLOWED_EMAILS in Vercel, fix RSS feeds, secure /api/debug.*

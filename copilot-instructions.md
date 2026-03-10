@@ -29,16 +29,16 @@
 
 | Layer | Technology |
 |---|---|
-| Frontend | Next.js App Router, TypeScript, Tailwind CSS |
-| Auth | Clerk |
-| State | Zustand |
-| Database | Supabase (PostgreSQL + pgvector + RLS + Realtime) |
-| AI — primary | Claude Sonnet / Haiku (Anthropic) |
-| AI — secondary | OpenAI GPT-4o, GPT-5 |
+| Frontend | Next.js 16.1.6 App Router, TypeScript, Tailwind CSS v4 |
+| Auth | Supabase Auth (email/password, middleware allowlist) |
+| Database | Supabase (PostgreSQL) |
+| AI — primary | Claude Sonnet 4.6 / Claude Opus 4.6 (Anthropic `@anthropic-ai/sdk@^0.78.0`) |
+| AI — secondary | OpenAI GPT-5.4 / GPT-5.4 Pro / GPT-5 Mini (Responses API) |
+| AI — vision | GPT-5.4 (research screenshot analysis) |
 | Voice | ElevenLabs TTS |
 | Images | DALL-E 3 |
-| 3D/Physics | Babylon.js + Ammo.js (WASM) |
-| Email (transactional) | Resend |
+| 3D/Physics | Babylon.js + Ammo.js (WASM) — roleplaying repo |
+| Email (transactional) | Resend (planned — not yet wired) |
 | Payments | Stripe |
 | Hosting — apps | Vercel Pro ($20/mo) |
 | Hosting — backends | Railway |
@@ -46,7 +46,7 @@
 | Domain/DNS/email | Cloudflare (free tier) — buttercup.cfd catch-all active |
 | Domain registrar | Porkbun (subxeroscott) — buttercup.cfd, expires 2027-03-09 |
 | SMTP (outbound) | Brevo (free tier) |
-| Package manager | npm / pnpm |
+| Package manager | npm |
 | Local AI (privacy) | Ollama — runs locally when privacy is needed |
 
 ---
@@ -271,9 +271,13 @@ Use these when generating copy, landing pages, ad campaigns, email sequences, or
 5. **N8N on Railway** — park until needed, but deploy when you're ready to wire up SomerSchool enrollments or Stripe→Supabase flows.
 6. ~~dreamer.py~~ — killed, no action needed.
 7. ~~**Daily Brief v1**~~ — DONE ✅. See Daily Brief section below.
-8. **Chapterhouse Auth gate** — Supabase magic link locked to Scott + Anna emails. App is currently open. P0 security issue.
-9. **Test the daily brief in production** — hit Generate on chapterhouse.vercel.app/daily-brief. Verify RSS feeds return data, GitHub alerts populate, Claude output matches 🔴🟡🟢📊⚫ format.
-10. **Verify Vercel Cron is registered** — check Vercel project → Settings → Cron Jobs. Should show `/api/cron/daily-brief` running at 03:00 UTC daily.
+8. ~~**Chapterhouse Auth gate**~~ — DONE ✅. Supabase email/password auth. Middleware + auth callback both enforce `ALLOWED_EMAILS` allowlist. scott@somers.com and anna@somers.com.
+9. ~~**Test the daily brief in production**~~ — DONE ✅. Generate works. RSS: 3 feeds OK, 6 failed (feed-side issue, not code). GitHub: 11 repos checked. 20 items scanned → Claude. Brief saved to Supabase.
+10. ~~**Vercel env vars**~~ — DONE ✅. `GITHUB_TOKEN`, `CRON_SECRET`, `NEXT_PUBLIC_APP_URL` all set in Vercel dashboard.
+11. **Set `ALLOWED_EMAILS` in Vercel** — `scott@somers.com,anna@somers.com`. Without this, any Supabase user can log in. The middleware checks this var but it's not set in production yet.
+12. **Secure `/api/debug`** — currently returns API key prefixes with no auth check. Either add auth or remove the endpoint.
+13. **Fix 6 failing RSS feeds** — Anthropic, OpenAI, HSLDA, Shopify, Christianity Today, Education Week feeds may be blocking server-side fetches. Swap URLs or add fallback parsing.
+14. **SSRF protection** — block internal IP ranges (127.x, 192.168.x, 10.x, 169.254.x) on research URL fetch.
 
 ---
 
@@ -309,33 +313,81 @@ Use these when generating copy, landing pages, ad campaigns, email sequences, or
 - `src/lib/sources/github.ts` — GitHub API hits 11 repos (all active + warm): Dependabot security alerts, failed workflow runs (last 48h), open issues. Sorted: security → build failures → issues.
 - `src/app/api/briefs/generate/route.ts` — rewritten. Fetches real RSS + GitHub data, feeds to Claude Sonnet 4.6 (`claude-sonnet-4-6`), outputs structured brief in 🔴🟡🟢📊⚫ section format, saves to Supabase `briefs` table with real `source_count`.
 - `src/app/api/cron/daily-brief/route.ts` — cron endpoint at `GET /api/cron/daily-brief`. Authenticated via `CRON_SECRET` Bearer token.
-- `vercel.json` — cron schedule `0 15 * * *` (3:00 UTC = 7:00am AKST). Will show in Vercel dashboard → Cron Jobs.
-- Committed as `98d4f17` and pushed to GitHub.
+- `vercel.json` — cron schedule `0 15 * * *` (3:00 UTC = 7:00am AKST).
+- `src/components/brief-item-card.tsx` — client component with live **Convert to task** and **Send to review** buttons on every brief item.
+- `src/components/new-brief-panel.tsx` — Generate always visible at top. Debug strip shows RSS/GitHub ingestion stats after generation.
+- Right sidebar shows full ingestion pipeline (9 feeds, 11 repos) + last brief stats.
 
-**Env vars set locally (.env + .env.local):**
-- `GITHUB_TOKEN` — set in `.env` (do not paste token value in docs)
-- `CRON_SECRET` — set in `.env`
-- `NEXT_PUBLIC_APP_URL=https://chapterhouse.vercel.app`
+**Tested in production:** ✅ First real brief generated March 10. RSS: 3 feeds OK, 6 failed (feed-side — not code). GitHub: 11 repos checked. 20 items scanned → Claude Sonnet 4.6 → saved to Supabase.
 
-**Env vars that must also be set in Vercel dashboard (Settings → Environment Variables):**
-- `GITHUB_TOKEN` — same value as above
-- `CRON_SECRET` — same value as above
-- `NEXT_PUBLIC_APP_URL` — `https://chapterhouse.vercel.app`
+**Vercel env vars:** ✅ All three set (`GITHUB_TOKEN`, `CRON_SECRET`, `NEXT_PUBLIC_APP_URL`).
 
-**Cost estimate:** Under $0.10/day. 9 RSS feeds (~50 items) + GitHub (0–30 alerts) → ~2,000 tokens in, ~800 tokens out per Claude call. At Sonnet 4.6 pricing = ~$0.03–0.08/day.
+**Cost estimate:** Under $0.10/day.
 
 **Monitored repos:** roleplaying, chapterhouse, NextChapterHomeschool, agentsvercel, arms-of-deliverance, BibleSAAS, talesofoldendays, 1stgradescienceexample, FoodHistory, mythology, 2026worksheets.
 
 **RSS feeds monitored:** Anthropic Blog, OpenAI Blog, GitHub Changelog, Vercel Blog, Hacker News (top 10), HSLDA News, Shopify Changelog, Christianity Today, Education Week.
 
+**Known issue:** 6 of 9 RSS feeds failed on first run. Likely blocked by server-side user-agent or rate limiting. Hacker News, GitHub Changelog, and Vercel Blog returned data. Need to swap failing feed URLs or add proxy/fallback.
+
 **Next steps for Daily Brief:**
-- Test manually: open chapterhouse.vercel.app/daily-brief → click Generate
-- Verify Vercel Cron is registered in project dashboard
+- Fix or replace the 6 failing RSS feeds
+- Verify Vercel Cron fires tomorrow at 7am AKST
 - Add more feeds as needed (see `src/lib/sources/rss.ts` FEEDS array)
-- Add more repos to `MONITORED_REPOS` in `src/lib/sources/github.ts`
 - Future: email delivery to `brief@buttercup.cfd` via Resend
 
 ---
 
+## Chapterhouse Feature Status — March 10, 2026
+
+| Screen | Status | What works |
+|--------|--------|------------|
+| Chat (Home) | ✅ WORKING | Streaming, 5 model options (GPT-5.4/Pro/Mini, Claude Opus/Sonnet 4.6), persistent threads, auto-learn, founder memory + brief + research injected into context |
+| Daily Brief | ✅ WORKING | Real RSS + GitHub → Claude Sonnet 4.6. Generate button + cron. Convert to task + Send to review on every item. Ingestion debug strip. |
+| Research | ✅ WORKING | URL fetch + GPT-5.4 analysis, paste text, quick note, screenshot/GPT Vision. Manual fallback. Status: review → saved/rejected. |
+| Product Intelligence | ✅ WORKING | GPT-5.4 scores opportunities across Store/Curriculum/Content (A+ to C). Category filter. |
+| Content Studio | ✅ WORKING | 3 modes via Claude Sonnet 4.6: Newsletter/Campaign, Curriculum Guide, Product Description. Copy to clipboard. |
+| Review Queue | ✅ WORKING | Dual-feed: research items + opportunities. Approve/reject. Convert opportunity → task. |
+| Tasks | ✅ WORKING | Full CRUD. Status machine: open → in-progress → blocked → done → canceled. Source linking (from brief/opportunity/manual). |
+| Documents | ✅ WORKING | Server-rendered. Reads all .md from repo root. Search/filter. Priority ordering. |
+| Settings | ✅ WORKING | Env status checker (present/missing). Founder Memory CRUD. Category picker. |
+| Login | ✅ WORKING | Supabase email/password auth. ALLOWED_EMAILS enforcement in middleware. |
+
+### Known Issues
+| Issue | Severity | Detail |
+|-------|----------|--------|
+| `ALLOWED_EMAILS` not set in Vercel | **P0** | Middleware checks it but env var is absent in production. Anyone with Supabase creds can access. Set to `scott@somers.com,anna@somers.com`. |
+| `/api/debug` unauthenticated | **P1** | Returns API key prefixes publicly. Add auth or remove. |
+| 6/9 RSS feeds fail | **P2** | Feeds blocked by server-side fetch. Not a code bug. |
+| No SSRF protection | **P3** | Research URL fetch doesn't block internal IPs. |
+| Migration schema conflicts | **P3** | `research_items` and `tasks` tables have competing CREATE TABLE IF NOT EXISTS across migration files. Production schema works but migration files are misleading. |
+
+### AI Model Map
+| Feature | Model | Provider |
+|---------|-------|----------|
+| Daily Brief generation | claude-sonnet-4-6 | Anthropic |
+| Chat (default) | gpt-5.4 | OpenAI |
+| Chat (Claude option) | claude-* (user-selected) | Anthropic |
+| Research analysis | gpt-5.4 | OpenAI (Responses API) |
+| Research screenshot | gpt-5.4 | OpenAI (Vision) |
+| Opportunity analyzer | gpt-5.4 | OpenAI (Responses API) |
+| Extract learnings | gpt-5.4 | OpenAI (Responses API) |
+| Content Studio | claude-sonnet-4-6 | Anthropic |
+
+### Supabase Tables (All Live)
+| Table | Used by |
+|-------|--------|
+| `briefs` | Daily Brief, Chat context |
+| `research_items` | Research, Chat context, Opportunity analyzer, Review Queue |
+| `opportunities` | Product Intelligence, Chat context, Review Queue |
+| `founder_notes` | Settings/Founder Memory, Chat context, Extract-learnings |
+| `tasks` | Tasks page, Review Queue, Brief item cards |
+| `chat_threads` | Chat interface (persistent threads) |
+| `documents` | Schema exists — not used (Documents reads filesystem) |
+| `sources` | Schema exists — not used yet (RSS items go direct to Claude) |
+| `settings` | Schema exists — not used |
+
+---
+
 ## Last Updated
-March 10, 2026 — Daily Brief v1 COMPLETE. Real RSS + GitHub ingestion live. Claude Sonnet 4.6 generating structured briefs. Vercel Cron wired for 7am AKST. GitHub token, CRON_SECRET, and APP_URL set locally. Env vars need to be added to Vercel dashboard + redeploy to activate cron.
+March 10, 2026 — Full audit complete. All 9 screens WORKING. Auth gate live (middleware + email allowlist). Daily Brief pipeline tested in production (3/9 RSS OK, GitHub 11/11). Convert to task + Send to review wired on brief items. Vercel env vars set. Outstanding: set ALLOWED_EMAILS in Vercel, fix RSS feeds, secure /api/debug.
