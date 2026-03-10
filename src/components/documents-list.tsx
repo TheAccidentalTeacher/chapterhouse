@@ -11,8 +11,8 @@ type DocFile = {
   size: number;
 };
 
-export function DocumentsList({ docs }: { docs: DocFile[] }) {
-  const [query, setQuery] = useState("");
+export function DocumentsList({ docs, initialQuery = "" }: { docs: DocFile[]; initialQuery?: string }) {
+  const [query, setQuery] = useState(initialQuery);
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const filtered = docs.filter(

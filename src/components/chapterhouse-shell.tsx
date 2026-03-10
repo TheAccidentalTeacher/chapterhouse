@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Bell, HelpCircle, LogOut, Search, Settings2, Sparkles } from "lucide-react";
+import { useRef, useState } from "react";
 import { navigationItems } from "@/lib/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type ChapterhouseShellProps = {
   children: React.ReactNode;
@@ -15,6 +16,17 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  function handleSearch(e: React.FormEvent) {
+    e.preventDefault();
+    const q = searchQuery.trim();
+    if (!q) return;
+    router.push(`/documents?q=${encodeURIComponent(q)}`);
+    setSearchQuery("");
+    searchRef.current?.blur();
+  }
 
   useEffect(() => {
     const client = getSupabaseBrowserClient();
@@ -116,17 +128,34 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
         <main className="flex min-h-0 min-w-0 flex-col border-b border-border/70 bg-background lg:border-b-0 lg:border-r">
           <div className="sticky top-0 z-10 border-b border-border/70 bg-background/80 px-4 py-4 backdrop-blur sm:px-6 lg:px-8">
             <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-              <div className="flex items-center gap-3 rounded-full border border-border bg-card/80 px-4 py-3 text-sm text-muted">
-                <Search className="h-4 w-4" />
-                Search docs, sources, tasks, opportunities, and chats
-              </div>
+              <form onSubmit={handleSearch} className="flex-1 xl:max-w-md">
+                <div className="flex items-center gap-3 rounded-full border border-border bg-card/80 px-4 py-3 text-sm text-muted focus-within:border-accent/40 focus-within:text-foreground">
+                  <Search className="h-4 w-4 shrink-0" />
+                  <input
+                    ref={searchRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search documents…"
+                    className="flex-1 bg-transparent text-foreground placeholder:text-muted focus:outline-none"
+                  />
+                </div>
+              </form>
               <div className="flex items-center gap-3 text-sm">
-                <button className="rounded-full border border-border bg-card px-3 py-2 text-muted transition hover:bg-muted-surface hover:text-foreground">
+                <Link
+                  href="/review-queue"
+                  title="Review Queue"
+                  className="rounded-full border border-border bg-card px-3 py-2 text-muted transition hover:bg-muted-surface hover:text-foreground"
+                >
                   <Bell className="h-4 w-4" />
-                </button>
-                <button className="rounded-full border border-border bg-card px-3 py-2 text-muted transition hover:bg-muted-surface hover:text-foreground">
+                </Link>
+                <Link
+                  href="/settings"
+                  title="Settings"
+                  className="rounded-full border border-border bg-card px-3 py-2 text-muted transition hover:bg-muted-surface hover:text-foreground"
+                >
                   <Settings2 className="h-4 w-4" />
-                </button>
+                </Link>
                 <div className="rounded-full border border-border bg-card px-4 py-2 text-muted text-sm truncate max-w-[200px]">
                   {userEmail ?? "Chapterhouse"}
                 </div>

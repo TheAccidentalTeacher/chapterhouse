@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { DocumentsList } from "@/components/documents-list";
+import type { SearchParams } from "next/dist/server/request/search-params";
 
 type DocFile = {
   slug: string;
@@ -74,8 +75,14 @@ function readDocs(): DocFile[] {
   });
 }
 
-export default function DocumentsPage() {
+export default async function DocumentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
   const docs = readDocs();
+  const params = await searchParams;
+  const initialQuery = typeof params.q === "string" ? params.q : "";
 
   return (
     <div className="p-6 sm:p-8 lg:p-10">
@@ -89,7 +96,7 @@ export default function DocumentsPage() {
           </p>
         </div>
 
-        <DocumentsList docs={docs} />
+        <DocumentsList docs={docs} initialQuery={initialQuery} />
       </div>
     </div>
   );
