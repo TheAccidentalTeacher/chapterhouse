@@ -4,5 +4,16 @@
       "path": "/api/cron/daily-brief",
       "schedule": "0 15 * * *"
     }
-  ]
+  ],
+  "functions": {
+    "src/app/api/cron/daily-brief/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/briefs/generate/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/summarize/route.ts": {
+      "maxDuration": 60
+    }
+  }
 }

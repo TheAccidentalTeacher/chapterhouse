@@ -9,10 +9,10 @@ const RSS_FEEDS = [
   "GitHub Changelog",
   "Vercel Blog",
   "Hacker News Top 10",
-  "HSLDA News",
-  "Shopify Changelog",
-  "Christianity Today",
-  "Education Week",
+  "The Homeschool Mom",
+  "Shopify News",
+  "The Gospel Coalition",
+  "Hechinger Report",
 ];
 
 const GITHUB_REPOS = [
