@@ -24,6 +24,7 @@ export default function ResearchPage() {
   const [reanalyzingId, setReanalyzingId] = useState<string | null>(null);
   const [summarizing, setSummarizing] = useState(false);
   const [summarizeResult, setSummarizeResult] = useState<string | null>(null);
+  const [filterTag, setFilterTag] = useState<string | null>(null);
 
   // URL tab
   const [url, setUrl] = useState("");
@@ -561,7 +562,17 @@ export default function ResearchPage() {
         ) : (
           <div className="space-y-4">
             <div className="flex items-center justify-between gap-4 flex-wrap">
-            <p className="text-xs text-muted">{items.length} source{items.length === 1 ? "" : "s"} saved</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="text-xs text-muted">{items.length} source{items.length === 1 ? "" : "s"} saved</p>
+              {filterTag && (
+                <button
+                  onClick={() => setFilterTag(null)}
+                  className="flex items-center gap-1.5 rounded-full border border-accent/40 bg-accent/10 px-2.5 py-1 text-xs text-accent hover:bg-accent/20 transition"
+                >
+                  {filterTag} <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               {summarizeResult && (
                 <span className="text-xs text-muted">{summarizeResult}</span>
@@ -577,11 +588,22 @@ export default function ResearchPage() {
               </button>
             </div>
           </div>
-            {items.map((item) => (
+            {(filterTag ? items.filter((i) => i.tags?.includes(filterTag)) : items).map((item) => (
               <article key={item.id} className="glass-panel rounded-3xl p-5 space-y-3">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <h2 className="font-medium leading-snug">{item.title || item.url}</h2>
+                    {item.url.startsWith("http") ? (
+                      <a
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium leading-snug hover:text-accent transition"
+                      >
+                        {item.title || item.url}
+                      </a>
+                    ) : (
+                      <h2 className="font-medium leading-snug">{item.title || item.url}</h2>
+                    )}
                     {item.url.startsWith("http") && (
                       <a
                         href={item.url}
@@ -638,18 +660,19 @@ export default function ResearchPage() {
                   <div className="flex flex-wrap items-center gap-1.5">
                     <Tag className="h-3 w-3 text-muted shrink-0" />
                     {item.tags.map((tag) => (
-                      <span
+                      <button
                         key={tag}
-                        className={`rounded-full border px-2.5 py-0.5 text-xs ${
+                        onClick={() => setFilterTag(filterTag === tag ? null : tag)}
+                        className={`rounded-full border px-2.5 py-0.5 text-xs transition ${
                           tag === "vibe-coding"
-                            ? "border-accent/40 bg-accent/10 text-accent"
+                            ? "border-accent/40 bg-accent/10 text-accent hover:ring-1 hover:ring-accent/50"
                             : tag === "competitor"
-                            ? "border-orange-500/30 bg-orange-500/10 text-orange-400"
-                            : "border-border/70 bg-muted-surface text-muted"
-                        }`}
+                            ? "border-orange-500/30 bg-orange-500/10 text-orange-400 hover:ring-1 hover:ring-orange-500/40"
+                            : "border-border/70 bg-muted-surface text-muted hover:border-border hover:text-foreground"
+                        } ${filterTag === tag ? "ring-1 ring-current" : ""}`}
                       >
                         {tag}
-                      </span>
+                      </button>
                     ))}
                   </div>
                 )}
