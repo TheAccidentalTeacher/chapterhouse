@@ -64,6 +64,28 @@ export async function POST(request: Request) {
       fetchGitHubAlerts(),
     ]);
 
+    // Fetch accumulated knowledge summaries (best-effort — table may not exist yet)
+    const supabase = getSupabaseServiceRoleClient();
+    let knowledgeSummaryBlock = "";
+    if (supabase) {
+      try {
+        const { data: summaries } = await supabase
+          .from("knowledge_summaries")
+          .select("tag, summary, item_count")
+          .order("item_count", { ascending: false });
+        if (summaries && summaries.length > 0) {
+          const lines = summaries
+            .map((s) => `**${s.tag}** (${s.item_count} items): ${s.summary}`)
+            .join("\n");
+          knowledgeSummaryBlock =
+            `\n---\n## ACCUMULATED KNOWLEDGE BASE\n` +
+            `Scott's research, condensed by category. Use these as additional context when scoring relevance and writing verdicts:\n${lines}`;
+        }
+      } catch {
+        // knowledge_summaries table not yet created — skip
+      }
+    }
+
     const totalScanned = rssResult.scannedCount + githubResult.scannedCount;
     const rssSection = formatRssItemsForPrompt(rssResult.items);
     const githubSection = formatGitHubAlertsForPrompt(githubResult.alerts);
@@ -76,6 +98,7 @@ export async function POST(request: Request) {
       rssSection || "(no RSS items returned — all feeds may be down)",
       "\n---",
       githubSection,
+      knowledgeSummaryBlock,
       "\n---",
       "Now generate the daily brief JSON.",
     ]
@@ -111,7 +134,6 @@ export async function POST(request: Request) {
     }
 
     // Save to Supabase
-    const supabase = getSupabaseServiceRoleClient();
     if (!supabase) {
       return Response.json({ error: "Database not available" }, { status: 503 });
     }

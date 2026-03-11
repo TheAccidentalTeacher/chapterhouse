@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowUp, ExternalLink, Loader2, Tag, PenLine, X, Link2, ClipboardPaste, StickyNote, Camera, ImageIcon, Trash2, RotateCcw } from "lucide-react";
+import { ArrowUp, ExternalLink, Loader2, Tag, PenLine, X, Link2, ClipboardPaste, StickyNote, Camera, ImageIcon, Trash2, RotateCcw, Sparkles } from "lucide-react";
 
 type InputTab = "url" | "paste" | "note" | "image";
 
@@ -22,6 +22,8 @@ export default function ResearchPage() {
   const [tab, setTab] = useState<InputTab>("url");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [reanalyzingId, setReanalyzingId] = useState<string | null>(null);
+  const [summarizing, setSummarizing] = useState(false);
+  const [summarizeResult, setSummarizeResult] = useState<string | null>(null);
 
   // URL tab
   const [url, setUrl] = useState("");
@@ -234,6 +236,22 @@ export default function ResearchPage() {
       setImageError(e instanceof Error ? e.message : String(e));
     } finally {
       setSavingImage(false);
+    }
+  }
+
+  async function handleSummarize() {
+    if (summarizing) return;
+    setSummarizing(true);
+    setSummarizeResult(null);
+    try {
+      const res = await fetch("/api/summarize", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || res.statusText);
+      setSummarizeResult(data.message);
+    } catch (e) {
+      setSummarizeResult(`Failed: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setSummarizing(false);
     }
   }
 
@@ -542,7 +560,23 @@ export default function ResearchPage() {
           </div>
         ) : (
           <div className="space-y-4">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
             <p className="text-xs text-muted">{items.length} source{items.length === 1 ? "" : "s"} saved</p>
+            <div className="flex items-center gap-2">
+              {summarizeResult && (
+                <span className="text-xs text-muted">{summarizeResult}</span>
+              )}
+              <button
+                onClick={handleSummarize}
+                disabled={summarizing || items.length < 2}
+                title="Compress all research into tag-based summaries for use in briefs and chat"
+                className="flex items-center gap-1.5 rounded-xl border border-border/70 bg-muted-surface px-3 py-1.5 text-xs font-medium text-muted transition hover:border-accent/40 hover:text-accent disabled:opacity-40"
+              >
+                {summarizing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                {summarizing ? "Condensing…" : "Condense knowledge"}
+              </button>
+            </div>
+          </div>
             {items.map((item) => (
               <article key={item.id} className="glass-panel rounded-3xl p-5 space-y-3">
                 <div className="flex items-start justify-between gap-4">

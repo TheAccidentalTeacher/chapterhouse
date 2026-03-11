@@ -131,6 +131,25 @@ async function buildLiveContext(userMessage: string = ""): Promise<string> {
   }
 
   try {
+    // Knowledge summaries — compressed overview of accumulated research by tag
+    const { data: summaries } = await supabase
+      .from("knowledge_summaries")
+      .select("tag, summary, item_count")
+      .order("item_count", { ascending: false });
+
+    if (summaries && summaries.length > 0) {
+      const summaryText = summaries
+        .map((s) => `**${s.tag}** (${s.item_count} items): ${s.summary}`)
+        .join("\n");
+      blocks.push(
+        `## Live Context: Accumulated Knowledge Base\n\nResearch condensed by category — these represent Scott's ongoing tracking and competitive intelligence:\n\n${summaryText}`
+      );
+    }
+  } catch {
+    // knowledge_summaries table not yet created — ignore
+  }
+
+  try {
     // Fetch up to 100 research items, then rank by relevance to the user's message
     const { data: allItems } = await supabase
       .from("research_items")
