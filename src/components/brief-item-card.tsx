@@ -21,9 +21,11 @@ export function BriefItemCard({
 }) {
   const [taskState, setTaskState] = useState<ActionState>("idle");
   const [reviewState, setReviewState] = useState<ActionState>("idle");
+  const [taskError, setTaskError] = useState<string | null>(null);
 
   async function convertToTask() {
     setTaskState("loading");
+    setTaskError(null);
     try {
       const res = await fetch("/api/tasks", {
         method: "POST",
@@ -35,10 +37,14 @@ export function BriefItemCard({
           source_title: sectionTitle,
         }),
       });
-      if (!res.ok) throw new Error((await res.json()).error);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP ${res.status}`);
+      }
       setTaskState("done");
-    } catch {
+    } catch (e) {
       setTaskState("error");
+      setTaskError(e instanceof Error ? e.message : String(e));
     }
   }
 
@@ -99,6 +105,9 @@ export function BriefItemCard({
             ? "Failed — retry"
             : "Convert to task"}
         </button>
+        {taskState === "error" && taskError && (
+          <span className="w-full text-xs text-red-400/70">{taskError}</span>
+        )}
 
         <button
           onClick={sendToReview}

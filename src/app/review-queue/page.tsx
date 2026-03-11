@@ -81,9 +81,11 @@ function ActionBtn({
 function ResearchCard({
   item,
   onDismiss,
+  onTagFilter,
 }: {
   item: ResearchItem;
   onDismiss: (id: string) => void;
+  onTagFilter?: (tag: string) => void;
 }) {
   const [saving, setSaving] = useState(false);
 
@@ -103,7 +105,8 @@ function ResearchCard({
 
   const isImage = item.url?.startsWith("image://");
   const isPaste = item.url?.startsWith("paste://");
-  const sourceLabel = isImage ? "Screenshot" : isPaste ? "Pasted text" : item.url;
+  const isBrief = item.url?.startsWith("brief://");
+  const sourceLabel = isImage ? "Screenshot" : isPaste ? "Pasted text" : isBrief ? "Daily Brief" : item.url;
 
   return (
     <article className="glass-panel rounded-3xl p-5 space-y-3">
@@ -114,18 +117,19 @@ function ResearchCard({
               Research
             </span>
             {item.tags?.map((tag) => (
-              <span
+              <button
                 key={tag}
-                className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                onClick={() => onTagFilter?.(tag)}
+                className={`rounded-full px-2 py-0.5 text-xs font-medium transition ${
                   tag === "vibe-coding"
-                    ? "bg-accent/15 text-accent border border-accent/30"
+                    ? "bg-accent/15 text-accent border border-accent/30 hover:ring-1 hover:ring-accent/50"
                     : tag === "competitor"
-                    ? "bg-orange-500/10 text-orange-400 border border-orange-500/20"
-                    : "bg-muted-surface text-muted border border-border/50"
-                }`}
+                    ? "bg-orange-500/10 text-orange-400 border border-orange-500/20 hover:ring-1 hover:ring-orange-500/40"
+                    : "bg-muted-surface text-muted border border-border/50 hover:border-border hover:text-foreground"
+                } ${onTagFilter ? "cursor-pointer" : "cursor-default"}`}
               >
                 {tag}
-              </span>
+              </button>
             ))}
           </div>
           <h2 className="font-semibold leading-snug">{item.title || sourceLabel}</h2>
@@ -133,7 +137,7 @@ function ResearchCard({
           {item.verdict && (
             <p className="mt-2 text-sm text-foreground/80 italic leading-6">&ldquo;{item.verdict}&rdquo;</p>
           )}
-          {!isImage && !isPaste && item.url && (
+          {!isImage && !isPaste && !isBrief && item.url && (
             <a
               href={item.url}
               target="_blank"
@@ -142,6 +146,9 @@ function ResearchCard({
             >
               {item.url}
             </a>
+          )}
+          {isBrief && (
+            <span className="mt-1 block text-xs text-muted/60">Source: Daily Brief</span>
           )}
         </div>
       </div>
@@ -268,6 +275,7 @@ export default function ReviewQueuePage() {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filterTag, setFilterTag] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -295,6 +303,10 @@ export default function ReviewQueuePage() {
     }
     load();
   }, []);
+
+  const filteredResearch = filterTag
+    ? researchItems.filter((i) => i.tags?.includes(filterTag))
+    : researchItems;
 
   function dismissResearch(id: string) {
     setResearchItems((prev) => prev.filter((i) => i.id !== id));
@@ -357,12 +369,25 @@ export default function ReviewQueuePage() {
 
           {researchItems.length > 0 && (
             <section className="space-y-3">
-              <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted px-1">
-                Research — awaiting review
-              </h2>
-              {researchItems.map((item) => (
-                <ResearchCard key={item.id} item={item} onDismiss={dismissResearch} />
+              <div className="flex items-center justify-between px-1">
+                <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">
+                  Research — awaiting review
+                </h2>
+                {filterTag && (
+                  <button
+                    onClick={() => setFilterTag(null)}
+                    className="flex items-center gap-1.5 rounded-full border border-accent/40 bg-accent/10 px-2.5 py-1 text-xs text-accent hover:bg-accent/20 transition"
+                  >
+                    {filterTag} <XCircle className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+              {filteredResearch.map((item) => (
+                <ResearchCard key={item.id} item={item} onDismiss={dismissResearch} onTagFilter={setFilterTag} />
               ))}
+              {filterTag && filteredResearch.length === 0 && (
+                <p className="text-sm text-muted px-1">No items with tag &ldquo;{filterTag}&rdquo;.</p>
+              )}
             </section>
           )}
 
