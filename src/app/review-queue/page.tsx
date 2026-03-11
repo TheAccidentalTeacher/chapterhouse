@@ -120,7 +120,7 @@ function ResearchCard({
               <button
                 key={tag}
                 onClick={() => onTagFilter?.(tag)}
-                className={`rounded-full px-2 py-0.5 text-xs font-medium transition ${
+                className={`cursor-pointer rounded-full px-2 py-0.5 text-xs font-medium transition ${
                   tag === "vibe-coding"
                     ? "bg-accent/15 text-accent border border-accent/30 hover:ring-1 hover:ring-accent/50"
                     : tag === "competitor"

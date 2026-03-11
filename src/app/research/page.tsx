@@ -597,7 +597,7 @@ export default function ResearchPage() {
                         href={item.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-medium leading-snug hover:text-accent transition"
+                        className="font-medium leading-snug hover:text-accent hover:underline transition cursor-pointer"
                       >
                         {item.title || item.url}
                       </a>
@@ -663,7 +663,7 @@ export default function ResearchPage() {
                       <button
                         key={tag}
                         onClick={() => setFilterTag(filterTag === tag ? null : tag)}
-                        className={`rounded-full border px-2.5 py-0.5 text-xs transition ${
+                        className={`cursor-pointer rounded-full border px-2.5 py-0.5 text-xs transition ${
                           tag === "vibe-coding"
                             ? "border-accent/40 bg-accent/10 text-accent hover:ring-1 hover:ring-accent/50"
                             : tag === "competitor"
