@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle, XCircle, ArrowRight, Loader2, ClipboardList, FlaskConical } from "lucide-react";
+import { CheckCircle, XCircle, ArrowRight, Loader2, ClipboardList, FlaskConical, ChevronDown, ExternalLink } from "lucide-react";
 import { PageFrame } from "@/components/page-frame";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -88,6 +88,7 @@ function ResearchCard({
   onTagFilter?: (tag: string) => void;
 }) {
   const [saving, setSaving] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   async function updateStatus(status: string) {
     setSaving(true);
@@ -132,12 +133,39 @@ function ResearchCard({
               </button>
             ))}
           </div>
-          <h2 className="font-semibold leading-snug">{item.title || sourceLabel}</h2>
-          {item.summary && <p className="mt-1 text-sm text-muted leading-6">{item.summary}</p>}
-          {item.verdict && (
+          <div className="flex items-start justify-between gap-2">
+            <button
+              className="text-left font-semibold leading-snug hover:text-accent transition cursor-pointer flex-1"
+              onClick={() => setExpanded(!expanded)}
+            >
+              {item.title || sourceLabel}
+            </button>
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="shrink-0 rounded-lg p-1 text-muted hover:text-foreground transition"
+            >
+              <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
+            </button>
+          </div>
+          {item.summary && (
+            <p className={`mt-1 text-sm text-muted leading-6 ${expanded ? "" : "line-clamp-2"}`}>
+              {item.summary}
+            </p>
+          )}
+          {expanded && item.verdict && (
             <p className="mt-2 text-sm text-foreground/80 italic leading-6">&ldquo;{item.verdict}&rdquo;</p>
           )}
-          {!isImage && !isPaste && !isBrief && item.url && (
+          {expanded && !isImage && !isPaste && !isBrief && item.url && (
+            <a
+              href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-flex items-center gap-1.5 rounded-xl border border-accent/40 bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/20 transition"
+            >
+              Open article <ExternalLink className="h-3 w-3" />
+            </a>
+          )}
+          {!expanded && !isImage && !isPaste && !isBrief && item.url && (
             <a
               href={item.url}
               target="_blank"

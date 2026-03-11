@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowUp, ExternalLink, Loader2, Tag, PenLine, X, Link2, ClipboardPaste, StickyNote, Camera, ImageIcon, Trash2, RotateCcw, Sparkles } from "lucide-react";
+import { ArrowUp, ExternalLink, Loader2, Tag, PenLine, X, Link2, ClipboardPaste, StickyNote, Camera, ImageIcon, Trash2, RotateCcw, Sparkles, ChevronDown } from "lucide-react";
 
 type InputTab = "url" | "paste" | "note" | "image";
 
@@ -25,6 +25,7 @@ export default function ResearchPage() {
   const [summarizing, setSummarizing] = useState(false);
   const [summarizeResult, setSummarizeResult] = useState<string | null>(null);
   const [filterTag, setFilterTag] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   // URL tab
   const [url, setUrl] = useState("");
@@ -588,39 +589,63 @@ export default function ResearchPage() {
               </button>
             </div>
           </div>
-            {(filterTag ? items.filter((i) => i.tags?.includes(filterTag)) : items).map((item) => (
+            {(filterTag ? items.filter((i) => i.tags?.includes(filterTag)) : items).map((item) => {
+              const isExpanded = expandedId === item.id;
+              const isHttp = item.url.startsWith("http");
+              const isImage = item.url.startsWith("image://");
+              const isPaste = item.url.startsWith("paste://");
+              const isBrief = item.url.startsWith("brief://");
+              const sourceTypeLabel = isImage ? "Screenshot" : isPaste ? "Pasted text" : isBrief ? "Daily Brief" : null;
+              return (
               <article key={item.id} className="glass-panel rounded-3xl p-5 space-y-3">
                 <div className="flex items-start justify-between gap-4">
-                  <div>
-                    {item.url.startsWith("http") ? (
+                  <div className="flex-1 min-w-0">
+                    {isHttp ? (
                       <a
                         href={item.url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="font-medium leading-snug hover:text-accent hover:underline transition cursor-pointer"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         {item.title || item.url}
                       </a>
                     ) : (
-                      <h2 className="font-medium leading-snug">{item.title || item.url}</h2>
+                      <button
+                        className="text-left font-medium leading-snug hover:text-accent transition cursor-pointer w-full"
+                        onClick={() => setExpandedId(isExpanded ? null : item.id)}
+                      >
+                        {item.title || item.url}
+                      </button>
                     )}
-                    {item.url.startsWith("http") && (
+                    {isHttp && (
                       <a
                         href={item.url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted hover:text-accent"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         {item.url.replace(/^https?:\/\//, "").split("/")[0]}
                         <ExternalLink className="h-3 w-3" />
                       </a>
                     )}
+                    {sourceTypeLabel && (
+                      <span className="mt-0.5 block text-xs text-muted/60">{sourceTypeLabel}</span>
+                    )}
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
+                    <button
+                      onClick={() => setExpandedId(isExpanded ? null : item.id)}
+                      title={isExpanded ? "Collapse" : "Expand"}
+                      className="rounded-lg p-1.5 text-muted transition hover:text-foreground"
+                    >
+                      <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                    </button>
                     <span className="text-xs text-muted">
                       {new Date(item.created_at).toLocaleDateString()}
                     </span>
-                    {item.url.startsWith("http") && (
+                    {isHttp && (
                       <button
                         onClick={() => handleReanalyze(item)}
                         disabled={reanalyzingId === item.id || !!deletingId}
@@ -646,14 +671,27 @@ export default function ResearchPage() {
                 </div>
 
                 {item.summary && (
-                  <p className="text-sm leading-6 text-muted">{item.summary}</p>
+                  <p className={`text-sm leading-6 text-muted ${isExpanded ? "" : "line-clamp-2"}`}>
+                    {item.summary}
+                  </p>
                 )}
 
-                {item.verdict && (
+                {isExpanded && item.verdict && (
                   <div className="rounded-xl border border-border/70 bg-muted-surface px-4 py-2.5 text-sm">
                     <span className="font-medium">Verdict: </span>
                     <span className="text-muted">{item.verdict}</span>
                   </div>
+                )}
+
+                {isExpanded && isHttp && (
+                  <a
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-accent/40 bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/20 transition"
+                  >
+                    Open article <ExternalLink className="h-3 w-3" />
+                  </a>
                 )}
 
                 {item.tags && item.tags.length > 0 && (
@@ -677,7 +715,8 @@ export default function ResearchPage() {
                   </div>
                 )}
               </article>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
