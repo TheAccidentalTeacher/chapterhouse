@@ -105,12 +105,12 @@ This includes Chapterhouse, the internal AI system for Scott and Anna: document 
 
 **Auth:** Supabase email/password. Middleware enforces `ALLOWED_EMAILS` allowlist (scott@somers.com, anna@somers.com). Login page with redirect. `ALLOWED_EMAILS` is set in Vercel production. Auth gate is fully closed.
 
-**Daily Brief pipeline:** RSS feeds (3/9 working, 6 blocked server-side — not a code bug). GitHub API (11/11 repos checked). First real brief generated March 10. Vercel Cron registered. `GITHUB_TOKEN`, `CRON_SECRET`, `NEXT_PUBLIC_APP_URL` all set in Vercel.
+**Daily Brief pipeline:** RSS feeds (all 9 working — 5 URLs fixed March 10). GitHub API (11/11 repos checked). First real brief generated March 10. Vercel Cron registered (first scheduled fire March 11 7am AKST). `GITHUB_TOKEN`, `CRON_SECRET`, `NEXT_PUBLIC_APP_URL` all set in Vercel. Stage 3 knowledge summarization pipeline deployed and wired into brief generation + chat context.
 
 **Known issues:**
-- 6/9 RSS feeds fail server-side (P2 — feed-side, not code; fix URLs or add Jina fallback)
-- `chat_threads` migration not yet run in production Supabase — chat works but threads don’t persist (P0 — run the SQL in Supabase dashboard)
-- No SSRF protection on research URL fetch (P3)
+- `chat_threads` migration not yet run in production Supabase — run migration 006 in Supabase SQL Editor (P0)
+- `knowledge_summaries` migration not yet run in production Supabase — run migration 007 in Supabase SQL Editor (P0 for Stage 3 to work)
+- Vercel Cron first scheduled fire is March 11 — verify brief appeared automatically
 
 Primary source docs:
 - [chapterhouse-knowledge-base-blueprint.md](chapterhouse-knowledge-base-blueprint.md)

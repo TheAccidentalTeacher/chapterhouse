@@ -160,20 +160,20 @@ That includes:
 
 ## Current Build Gaps (Prioritized)
 
-### P0 — Supabase Migration
-- [ ] **Run `chat_threads` migration in production Supabase** — go to supabase.com/dashboard/project/kqshlqvxvdmkygjhwbar/sql/new and run the SQL from `supabase/migrations/20260309_006_create_chat_threads.sql`. Without this, chat threads don't persist.
+### P0 — Supabase Migrations (run both NOW)
+- [ ] **Run `chat_threads` migration** — `supabase/migrations/20260309_006_create_chat_threads.sql` in Supabase dashboard SQL Editor
+- [ ] **Run `knowledge_summaries` migration** — `supabase/migrations/20260310_007_create_knowledge_summaries.sql` in Supabase dashboard SQL Editor
 
-### P1 — Daily Brief Reliability
-- [ ] **Fix 6 failing RSS feeds** — Anthropic, OpenAI, HSLDA, Shopify, Christianity Today, Education Week feeds fail server-side. Swap for working URLs, add User-Agent rotation, or add Jina/Firecrawl fallback.
-- [ ] **Verify Vercel Cron fired** — Check that the 7am AKST brief auto-generated on March 11.
+### P1 — Verify Cron
+- [ ] **Verify Vercel Cron fired** — Check Daily Brief page for a March 11 auto-generated brief (fires 7am AKST / 15:00 UTC)
 
 ### P2 — Intelligence scaling
-- [ ] **Stage 3: Summarization pass** — `knowledge_summaries` table; `/api/summarize`; group by tag → condensed summaries; inject when research count > threshold
+- [x] **Stage 3: Summarization pass** — DONE ✅. `/api/summarize`, `knowledge_summaries` table, Condense button on Research page, injected into brief + chat
 - [ ] **Stage 4: pgvector** — `CREATE EXTENSION vector`; `text-embedding-3-small` on save; semantic similarity replaces keyword scoring in `buildLiveContext()`
 - [ ] **Persist RSS items to `sources` table** — Brief sources become searchable, linkable context
 
 ### P3 — Research hardening
-- [ ] **SSRF protection** — block 127.x, 192.168.x, 10.x, 169.254.x before outbound URL fetch
+- [x] **SSRF protection** — DONE ✅. Blocks all internal IP ranges before outbound URL fetch
 - [ ] **Metadata extraction** — pull `<title>`, meta description, og:site_name, article:published_time from HTML
 
 ### P4 — Global search
@@ -227,7 +227,8 @@ Pipe the store's catalog metadata into Chapterhouse Research so AI can interpret
 | `opportunities` | ✅ Live | Product Intelligence scoring |
 | `founder_notes` | ✅ Live | Auto-learn + /remember memory |
 | `tasks` | ✅ Live | Full CRUD with source linking (brief/opportunity/manual) |
-| `chat_threads` | ✅ Live | Persistent chat threads with messages JSONB |
+| `chat_threads` | ⚠️ Needs migration | SQL file exists (migration 006) — run in Supabase SQL Editor |
+| `knowledge_summaries` | ⚠️ Needs migration | SQL file exists (migration 007) — run in Supabase SQL Editor |
 | `documents` | ✅ Schema only | Not used by code (Documents page reads filesystem) |
 | `sources` | ✅ Schema only | Nothing writes to it yet; RSS items go direct to Claude |
 | `settings` | ✅ Schema only | No code reads/writes to it |
@@ -260,14 +261,15 @@ This is the working sequence. Do these in order. Don't skip ahead.
 | 11 | ~~SVG favicon~~ | ✅ DONE | Brand identity in browser tab |
 | 12 | ~~Help guide + /help page~~ | ✅ DONE | Onboarding + docs |
 | 13 | **Run `chat_threads` migration in Supabase** | 🔴 DO NOW | Chat persistence broken until this runs |
-| 14 | **Fix failing RSS feeds** | 🟡 NEXT | 6/9 feeds fail server-side |
-| 15 | **Verify Vercel Cron** | 🟡 NEXT | Check March 11 7am auto-brief |
-| 16 | **SSRF fix + metadata extraction** | 🟢 LATER | Security hardening |
+| 14 | ~~Fix failing RSS feeds~~ | ✅ DONE | All 5 broken feeds replaced with verified working URLs |
+| 15 | **Verify Vercel Cron first fire** | 🟡 CHECK TODAY | Should have fired March 11 7am AKST |
+| 16 | ~~SSRF fix + metadata extraction~~ | ✅ DONE | SSRF protection added to research URL fetch |
 | 17 | **Real cross-table search** | 🟢 LATER | Nav search bar covers all tables |
-| 18 | **Stage 3: Summarization pass** | 🟢 LATER | When research > ~50 items |
-| 19 | **Stage 4: pgvector embeddings** | 🟢 LATER | Semantic similarity |
-| 20 | **Persist RSS to `sources` table** | 🟢 LATER | Brief sources searchable |
-| 21 | **Email delivery** | 🟢 LATER | Daily brief to buttercup.cfd via Resend |
-| 22 | **Inline chat URL detection** | 🟢 LATER | URL in chat → inject into context |
-| 23 | **Agentic research** | 🟢 LATER | Search API + multi-URL synthesis |
+| 18 | ~~Stage 3: Summarization pass~~ | ✅ DONE | /api/summarize + knowledge_summaries + Condense button + injected into brief + chat |
+| 19 | **Run `knowledge_summaries` migration in Supabase** | 🔴 DO NOW | Needed for Stage 3 to work in production |
+| 20 | **Stage 4: pgvector embeddings** | 🟢 LATER | Semantic similarity |
+| 21 | **Persist RSS to `sources` table** | 🟢 LATER | Brief sources searchable |
+| 22 | **Email delivery** | 🟢 LATER | Daily brief to buttercup.cfd via Resend |
+| 23 | **Inline chat URL detection** | 🟢 LATER | URL in chat → inject into context |
+| 24 | **Agentic research** | 🟢 LATER | Search API + multi-URL synthesis |
 

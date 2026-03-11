@@ -192,10 +192,17 @@ Use these when generating copy, landing pages, ad campaigns, email sequences, or
 | .env.local | Local overrides (not committed to git) |
 | .vscode/settings.json | Gold VS Code theme |
 | vercel.json | Vercel Cron config — daily brief at 03:00 UTC (7am AKST) |
-| src/lib/sources/rss.ts | RSS feed fetcher — 9 feeds across AI, homeschool, ecommerce, faith, education |
+| src/lib/sources/rss.ts | RSS feed fetcher — 9 feeds (MIT Tech Review AI, OpenAI, GitHub, Vercel, Hacker News, Homeschool Mom, Shopify News, Gospel Coalition, Hechinger Report) |
 | src/lib/sources/github.ts | GitHub API — Dependabot alerts + failed builds + open issues across 11 repos |
-| src/app/api/briefs/generate/route.ts | Daily brief generation — Claude Sonnet 4.6, real data, structured output |
+| src/app/api/briefs/generate/route.ts | Daily brief generation — Claude Sonnet 4.6, real RSS+GitHub data, knowledge summaries injected, structured output |
 | src/app/api/cron/daily-brief/route.ts | Vercel Cron endpoint — triggers brief generation at 7am AKST |
+| src/app/api/research/route.ts | Research ingestion — URL fetch, paste, note, image, brief item forwarding. SSRF protection added. |
+| src/app/api/summarize/route.ts | Stage 3 — POST groups research by tag + compresses with Claude. GET returns current summaries. |
+| src/app/api/chat/route.ts | Chat streaming — GPT-5.4 + Claude. buildLiveContext injects brief + knowledge summaries + research. |
+| src/app/help/page.tsx | /help page — reads chapterhouse-help-guide.md and renders as styled HTML |
+| chapterhouse-help-guide.md | ELI5 guide to all 9 screens. Plain-English, updated for current state. |
+| supabase/migrations/20260309_006_create_chat_threads.sql | chat_threads table — needs to be run manually in Supabase |
+| supabase/migrations/20260310_007_create_knowledge_summaries.sql | knowledge_summaries table — needs to be run manually in Supabase |
 
 ### dreamer.py — KILLED ✅
 - **Decision**: dreamer.py is retired. VS Code + Copilot does everything it did, better.
@@ -274,10 +281,12 @@ Use these when generating copy, landing pages, ad campaigns, email sequences, or
 8. ~~**Chapterhouse Auth gate**~~ — DONE ✅. Supabase email/password auth. Middleware + auth callback both enforce `ALLOWED_EMAILS` allowlist. scott@somers.com and anna@somers.com.
 9. ~~**Test the daily brief in production**~~ — DONE ✅. Generate works. RSS: 3 feeds OK, 6 failed (feed-side issue, not code). GitHub: 11 repos checked. 20 items scanned → Claude. Brief saved to Supabase.
 10. ~~**Vercel env vars**~~ — DONE ✅. `GITHUB_TOKEN`, `CRON_SECRET`, `NEXT_PUBLIC_APP_URL` all set in Vercel dashboard.
-11. **Set `ALLOWED_EMAILS` in Vercel** — `scott@somers.com,anna@somers.com`. Without this, any Supabase user can log in. The middleware checks this var but it's not set in production yet.
-12. **Secure `/api/debug`** — currently returns API key prefixes with no auth check. Either add auth or remove the endpoint.
-13. **Fix 6 failing RSS feeds** — Anthropic, OpenAI, HSLDA, Shopify, Christianity Today, Education Week feeds may be blocking server-side fetches. Swap URLs or add fallback parsing.
-14. **SSRF protection** — block internal IP ranges (127.x, 192.168.x, 10.x, 169.254.x) on research URL fetch.
+11. ~~**Set `ALLOWED_EMAILS` in Vercel**~~ — DONE ✅. Set to `scott@somers.com,anna@somers.com`.
+12. ~~**Secure `/api/debug`**~~ — DONE ✅. CRON_SECRET bearer auth added.
+13. ~~**Fix 6 failing RSS feeds**~~ — DONE ✅. Replaced: Anthropic→MIT Tech Review AI, HSLDA→The Homeschool Mom, Shopify Changelog→Shopify News, Christianity Today→The Gospel Coalition, Education Week→Hechinger Report.
+14. ~~**SSRF protection**~~ — DONE ✅. Research URL fetch now blocks all internal IP ranges (127.x, 192.168.x, 10.x, 169.254.x, IPv6 loopback).
+15. **Run 2 pending migrations in Supabase** — `chat_threads` (006) and `knowledge_summaries` (007). Go to Supabase SQL Editor and run both.
+16. **Verify Vercel Cron fired** — First fire should be March 11 7am AKST. Check Daily Brief page for auto-generated brief.
 
 ---
 
@@ -326,39 +335,38 @@ Use these when generating copy, landing pages, ad campaigns, email sequences, or
 
 **Monitored repos:** roleplaying, chapterhouse, NextChapterHomeschool, agentsvercel, arms-of-deliverance, BibleSAAS, talesofoldendays, 1stgradescienceexample, FoodHistory, mythology, 2026worksheets.
 
-**RSS feeds monitored:** Anthropic Blog, OpenAI Blog, GitHub Changelog, Vercel Blog, Hacker News (top 10), HSLDA News, Shopify Changelog, Christianity Today, Education Week.
+**RSS feeds monitored (current working set):** MIT Technology Review AI, OpenAI Blog, GitHub Changelog, Vercel Blog, Hacker News (top 10), The Homeschool Mom, Shopify News, The Gospel Coalition, Hechinger Report.
 
-**Known issue:** 6 of 9 RSS feeds failed on first run. Likely blocked by server-side user-agent or rate limiting. Hacker News, GitHub Changelog, and Vercel Blog returned data. Need to swap failing feed URLs or add proxy/fallback.
+**Known issue:** First run had 6/9 failing. Fixed March 10 — all 9 feeds now have verified-working URLs.
 
 **Next steps for Daily Brief:**
-- Fix or replace the 6 failing RSS feeds
-- Verify Vercel Cron fires tomorrow at 7am AKST
-- Add more feeds as needed (see `src/lib/sources/rss.ts` FEEDS array)
+- Run `knowledge_summaries` migration in Supabase SQL Editor
+- Verify Vercel Cron first fire (March 11 7am AKST)
 - Future: email delivery to `brief@buttercup.cfd` via Resend
 
 ---
 
-## Chapterhouse Feature Status — March 10, 2026
+## Chapterhouse Feature Status — March 11, 2026
 
 | Screen | Status | What works |
 |--------|--------|------------|
-| Chat (Home) | ✅ WORKING | Streaming, 5 model options (GPT-5.4/Pro/Mini, Claude Opus/Sonnet 4.6), persistent threads, auto-learn, founder memory + brief + research injected into context |
-| Daily Brief | ✅ WORKING | Real RSS + GitHub → Claude Sonnet 4.6. Generate button + cron. Convert to task + Send to review on every item. Ingestion debug strip. |
-| Research | ✅ WORKING | URL fetch + GPT-5.4 analysis, paste text, quick note, screenshot/GPT Vision. Manual fallback. Status: review → saved/rejected. |
+| Chat (Home) | ✅ WORKING | Streaming, 5 model options (GPT-5.4/Pro/Mini, Claude Opus/Sonnet 4.6), persistent threads, auto-learn, founder memory + knowledge summaries + brief + research injected into context |
+| Daily Brief | ✅ WORKING | Real RSS (9 feeds, all URLs verified) + GitHub (11 repos) → Claude Sonnet 4.6. Knowledge summaries injected. Generate + cron. Convert to task + Send to review on every item. |
+| Research | ✅ WORKING | URL fetch + GPT-5.4 analysis, paste text, quick note, screenshot/GPT Vision. Manual fallback. SSRF protection. Condense knowledge button → /api/summarize. |
 | Product Intelligence | ✅ WORKING | GPT-5.4 scores opportunities across Store/Curriculum/Content (A+ to C). Category filter. |
 | Content Studio | ✅ WORKING | 3 modes via Claude Sonnet 4.6: Newsletter/Campaign, Curriculum Guide, Product Description. Copy to clipboard. |
 | Review Queue | ✅ WORKING | Dual-feed: research items + opportunities. Approve/reject. Convert opportunity → task. |
 | Tasks | ✅ WORKING | Full CRUD. Status machine: open → in-progress → blocked → done → canceled. Source linking (from brief/opportunity/manual). |
-| Documents | ✅ WORKING | Server-rendered. Reads all .md from repo root. Search/filter. Priority ordering. |
+| Documents | ✅ WORKING | Server-rendered. Reads all .md from repo root. Search/filter from top nav. |
 | Settings | ✅ WORKING | Env status checker (present/missing). Founder Memory CRUD. Category picker. |
+| Help | ✅ WORKING | /help page serving chapterhouse-help-guide.md. Linked from sidebar. |
 | Login | ✅ WORKING | Supabase email/password auth. ALLOWED_EMAILS enforcement in middleware. |
 
 ### Known Issues
 | Issue | Severity | Detail |
 |-------|----------|--------|
 | `chat_threads` migration not run in production Supabase | **P0** | Chat works (best-effort fallback) but threads don’t persist. Run `supabase/migrations/20260309_006_create_chat_threads.sql` in Supabase SQL Editor. |
-| 6/9 RSS feeds fail | **P2** | Feeds blocked by server-side fetch. Not a code bug. Swap URLs or add Jina/Firecrawl fallback. |
-| No SSRF protection | **P3** | Research URL fetch doesn't block internal IPs. |
+| `knowledge_summaries` migration not run in production Supabase | **P0** | Stage 3 summarization deployed but table doesn't exist yet. Run `supabase/migrations/20260310_007_create_knowledge_summaries.sql` in SQL Editor. |
 | Migration schema conflicts | **P3** | `research_items` and `tasks` tables have competing CREATE TABLE IF NOT EXISTS across migration files. Production schema works but migration files are misleading. |
 
 ### AI Model Map
@@ -382,6 +390,7 @@ Use these when generating copy, landing pages, ad campaigns, email sequences, or
 | `founder_notes` | Settings/Founder Memory, Chat context, Extract-learnings |
 | `tasks` | Tasks page, Review Queue, Brief item cards |
 | `chat_threads` | Chat interface (persistent threads) |
+| `knowledge_summaries` | Stage 3 summarization — compressed research by tag, injected into brief + chat |
 | `documents` | Schema exists — not used (Documents reads filesystem) |
 | `sources` | Schema exists — not used yet (RSS items go direct to Claude) |
 | `settings` | Schema exists — not used |
@@ -389,4 +398,4 @@ Use these when generating copy, landing pages, ad campaigns, email sequences, or
 ---
 
 ## Last Updated
-March 10, 2026 — Full audit complete. All 9 screens WORKING. Auth gate live (middleware + email allowlist). Daily Brief pipeline tested in production (3/9 RSS OK, GitHub 11/11). Convert to task + Send to review wired on brief items. Vercel env vars set. Outstanding: set ALLOWED_EMAILS in Vercel, fix RSS feeds, secure /api/debug.
+March 11, 2026 — Deep audit complete. All 9 screens WORKING + /help page. Auth gate live. RSS feeds all fixed (5 swapped for verified working URLs). SSRF protection added to research fetch. Stage 3 summarization pipeline deployed (POST /api/summarize + knowledge_summaries). Outstanding: run 2 pending Supabase migrations (chat_threads + knowledge_summaries). Verify cron first fire today.
