@@ -135,7 +135,7 @@ function ResearchCard({
           </div>
           <div className="flex items-start justify-between gap-2">
             <button
-              className="text-left font-semibold leading-snug hover:text-accent transition cursor-pointer flex-1"
+              className="text-left font-semibold leading-snug text-foreground hover:text-foreground/80 transition cursor-pointer flex-1"
               onClick={() => setExpanded(!expanded)}
             >
               {item.title || sourceLabel}

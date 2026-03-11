@@ -612,7 +612,7 @@ export default function ResearchPage() {
                       </a>
                     ) : (
                       <button
-                        className="text-left font-medium leading-snug hover:text-accent transition cursor-pointer w-full"
+                        className="text-left font-medium leading-snug text-foreground hover:text-foreground/80 transition cursor-pointer w-full"
                         onClick={() => setExpandedId(isExpanded ? null : item.id)}
                       >
                         {item.title || item.url}
