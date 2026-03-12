@@ -56,17 +56,20 @@ export async function POST() {
     try {
       const message = await anthropic.messages.create({
         model: "claude-sonnet-4-6",
-        max_tokens: 300,
+        max_tokens: 600,
         messages: [
           {
             role: "user",
             content:
-              `You are compressing research notes for Scott Somers, who builds homeschool and edtech products ` +
-              `(Next Chapter Homeschool Outpost, SomerSchool, BibleSaaS). ` +
-              `Summarize these ${groupItems.length} research items tagged "${tag}" into 2-3 tight sentences. ` +
-              `What's the pattern? What's the business signal? What should Scott remember or act on?\n\n` +
-              `${itemText}\n\n` +
-              `Respond with ONLY the summary sentences. No intro, no labels, no metadata.`,
+              `You are distilling research notes for Scott Somers into a permanent knowledge base. ` +
+              `Scott builds homeschool and edtech products: Next Chapter Homeschool Outpost (Shopify store), SomerSchool (AI-generated K-12 courses), and BibleSaaS (AI Bible study app). ` +
+              `His wife Anna is a USA Today bestselling author and podcaster. ` +
+              `\n\nFrom these ${groupItems.length} research items tagged "${tag}", extract the KEY FACTS that Scott and Anna should remember. ` +
+              `Format as 3-6 bullet points. Each bullet must be specific and actionable — include names, numbers, product details, or implications where present. ` +
+              `Do NOT write vague summaries. Write concrete facts.` +
+              `\n\nFormat:\n- **[Short label]**: [specific fact or detail and why it matters]` +
+              `\n\nResearch items:\n\n${itemText}\n\n` +
+              `Respond with ONLY the bullet points. No intro, no section headers, no metadata.`,
           },
         ],
       });

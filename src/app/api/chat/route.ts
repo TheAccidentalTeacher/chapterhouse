@@ -139,10 +139,10 @@ async function buildLiveContext(userMessage: string = ""): Promise<string> {
 
     if (summaries && summaries.length > 0) {
       const summaryText = summaries
-        .map((s) => `**${s.tag}** (${s.item_count} items): ${s.summary}`)
-        .join("\n");
+        .map((s) => `### ${s.tag} (${s.item_count} items)\n${s.summary}`)
+        .join("\n\n");
       blocks.push(
-        `## Live Context: Accumulated Knowledge Base\n\nResearch condensed by category — these represent Scott's ongoing tracking and competitive intelligence:\n\n${summaryText}`
+        `## Live Context: Accumulated Knowledge Base\n\nResearch Scott and Anna have saved and distilled — treat these as established facts about their market, tools, and environment:\n\n${summaryText}`
       );
     }
   } catch {
