@@ -1,8 +1,30 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { X, ChevronUp, ChevronDown, Trash2, RefreshCw, Bug } from "lucide-react";
+import { X, ChevronUp, ChevronDown, Trash2, RefreshCw, Bug, Download, MessageSquare } from "lucide-react";
 import { getEntries, clearLog, subscribe, type LogEntry, type LogLevel } from "@/lib/debug-log";
+
+function exportLog(entries: LogEntry[]) {
+  const text = entries.map(e =>
+    `[${new Date(e.ts).toISOString()}] [${e.level.toUpperCase()}] ${e.label}${e.detail !== undefined ? "\n" + JSON.stringify(e.detail, null, 2) : ""}`
+  ).join("\n\n");
+  const blob = new Blob([text], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `chapterhouse-debug-${new Date().toISOString().slice(0,19).replace(/:/g,"-")}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function sendToChat(entries: LogEntry[]) {
+  const recent = entries.slice(-50);
+  const formatted = recent.map(e =>
+    `[${e.level.toUpperCase()}] ${e.label}${e.detail !== undefined ? " → " + JSON.stringify(e.detail) : ""}`
+  ).join("\n");
+  const text = `Here is my Chapterhouse debug log (last ${recent.length} events). Can you help me understand what happened or diagnose any issues?\n\n\`\`\`\n${formatted}\n\`\`\``;
+  window.dispatchEvent(new CustomEvent("chapterhouse:prefill", { detail: text }));
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -214,12 +236,28 @@ export function DebugPanel() {
                       {f}
                     </button>
                   ))}
-                  <button
-                    onClick={() => { clearLog(); setExpandedId(null); }}
-                    className="ml-auto flex items-center gap-1 rounded-full border border-border/40 px-2 py-0.5 text-[11px] text-muted hover:text-red-400 transition"
-                  >
-                    <Trash2 className="h-2.5 w-2.5" /> Clear
-                  </button>
+                  <div className="ml-auto flex items-center gap-1">
+                    <button
+                      onClick={() => exportLog(entries)}
+                      title="Download log as text file"
+                      className="flex items-center gap-1 rounded-full border border-border/40 px-2 py-0.5 text-[11px] text-muted hover:text-foreground transition"
+                    >
+                      <Download className="h-2.5 w-2.5" /> Export
+                    </button>
+                    <button
+                      onClick={() => { sendToChat(entries); setOpen(false); }}
+                      title="Send log to chat for AI analysis"
+                      className="flex items-center gap-1 rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 text-[11px] text-accent hover:bg-accent/20 transition"
+                    >
+                      <MessageSquare className="h-2.5 w-2.5" /> Ask AI
+                    </button>
+                    <button
+                      onClick={() => { clearLog(); setExpandedId(null); }}
+                      className="flex items-center gap-1 rounded-full border border-border/40 px-2 py-0.5 text-[11px] text-muted hover:text-red-400 transition"
+                    >
+                      <Trash2 className="h-2.5 w-2.5" /> Clear
+                    </button>
+                  </div>
                 </div>
 
                 {filtered.length === 0 && (

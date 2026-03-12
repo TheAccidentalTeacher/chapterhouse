@@ -115,6 +115,17 @@ export function ChatInterface() {
     fetchThreads();
   }, [fetchThreads]);
 
+  // Listen for debug panel "Ask AI" — pre-fills the input and focuses textarea
+  useEffect(() => {
+    function handlePrefill(e: Event) {
+      const text = (e as CustomEvent<string>).detail;
+      setInput(text);
+      setTimeout(() => textareaRef.current?.focus(), 50);
+    }
+    window.addEventListener("chapterhouse:prefill", handlePrefill);
+    return () => window.removeEventListener("chapterhouse:prefill", handlePrefill);
+  }, []);
+
   // Migrate from localStorage on first load (one-time)
   useEffect(() => {
     if (loadingThreads) return;
