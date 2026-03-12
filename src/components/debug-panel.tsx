@@ -146,7 +146,7 @@ export function DebugPanel() {
       <button
         onClick={() => setOpen(true)}
         title="Open debug panel"
-        className="fixed bottom-4 right-4 z-50 flex items-center gap-1.5 rounded-full border border-border/60 bg-background/90 px-3 py-2 text-xs font-medium text-muted shadow-xl backdrop-blur hover:border-accent/40 hover:text-accent transition"
+        className="fixed bottom-24 right-4 z-50 flex items-center gap-1.5 rounded-full border border-accent/50 bg-accent/20 px-3 py-2 text-xs font-semibold text-accent shadow-xl backdrop-blur hover:bg-accent/30 transition"
       >
         <Bug className="h-3.5 w-3.5" />
         Debug
@@ -160,7 +160,7 @@ export function DebugPanel() {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col rounded-2xl border border-border/60 bg-background/95 shadow-2xl backdrop-blur"
+    <div className="fixed bottom-24 right-4 z-50 flex flex-col rounded-2xl border border-border/60 bg-background/95 shadow-2xl backdrop-blur"
       style={{ width: "480px", maxHeight: minimized ? "auto" : "70vh" }}>
 
       {/* Header */}
