@@ -84,7 +84,7 @@ function JsonTree({ data, depth = 0 }: { data: unknown; depth?: number }) {
 // ── Brain Context Tab ──────────────────────────────────────────────────────────
 
 function BrainTab() {
-  const [context, setContext] = useState<unknown>(null);
+  const [context, setContext] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
