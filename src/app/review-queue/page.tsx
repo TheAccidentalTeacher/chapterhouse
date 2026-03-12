@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { CheckCircle, XCircle, ArrowRight, Loader2, ClipboardList, FlaskConical, ChevronDown, ExternalLink } from "lucide-react";
 import { PageFrame } from "@/components/page-frame";
+import { logEvent, loggedFetch } from "@/lib/debug-log";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -91,13 +92,15 @@ function ResearchCard({
   const [expanded, setExpanded] = useState(false);
 
   async function updateStatus(status: string) {
+    logEvent("click", `Research item → ${status}: "${item.title}"`);
     setSaving(true);
     try {
-      await fetch(`/api/research?id=${item.id}`, {
+      await loggedFetch(`/api/research?id=${item.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
-      });
+      }, `Research ${status}`);
+      logEvent("success", `Research item status set to ${status}: "${item.title}"`);
       onDismiss(item.id);
     } finally {
       setSaving(false);
@@ -209,13 +212,15 @@ function OpportunityCard({
   const [creatingTask, setCreatingTask] = useState(false);
 
   async function updateOppStatus(status: string) {
+    logEvent("click", `Opportunity → ${status}: "${opp.title}"`);
     setSaving(true);
     try {
-      await fetch(`/api/opportunities/${opp.id}`, {
+      await loggedFetch(`/api/opportunities/${opp.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
-      });
+      }, `Opportunity ${status}`);
+      logEvent("success", `Opportunity status set to ${status}: "${opp.title}"`);
       onDismiss(opp.id);
     } finally {
       setSaving(false);
@@ -223,9 +228,10 @@ function OpportunityCard({
   }
 
   async function convertToTask() {
+    logEvent("click", `Convert to task: "${opp.title}"`);
     setCreatingTask(true);
     try {
-      await fetch("/api/tasks", {
+      const taskRes = await loggedFetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -235,12 +241,14 @@ function OpportunityCard({
           source_id: opp.id,
           source_title: opp.title,
         }),
-      });
-      await fetch(`/api/opportunities/${opp.id}`, {
+      }, "Create task from opportunity");
+      const taskData = await taskRes.json();
+      logEvent("brain", `Task created from opportunity: "${opp.title}"`, taskData);
+      await loggedFetch(`/api/opportunities/${opp.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "in-progress" }),
-      });
+      }, "Mark opportunity in-progress");
       onDismiss(opp.id);
     } finally {
       setCreatingTask(false);
@@ -310,21 +318,22 @@ export default function ReviewQueuePage() {
       setLoading(true);
       setError(null);
       try {
+        logEvent("info", "Review queue page loaded — fetching research & opportunities");
         const [rRes, oRes] = await Promise.all([
-          fetch("/api/research"),
-          fetch("/api/opportunities"),
+          loggedFetch("/api/research", {}, "Load review-pending research"),
+          loggedFetch("/api/opportunities", {}, "Load open opportunities"),
         ]);
         const rData = await rRes.json();
         const oData = await oRes.json();
 
-        setResearchItems(
-          (rData.items ?? []).filter((i: ResearchItem) => i.status === "review")
-        );
-        setOpportunities(
-          (oData.opportunities ?? []).filter((o: Opportunity) => o.status === "open")
-        );
+        const pendingResearch = (rData.items ?? []).filter((i: ResearchItem) => i.status === "review");
+        const openOpps = (oData.opportunities ?? []).filter((o: Opportunity) => o.status === "open");
+        setResearchItems(pendingResearch);
+        setOpportunities(openOpps);
+        logEvent("success", `Queue loaded: ${pendingResearch.length} research pending, ${openOpps.length} open opportunities`);
       } catch (e) {
         setError(String(e));
+        logEvent("error", "Failed to load review queue", String(e));
       } finally {
         setLoading(false);
       }

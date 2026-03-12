@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { BookOpen, CheckCircle2, ClipboardList, Loader2 } from "lucide-react";
+import { logEvent, loggedFetch } from "@/lib/debug-log";
 
 type BriefItem = {
   headline: string;
@@ -24,10 +25,11 @@ export function BriefItemCard({
   const [taskError, setTaskError] = useState<string | null>(null);
 
   async function convertToTask() {
+    logEvent("click", `Convert brief item to task: "${item.headline}"`);
     setTaskState("loading");
     setTaskError(null);
     try {
-      const res = await fetch("/api/tasks", {
+      const res = await loggedFetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -36,22 +38,25 @@ export function BriefItemCard({
           source_type: "brief",
           source_title: sectionTitle,
         }),
-      });
+      }, "Create task from brief");
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || `HTTP ${res.status}`);
       }
+      logEvent("success", `Brief item converted to task: "${item.headline}"`);
       setTaskState("done");
     } catch (e) {
       setTaskState("error");
       setTaskError(e instanceof Error ? e.message : String(e));
+      logEvent("error", `Create task failed: "${item.headline}"`, String(e));
     }
   }
 
   async function sendToReview() {
+    logEvent("click", `Send to review queue: "${item.headline}"`);
     setReviewState("loading");
     try {
-      const res = await fetch("/api/research", {
+      const res = await loggedFetch("/api/research", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -59,11 +64,13 @@ export function BriefItemCard({
           title: item.headline,
           summary: item.whyItMatters,
         }),
-      });
+      }, "Send brief item to review");
       if (!res.ok) throw new Error((await res.json()).error);
+      logEvent("success", `Brief item sent to review: "${item.headline}"`);
       setReviewState("done");
-    } catch {
+    } catch (e) {
       setReviewState("error");
+      logEvent("error", `Send to review failed: "${item.headline}"`, String(e));
     }
   }
 

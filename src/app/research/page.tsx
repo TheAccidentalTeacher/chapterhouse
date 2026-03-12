@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ArrowUp, ExternalLink, Loader2, Tag, PenLine, X, Link2, ClipboardPaste, StickyNote, Camera, ImageIcon, Trash2, RotateCcw, Sparkles, ChevronDown } from "lucide-react";
+import { logEvent, loggedFetch } from "@/lib/debug-log";
 
 type InputTab = "url" | "paste" | "note" | "image";
 
@@ -61,10 +62,14 @@ export default function ResearchPage() {
   const [imageDragOver, setImageDragOver] = useState(false);
 
   useEffect(() => {
-    fetch("/api/research")
+    logEvent("info", "Research page loaded — fetching items");
+    loggedFetch("/api/research", {}, "Load research items")
       .then((r) => r.json())
-      .then((data) => setItems(data.items ?? []))
-      .catch(() => setItems([]))
+      .then((data) => {
+        setItems(data.items ?? []);
+        logEvent("success", `Loaded ${(data.items ?? []).length} research items`);
+      })
+      .catch((e) => { setItems([]); logEvent("error", "Failed to load research items", String(e)); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -72,20 +77,20 @@ export default function ResearchPage() {
     e.preventDefault();
     const trimmed = url.trim();
     if (!trimmed || ingesting) return;
-
+    logEvent("click", `Ingest URL: ${trimmed}`);
     setIngesting(true);
     setError(null);
     setShowManual(false);
     try {
-      const res = await fetch("/api/research", {
+      const res = await loggedFetch("/api/research", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: trimmed }),
-      });
+      }, "Ingest URL");
       const data = await res.json();
       if (!res.ok) {
         if (data.fetchFailed) {
-          // Site blocked the fetch — offer manual entry
+          logEvent("info", `Site blocked auto-fetch — manual entry triggered for ${trimmed}`);
           setManualUrl(trimmed);
           setManualTitle("");
           setManualSummary("");
@@ -98,6 +103,7 @@ export default function ResearchPage() {
         return;
       }
       setItems((prev) => [data.item, ...prev]);
+      logEvent("brain", `Item saved to research brain: "${data.item?.title}"`, data.item);
       setUrl("");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -108,23 +114,18 @@ export default function ResearchPage() {
 
   async function handleManualSave(e: React.FormEvent) {
     e.preventDefault();
+    logEvent("click", `Manual save: ${manualTitle || manualUrl}`);
     setSavingManual(true);
     try {
-      const res = await fetch("/api/research", {
+      const res = await loggedFetch("/api/research", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          url: manualUrl,
-          manual: true,
-          title: manualTitle,
-          summary: manualSummary,
-          verdict: manualVerdict,
-          tags: ["competitor"],
-        }),
-      });
+        body: JSON.stringify({ url: manualUrl, manual: true, title: manualTitle, summary: manualSummary, verdict: manualVerdict, tags: ["competitor"] }),
+      }, "Manual save research");
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || res.statusText);
       setItems((prev) => [data.item, ...prev]);
+      logEvent("brain", `Manual item saved to brain: "${data.item?.title}"`, data.item);
       setShowManual(false);
       setUrl("");
     } catch (e) {
@@ -137,17 +138,19 @@ export default function ResearchPage() {
   async function handlePaste(e: React.FormEvent) {
     e.preventDefault();
     if (!pasteText.trim() || savingPaste) return;
+    logEvent("click", `Paste text: "${pasteLabel || "Pasted content"}" (${pasteText.length} chars)`);
     setSavingPaste(true);
     setPasteError(null);
     try {
-      const res = await fetch("/api/research", {
+      const res = await loggedFetch("/api/research", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pasteText, sourceLabel: pasteLabel || "Pasted content" }),
-      });
+      }, "Ingest paste text");
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || res.statusText);
       setItems((prev) => [data.item, ...prev]);
+      logEvent("brain", `Paste item saved to brain: "${data.item?.title}"`, data.item);
       setPasteText("");
       setPasteLabel("");
     } catch (e) {
@@ -159,13 +162,15 @@ export default function ResearchPage() {
 
   async function handleDelete(id: string) {
     if (deletingId) return;
+    logEvent("click", `Delete research item: ${id}`);
     setDeletingId(id);
     try {
-      const res = await fetch(`/api/research?id=${id}`, { method: "DELETE" });
+      const res = await loggedFetch(`/api/research?id=${id}`, { method: "DELETE" }, "Delete research item");
       if (!res.ok) throw new Error("Delete failed");
       setItems((prev) => prev.filter((i) => i.id !== id));
-    } catch {
-      // silent
+      logEvent("success", `Deleted research item ${id}`);
+    } catch (e) {
+      logEvent("error", `Delete failed for ${id}`, String(e));
     } finally {
       setDeletingId(null);
     }
@@ -173,19 +178,23 @@ export default function ResearchPage() {
 
   async function handleReanalyze(item: ResearchItem) {
     if (reanalyzingId) return;
+    logEvent("click", `Re-analyze: "${item.title || item.url}"`);
     setReanalyzingId(item.id);
     try {
-      await fetch(`/api/research?id=${item.id}`, { method: "DELETE" });
+      await loggedFetch(`/api/research?id=${item.id}`, { method: "DELETE" }, "Delete before re-analyze");
       setItems((prev) => prev.filter((i) => i.id !== item.id));
-      const res = await fetch("/api/research", {
+      const res = await loggedFetch("/api/research", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: item.url }),
-      });
+      }, "Re-analyze URL");
       const data = await res.json();
-      if (res.ok) setItems((prev) => [data.item, ...prev]);
-    } catch {
-      // silent
+      if (res.ok) {
+        setItems((prev) => [data.item, ...prev]);
+        logEvent("brain", `Re-analyzed item saved: "${data.item?.title}"`, data.item);
+      }
+    } catch (e) {
+      logEvent("error", "Re-analyze failed", String(e));
     } finally {
       setReanalyzingId(null);
     }
@@ -206,10 +215,10 @@ export default function ResearchPage() {
   async function handleImage(e: React.FormEvent) {
     e.preventDefault();
     if (!imageFile || savingImage) return;
+    logEvent("click", `Analyze image: "${imageLabel || "Screenshot"}" (${imageFile.name})`);
     setSavingImage(true);
     setImageError(null);
     try {
-      // Convert to base64 (strip the data:image/...;base64, prefix)
       const base64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (ev) => {
@@ -219,7 +228,7 @@ export default function ResearchPage() {
         reader.onerror = reject;
         reader.readAsDataURL(imageFile);
       });
-      const res = await fetch("/api/research", {
+      const res = await loggedFetch("/api/research", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -227,15 +236,17 @@ export default function ResearchPage() {
           imageType: imageFile.type,
           sourceLabel: imageLabel || "Screenshot",
         }),
-      });
+      }, "Analyze image");
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || res.statusText);
       setItems((prev) => [data.item, ...prev]);
+      logEvent("brain", `Image item saved to brain: "${data.item?.title}"`, data.item);
       setImageFile(null);
       setImagePreview(null);
       setImageLabel("");
     } catch (e) {
       setImageError(e instanceof Error ? e.message : String(e));
+      logEvent("error", "Image analyze failed", String(e));
     } finally {
       setSavingImage(false);
     }
@@ -243,15 +254,19 @@ export default function ResearchPage() {
 
   async function handleSummarize() {
     if (summarizing) return;
+    logEvent("click", `Condense knowledge — ${items.length} items in corpus`);
     setSummarizing(true);
     setSummarizeResult(null);
     try {
-      const res = await fetch("/api/summarize", { method: "POST" });
+      const res = await loggedFetch("/api/summarize", { method: "POST" }, "Condense knowledge");
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || res.statusText);
       setSummarizeResult(data.message);
+      logEvent("brain", `Knowledge condensed: ${data.message}`, { tags: data.tags, summaries: data.summaries });
     } catch (e) {
-      setSummarizeResult(`Failed: ${e instanceof Error ? e.message : String(e)}`);
+      const msg = `Failed: ${e instanceof Error ? e.message : String(e)}`;
+      setSummarizeResult(msg);
+      logEvent("error", "Condense knowledge failed", String(e));
     } finally {
       setSummarizing(false);
     }
@@ -260,21 +275,19 @@ export default function ResearchPage() {
   async function handleNote(e: React.FormEvent) {
     e.preventDefault();
     if (!noteText.trim() || savingNote) return;
+    logEvent("click", `Save note: "${noteTitle || "Quick note"}"`);
     setSavingNote(true);
     setNoteError(null);
     try {
-      const res = await fetch("/api/research", {
+      const res = await loggedFetch("/api/research", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pasteText: noteText,
-          sourceLabel: noteTitle || "Quick note",
-          title: noteTitle || undefined,
-        }),
-      });
+        body: JSON.stringify({ pasteText: noteText, sourceLabel: noteTitle || "Quick note", title: noteTitle || undefined }),
+      }, "Save quick note");
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || res.statusText);
       setItems((prev) => [data.item, ...prev]);
+      logEvent("brain", `Note saved to brain: "${data.item?.title}"`, data.item);
       setNoteTitle("");
       setNoteText("");
     } catch (e) {

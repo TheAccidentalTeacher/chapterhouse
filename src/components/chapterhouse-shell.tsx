@@ -6,6 +6,7 @@ import { Bell, HelpCircle, LogOut, Search, Settings2, Sparkles } from "lucide-re
 import { useEffect, useRef, useState } from "react";
 import { navigationItems } from "@/lib/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
+import { DebugPanel } from "@/components/debug-panel";
 
 type ChapterhouseShellProps = {
   children: React.ReactNode;
@@ -203,6 +204,7 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
           </div>
         </aside>
       </div>
+      <DebugPanel />
     </div>
   );
 }
