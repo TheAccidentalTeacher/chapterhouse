@@ -1,10 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowUp, ExternalLink, Loader2, Tag, PenLine, X, Link2, ClipboardPaste, StickyNote, Camera, ImageIcon, Trash2, RotateCcw, Sparkles, ChevronDown } from "lucide-react";
+import { ArrowUp, ExternalLink, Loader2, Tag, PenLine, X, Link2, ClipboardPaste, StickyNote, Camera, ImageIcon, Trash2, RotateCcw, Sparkles, ChevronDown, BookOpen } from "lucide-react";
 import { logEvent, loggedFetch } from "@/lib/debug-log";
 
 type InputTab = "url" | "paste" | "note" | "image";
+
+type KnowledgeSummary = {
+  tag: string;
+  summary: string;
+  item_count: number;
+  updated_at: string;
+};
 
 type ResearchItem = {
   id: string;
@@ -27,6 +34,8 @@ export default function ResearchPage() {
   const [summarizeResult, setSummarizeResult] = useState<string | null>(null);
   const [filterTag, setFilterTag] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [summaries, setSummaries] = useState<KnowledgeSummary[]>([]);
+  const [kbExpanded, setKbExpanded] = useState(false);
 
   // URL tab
   const [url, setUrl] = useState("");
@@ -71,6 +80,11 @@ export default function ResearchPage() {
       })
       .catch((e) => { setItems([]); logEvent("error", "Failed to load research items", String(e)); })
       .finally(() => setLoading(false));
+    // Fetch existing knowledge summaries in parallel
+    fetch("/api/summarize")
+      .then((r) => r.json())
+      .then((data) => setSummaries(data.summaries ?? []))
+      .catch(() => { /* table may not exist yet */ });
   }, []);
 
   async function handleIngest(e: React.FormEvent) {
@@ -263,6 +277,11 @@ export default function ResearchPage() {
       if (!res.ok) throw new Error(data.error || res.statusText);
       setSummarizeResult(data.message);
       logEvent("brain", `Knowledge condensed: ${data.message}`, { tags: data.tags, summaries: data.summaries });
+      // Refresh the knowledge base panel
+      fetch("/api/summarize")
+        .then((r) => r.json())
+        .then((d) => { setSummaries(d.summaries ?? []); setKbExpanded(true); })
+        .catch(() => {});
     } catch (e) {
       const msg = `Failed: ${e instanceof Error ? e.message : String(e)}`;
       setSummarizeResult(msg);
@@ -602,6 +621,39 @@ export default function ResearchPage() {
               </button>
             </div>
           </div>
+
+            {/* Knowledge Base panel */}
+            {summaries.length > 0 && (
+              <div className="glass-panel rounded-3xl overflow-hidden">
+                <button
+                  onClick={() => setKbExpanded((v) => !v)}
+                  className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left transition hover:bg-muted-surface/60"
+                >
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4 text-accent" />
+                    <span className="text-sm font-medium">Knowledge Base</span>
+                    <span className="rounded-full bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">
+                      {summaries.length} categor{summaries.length === 1 ? "y" : "ies"} · {summaries.reduce((a, s) => a + s.item_count, 0)} items
+                    </span>
+                  </div>
+                  <ChevronDown className={`h-4 w-4 text-muted transition-transform ${kbExpanded ? "rotate-180" : ""}`} />
+                </button>
+                {kbExpanded && (
+                  <div className="border-t border-border/40 px-5 pb-5 pt-4 space-y-4">
+                    <p className="text-xs text-muted">Condensed by Claude from your saved research. Injected into every chat and daily brief.</p>
+                    {summaries.map((s) => (
+                      <div key={s.tag} className="rounded-2xl border border-border/50 bg-muted-surface/60 p-4 space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-semibold text-accent">{s.tag}</span>
+                          <span className="text-xs text-muted">{s.item_count} item{s.item_count === 1 ? "" : "s"} · updated {new Date(s.updated_at).toLocaleDateString()}</span>
+                        </div>
+                        <div className="text-sm text-foreground/90 leading-6 whitespace-pre-wrap">{s.summary}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             {(filterTag ? items.filter((i) => i.tags?.includes(filterTag)) : items).map((item) => {
               const isExpanded = expandedId === item.id;
               const isHttp = item.url.startsWith("http");

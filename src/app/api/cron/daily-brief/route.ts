@@ -43,6 +43,19 @@ export async function GET(request: Request) {
     const result = await res.json();
     console.log("[cron/daily-brief] Brief generated successfully:", result.brief?.id);
 
+    // Stage 3: after brief generates, run the summarization pass to keep
+    // the knowledge base current. Fire-and-forget — don't block this response.
+    fetch(`${origin}/api/summarize`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(cronSecret ? { authorization: `Bearer ${cronSecret}` } : {}),
+      },
+    })
+      .then((r) => r.json())
+      .then((s) => console.log("[cron/daily-brief] Summarization pass:", s.message))
+      .catch((e) => console.warn("[cron/daily-brief] Summarization pass failed (non-fatal):", e));
+
     return Response.json({
       ok: true,
       briefId: result.brief?.id ?? null,
