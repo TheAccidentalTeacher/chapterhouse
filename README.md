@@ -10,7 +10,7 @@
 
 **Next Chapter Homeschool Outpost** — that's the name. Won via Facebook ad click tests. Anna brought it back.
 
-This is the working session building three interconnected brands: a Shopify store (Next Chapter Homeschool Outpost), an AI-powered curriculum brand (SomerSchool, selling on Epic Learning's LearnWorlds platform), and a local teaching operation (Mt. Drum Homeschool Outpost) — with a SaaS platform as the long game. Built through a series of conversations between Scott Somers, Anna Somers, and the Brand Whisperer (AI strategic partner).
+This is the working session building three interconnected brands: a Shopify store (Next Chapter Homeschool Outpost), a standalone AI-powered curriculum SaaS (**SomersSchool**, off Epic Learning — Scott owns platform and revenue), and a local teaching operation (Mt. Drum Homeschool Outpost) — with a SaaS platform as the long game. Built through a series of conversations between Scott Somers, Anna Somers, and the Brand Whisperer (AI strategic partner).
 
 Everything in this folder is a working document. Nothing is final. Everything is real.
 
@@ -20,7 +20,7 @@ Everything in this folder is a working document. Nothing is final. Everything is
 
 ## The Business in One Paragraph
 
-Three brands, one mission. **Next Chapter Homeschool Outpost** is the Shopify storefront — curated books, curriculum, games, toys, and digital products (PDF discussion guides, course-like materials) — powered by Ingram Spark for dropship fulfillment. Trisha Goyer sells select products through the store under a revenue share. **SomerSchool** is Scott's curriculum classroom persona — full K-12 courses sold on epiclearning.learnworlds.com, built by an AI-powered production pipeline that generates a complete 24-lesson course in ~4 hours. Two courses are already live with 1,500+ platform learners. **Mt. Drum Homeschool Outpost** is the local play — in-person homeschool classes in Glennallen starting 2027. Anna curates the book catalog with editorial instinct and a literature-first philosophy. The store serves every kind of homeschooler — faith-based, secular, classical, eclectic — with clean filters and no judgment. Long-term, all of this feeds into a personalized curriculum SaaS platform. Right now, it pays the bills three different ways.
+Three brands, one mission. **Next Chapter Homeschool Outpost** is the Shopify storefront — curated books, curriculum, games, toys, and digital products (PDF discussion guides, course-like materials) — powered by Ingram Spark for dropship fulfillment. Anna curates every product personally. **SomersSchool** is Scott's standalone curriculum SaaS — full K-12 courses on a platform Scott owns entirely, built by an AI-powered production pipeline that generates a complete 24-lesson course in ~4 hours. All secular. COPPA-compliant. **Mt. Drum Homeschool Outpost** is the local play — in-person homeschool classes in Glennallen starting 2027. Anna curates the book catalog with editorial instinct and a literature-first philosophy. The store serves every kind of homeschooler — faith-based, secular, classical, eclectic — with clean filters and no judgment. Long-term, all of this feeds into a personalized curriculum SaaS platform. Right now, it pays the bills three different ways.
 
 ---
 
@@ -28,8 +28,8 @@ Three brands, one mission. **Next Chapter Homeschool Outpost** is the Shopify st
 
 | Brand | What It Is | Platform | Timeline |
 |-------|-----------|----------|----------|
-| **Next Chapter Homeschool Outpost** | Shopify storefront — books, curriculum, games, digital products, discussion guides, Trisha Goyer's products | Shopify + Ingram Spark | NOW |
-| **SomerSchool** | Scott's curriculum classroom persona — full K-12 courses, AI-generated, faith opt-in | epiclearning.learnworlds.com | NOW (2 courses live) |
+| **Next Chapter Homeschool Outpost** | Shopify storefront — books, curriculum, games, digital products, discussion guides | Shopify + Ingram Spark | NOW |
+| **SomersSchool** | Scott's standalone curriculum SaaS — full K-12 courses, AI-generated, secular, COPPA-compliant | CoursePlatform (standalone SaaS) | Building — off Epic Learning, Scott owns platform + revenue |
 | **Mt. Drum Homeschool Outpost** | Local homeschool classes taught by Scott in Glennallen | In-person | 2027 |
 | **The Platform** | Personalized AI curriculum generator — the SaaS endgame | TBD | PLUTO PHASE |
 
@@ -57,33 +57,27 @@ The second track is no longer vague. It now has documented:
 
 It also now has a **live, deployed application** at [chapterhouse.vercel.app](https://chapterhouse.vercel.app).
 
-As of March 9, 2026, Chapterhouse is running in production with:
-- Chat interface backed by GPT-5.4 (OpenAI Responses API) and Claude Opus/Sonnet 4.6
+**As of March 13, 2026, Chapterhouse is fully live.** All core screens built and deployed at [chapterhouse.vercel.app](https://chapterhouse.vercel.app):
+- **Clerk auth live** — sign-in/sign-out, session management
+- Chat interface backed by GPT-5.4 (OpenAI Responses API) and Claude Sonnet 4.6
 - Conversation memory persisted across refreshes (localStorage)
-- **Auto-learn memory** — every message is analyzed in parallel with the AI response; extracted facts saved to `founder_notes` table; no `/remember` required
-- **Brain indicator** — pulsing "learning…" pill while extraction runs; "N learned" count after
-- **Founder memory injected into every chat** — `founder_notes` rows prepend every system prompt as ground truth
-- **Relevance injection (Stage 2)** — research items scored by keyword overlap with the user's message; top 10 by relevance (not recency) injected into context
-- Live context enrichment — every chat message carries the latest brief, ranked research, and open opportunities from Supabase
-- Daily Brief reading and writing live from Supabase (Generate with AI or write manually)
-- Research screen fully live: URL auto-fetch + AI summary; paste text; quick notes; screenshot/image (GPT Vision analysis); manual fallback when sites block fetch
-- Research analysis prompt has full Scott context: vibe-coder, Chapterhouse builder, SomerSchool curriculum pipeline, Anna's content operation
-- Delete (🗑) and re-analyze (↺) buttons on every research item
-- `vibe-coding` tag renders in accent color as a first-class signal
-- 4 competitors ingested: Rainbow Resource Center, Master Books, Sonlight, Memoria Press
+- **Auto-learn memory** — every message analyzed in parallel; extracted facts saved to `founder_notes`; no `/remember` required
+- **Brain indicator** — pulsing "learning…" pill while extraction runs
+- **Relevance injection (Stage 2)** — top 10 research items by keyword overlap injected into context
+- Live context enrichment — every chat carries latest brief, ranked research, and open opportunities from Supabase
+- Daily Brief: read + write + AI generate, all live from Supabase
+- **Auto-cron live** — daily brief generates automatically at 7am Alaska (Vercel cron)
+- Research screen fully live: URL auto-fetch + AI summary; paste text; quick notes; screenshot/image (GPT Vision analysis); delete + re-analyze
+- **Review Queue screen — live** (research item status, opportunity status, convert-to-task)
+- **Tasks screen — live** (task creation from brief items and opportunities)
+- Product Intelligence screen: AI opportunity scoring across all research + brief
 - Documents screen: all brand guide `.md` files readable inside the app
-- Product Intelligence screen: AI opportunity scoring — runs analysis across all research items and brief, scores each opportunity A+/B/C across Store/Curriculum/Content tracks
-- Markdown rendering in all assistant chat messages
+- **Comprehensive debug panel** — floating `🐛 Debug` button, Event Log + Brain Context tabs, Export + Ask AI
 - Model switcher between all 5 models
-- F12 debug tooling and `/api/debug` health endpoint
-- AI context self-awareness — system prompt explicitly defines what Chapterhouse can and cannot see so it answers context questions precisely
+- Markdown rendering in all assistant chat messages
 
-**Known gaps (intentional defers):**
-- Auth gate — no login yet; app is internal-only, URL not advertised
-- Review Queue screen — nav item exists, screen not built
-- Tasks screen — nav item exists, screen not built
-- Content Studio — nav item exists, screen not built
-- Scheduled brief generation — currently manual only
+**Remaining gaps:**
+- Content Studio — nav item exists, screen not yet built
 - Stage 3: Summarization pass — not yet built
 - Stage 4: pgvector embeddings — not yet built
 
@@ -231,7 +225,7 @@ Locks the first practical implementation decisions for Chapterhouse: app locatio
 
 | Platform | URL | Role |
 |---------|-----|------|
-| Epic Learning (SomerSchool courses) | https://epiclearning.learnworlds.com | LearnWorlds — hosts SomerSchool curriculum |
+| Epic Learning (historical) | https://epiclearning.learnworlds.com | LearnWorlds — SomersSchool moved off this platform March 2026; now standalone SaaS |
 
 ---
 

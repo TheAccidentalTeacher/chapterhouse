@@ -19,9 +19,9 @@
 - Host: "Praying Christian Women" podcast.
 - Her audience is a warm launch market for all products.
 
-**Trisha Goyer** — partner at Epic Learning (not employee, not spouse).
-- Hosts SomerSchool courses on epiclearning.learnworlds.com.
-- Revenue share: $100 Scott / $49 Trisha per course sale.
+**Trisha Goyer** — former partner at Epic Learning. Parting ways amicably March 2026.
+- SomersSchool is now a standalone SaaS platform — off Epic Learning permanently.
+- Relationship is positive; she is now a competitor, not an enemy. Revenue share model no longer applies.
 
 ---
 
@@ -30,7 +30,7 @@
 | Layer | Technology |
 |---|---|
 | Frontend | Next.js 16.1.6 App Router, TypeScript, Tailwind CSS v4 |
-| Auth | Supabase Auth (email/password, middleware allowlist) |
+| Auth | Clerk |
 | Database | Supabase (PostgreSQL) |
 | AI — primary | Claude Sonnet 4.6 / Claude Opus 4.6 (Anthropic `@anthropic-ai/sdk@^0.78.0`) |
 | AI — secondary | OpenAI GPT-5.4 / GPT-5.4 Pro / GPT-5 Mini (Responses API) |
@@ -112,7 +112,7 @@
 | Track | Brand | Platform | Status |
 |---|---|---|---|
 | 1 | Next Chapter Homeschool Outpost | Shopify + Ingram Spark | Building — launch before June 2026 |
-| 2 | SomerSchool | epiclearning.learnworlds.com | Live — 2 courses, 1,500+ platform learners |
+| 2 | SomersSchool | CoursePlatform (standalone SaaS) | Path B active — off Trisha Goyer / Epic Learning. Revenue target before August 2026. |
 | 3 | Mt. Drum Homeschool Outpost | In-person, Glennallen | 2027 planning |
 | Long game | The Platform | Personalized AI curriculum SaaS | "Pluto Phase" — all repos unified |
 
@@ -133,13 +133,15 @@ Use these when generating copy, landing pages, ad campaigns, email sequences, or
 | **Visual Identity** | Earthy, warm, organic. Olive greens, dusty roses, teals. No corporate navy/gray. No aggressive reds. Think curated lifestyle blog, not educational supplier. |
 | **Voice** | Empathetic, specific, convictional. We see her child. We have a point of view. We are the calm exhale, not a generic catalog. |
 
-### Track 2: SomerSchool (Epic Learning)
+### Track 2: SomersSchool (Standalone SaaS)
 | Element | Definition |
 |---|---|
-| **Business** | Online courses hosted on epiclearning.learnworlds.com. Revenue share with Trisha Goyer ($100 Scott / $49 Trisha per sale). |
-| **Persona** | Parents wanting structured, teacher-designed online learning for kids. Trisha's existing audience (warm market). Willing to pay $149/course. |
-| **USP** | Designed by a real teacher with classroom experience, not a content mill. Partnership with Trisha Goyer adds credibility and reach. Interactive, not just PDFs. |
-| **Challenges** | Platform dependency (LearnWorlds owns the infrastructure). Limited catalog (2 courses live). Trisha relationship is partnership, not employment — requires alignment. Separate brand from NCHO — can't cross-pollinate too aggressively. |
+| **Business** | Full homeschool SaaS — standalone course platform. Scott owns the platform, the audience, the revenue. Off Trisha Goyer / Epic Learning permanently. ALL SECULAR — Alaska Statute 14.03.320 compliance required. |
+| **Persona** | Homeschool parents (30–50), tech-comfortable, want structured teacher-designed courses. Anna's podcast audience + NCHO buyers = warm launch market. |
+| **USP** | Built by a real classroom teacher, not a publisher. Structured. Secular. Allotment-eligible. Visible progress as retention mechanism — badge + XP + parent notification at every lesson end. |
+| **Challenges** | Revenue BEFORE August 2026 — contract ends May 24. COPPA compliance required (parent account → child profile → child login). Trisha Goyer is now a competitor — keep relationship positive. |
+| **Visual Identity** | Red and white. Bold, clean, educational. Confirmed via Facebook ad test. NOT earthy/organic (that's NCHO). |
+| **Pricing** | $49/mo base (1 student), +$25 each, capped at $149/mo (5+ students). À la carte $149/course. 3-course bundle $379. 5-course bundle $559. |
 
 ### Track 3: BibleSaaS
 | Element | Definition |
