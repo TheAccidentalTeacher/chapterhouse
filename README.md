@@ -77,7 +77,7 @@ It also now has a **live, deployed application** at [chapterhouse.vercel.app](ht
 - Markdown rendering in all assistant chat messages
 
 **Remaining gaps:**
-- Content Studio — nav item exists, screen not yet built
+- **Content Studio — live** (Newsletter drafts, Curriculum Guide builder, Product Description generator — all AI-powered, brand-voice grounded)
 - Stage 3: Summarization pass — not yet built
 - Stage 4: pgvector embeddings — not yet built
 

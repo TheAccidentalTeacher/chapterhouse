@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Loader2, Copy, Check, Sparkles } from "lucide-react";
 import { PageFrame } from "@/components/page-frame";
+import { logEvent, loggedFetch } from "@/lib/debug-log";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -72,12 +73,18 @@ function NewsletterForm({ onResult }: { onResult: (t: string) => void }) {
     e.preventDefault();
     setLoading(true);
     onResult("");
-    const res = await fetch("/api/content-studio", {
+    logEvent("click", `Newsletter generate: ${format} — "${topic}"`);
+    const res = await loggedFetch("/api/content-studio", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ mode: "newsletter", topic, notes, format }),
     });
     const data = await res.json();
+    if (data.error) {
+      logEvent("error", `Newsletter generation failed: ${data.error}`);
+    } else {
+      logEvent("brain", `Newsletter draft generated (${format})`, { topic, charCount: data.text?.length });
+    }
     onResult(data.text ?? data.error ?? "No output.");
     setLoading(false);
   }
@@ -141,12 +148,18 @@ function CurriculumGuideForm({ onResult }: { onResult: (t: string) => void }) {
     e.preventDefault();
     setLoading(true);
     onResult("");
-    const res = await fetch("/api/content-studio", {
+    logEvent("click", `Curriculum guide generate: "${title}" by ${author} — ${guideType} (${gradeRange})`);
+    const res = await loggedFetch("/api/content-studio", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ mode: "curriculum-guide", title, author, gradeRange, guideType }),
     });
     const data = await res.json();
+    if (data.error) {
+      logEvent("error", `Curriculum guide failed: ${data.error}`);
+    } else {
+      logEvent("brain", `Curriculum guide generated: "${title}"`, { guideType, gradeRange, charCount: data.text?.length });
+    }
     onResult(data.text ?? data.error ?? "No output.");
     setLoading(false);
   }
@@ -242,12 +255,18 @@ function ProductDescriptionForm({ onResult }: { onResult: (t: string) => void })
     e.preventDefault();
     setLoading(true);
     onResult("");
-    const res = await fetch("/api/content-studio", {
+    logEvent("click", `Product description generate: "${productName}" (${productType}, ${gradeRange})`);
+    const res = await loggedFetch("/api/content-studio", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ mode: "product-description", productName, productType, gradeRange, notes }),
     });
     const data = await res.json();
+    if (data.error) {
+      logEvent("error", `Product description failed: ${data.error}`);
+    } else {
+      logEvent("brain", `Product description generated: "${productName}"`, { productType, gradeRange, charCount: data.text?.length });
+    }
     onResult(data.text ?? data.error ?? "No output.");
     setLoading(false);
   }
@@ -345,6 +364,10 @@ export default function ContentStudioPage() {
   const [activeTab, setActiveTab] = useState<Mode>("newsletter");
   const [result, setResult] = useState("");
   const [generatingLoading, setGeneratingLoading] = useState(false);
+
+  useEffect(() => {
+    logEvent("info", "Content Studio page loaded");
+  }, []);
 
   function handleResult(text: string) {
     setResult(text);
