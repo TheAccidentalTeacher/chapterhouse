@@ -114,7 +114,7 @@ export function ChatInterface() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const messagesRef = useRef<Message[]>(messages);
+  const messagesRef = useRef<DisplayMessage[]>(messages);
   messagesRef.current = messages;
 
   // Whether thread persistence is available (null = unknown, true = ok, false = unavailable)
