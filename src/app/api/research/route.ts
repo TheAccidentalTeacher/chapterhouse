@@ -1,7 +1,9 @@
 import OpenAI from "openai";
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+function getOpenAI() {
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+}
 
 // GET /api/research — list all research items
 export async function GET() {
@@ -93,7 +95,7 @@ Respond with ONLY valid JSON:
 
 Be direct. No filler. Do not undersell AI tool relevance.`;
 
-  const aiResponse = await openai.responses.create({
+  const aiResponse = await getOpenAI().responses.create({
     model: "gpt-5.4",
     instructions: "You output only valid JSON. No markdown fences.",
     input: prompt,
@@ -129,7 +131,7 @@ export async function POST(request: Request) {
       const mediaType = (imageType as string) || "image/jpeg";
       const label = sourceLabel?.trim() || "Screenshot";
 
-      const aiResponse = await openai.responses.create({
+      const aiResponse = await getOpenAI().responses.create({
         model: "gpt-5.4",
         instructions: "You output only valid JSON. No markdown fences.",
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
