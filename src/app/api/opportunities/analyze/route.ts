@@ -9,7 +9,7 @@ You analyze research signals (competitor pages, market data, news) and generate 
 
 The three scoring dimensions:
 - Store Score: How strong is this as a Shopify product or product category?
-- Curriculum Score: How strong is this as a SomerSchool course or curriculum framework?
+- Curriculum Score: How strong is this as a SomersSchool course or curriculum framework?
 - Content Score: How strong is this as a content angle (blog, social, email, video)?
 
 Use letter grades: A+, A, A-, B+, B, B-, C

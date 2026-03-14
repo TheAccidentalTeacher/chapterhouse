@@ -62,7 +62,7 @@ export async function POST() {
             role: "user",
             content:
               `You are distilling research notes for Scott Somers into a permanent knowledge base. ` +
-              `Scott builds homeschool and edtech products: Next Chapter Homeschool Outpost (Shopify store), SomerSchool (AI-generated K-12 courses), and BibleSaaS (AI Bible study app). ` +
+              `Scott builds homeschool and edtech products: Next Chapter Homeschool Outpost (Shopify store), SomersSchool (AI-generated K-12 standalone courses), and BibleSaaS (AI Bible study app). ` +
               `His wife Anna is a USA Today bestselling author and podcaster. ` +
               `\n\nFrom these ${groupItems.length} research items tagged "${tag}", extract the KEY FACTS that Scott and Anna should remember. ` +
               `Format as 3-6 bullet points. Each bullet must be specific and actionable — include names, numbers, product details, or implications where present. ` +
