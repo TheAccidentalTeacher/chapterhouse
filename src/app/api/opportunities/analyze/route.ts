@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+function getOpenAI() { return new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); }
 
 const ANALYZE_SYSTEM_PROMPT = `You are the product intelligence engine for Next Chapter Homeschool Outpost.
 
@@ -87,7 +87,7 @@ export async function POST() {
       `Analyze these signals and generate scored product/content/positioning opportunities for Next Chapter Homeschool Outpost.\n\n` +
       [researchBlock, briefBlock].filter(Boolean).join("\n\n---\n\n");
 
-    const aiResponse = await openai.responses.create({
+    const aiResponse = await getOpenAI().responses.create({
       model: "gpt-5.4",
       instructions: ANALYZE_SYSTEM_PROMPT,
       input: userPrompt,

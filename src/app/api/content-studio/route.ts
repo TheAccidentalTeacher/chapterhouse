@@ -1,9 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+function getAnthropic() { return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }); }
 
 const BRAND_VOICE = `
 Brand voice: Honest, direct, earned authority. Irreverent toward corporate edtech and bureaucratic nonsense. Fiercely protective of learners. Allergic to empty hype. Written for parents who've opted out of mainstream options and want tools built by someone who's actually been in the room with kids.
@@ -144,7 +142,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid mode" }, { status: 400 });
     }
 
-    const message = await anthropic.messages.create({
+    const message = await getAnthropic().messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 1500,
       messages: [{ role: "user", content: prompt }],

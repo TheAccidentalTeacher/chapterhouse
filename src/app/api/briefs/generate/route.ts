@@ -3,7 +3,7 @@ import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
 import { fetchAllRssFeeds, formatRssItemsForPrompt } from "@/lib/sources/rss";
 import { fetchGitHubAlerts, formatGitHubAlertsForPrompt } from "@/lib/sources/github";
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+function getAnthropic() { return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }); }
 
 const SYSTEM_PROMPT = `You are the intelligence engine for Chapterhouse — the private ops brain of Scott Somers (TheAccidentalTeacher on GitHub).
 
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
       .filter(Boolean)
       .join("\n");
 
-    const message = await anthropic.messages.create({
+    const message = await getAnthropic().messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 2048,
       system: SYSTEM_PROMPT,

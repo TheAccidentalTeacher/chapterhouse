@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+function getOpenAI() { return new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); }
 
 // POST /api/extract-learnings
 // Called silently after each AI response. Reads the recent conversation,
@@ -50,7 +50,7 @@ Respond with ONLY a valid JSON array. Each item has:
 If there is nothing worth remembering, return an empty array: []
 No markdown. No explanation. Just the JSON array.`;
 
-    const aiResponse = await openai.responses.create({
+    const aiResponse = await getOpenAI().responses.create({
       model: "gpt-5.4",
       instructions: "You output only valid JSON arrays. No markdown fences. No explanation.",
       input: prompt,

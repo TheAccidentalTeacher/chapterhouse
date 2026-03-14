@@ -2,13 +2,8 @@ import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+function getOpenAI() { return new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); }
+function getAnthropic() { return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }); }
 
 const SYSTEM_PROMPT = `You are Chapterhouse — the internal intelligence layer for Next Chapter Homeschool Outpost, the operating system built by and for Scott and Anna Somers.
 
@@ -222,7 +217,7 @@ export async function POST(request: Request) {
 
     // Route to Anthropic if claude model requested
     if (model.startsWith("claude")) {
-      const stream = anthropic.messages.stream({
+      const stream = getAnthropic().messages.stream({
         model,
         max_tokens: 2048,
         system: systemPrompt,
@@ -253,7 +248,7 @@ export async function POST(request: Request) {
     }
 
     // OpenAI — use Responses API (required for gpt-5.x models)
-    const stream = await openai.responses.create({
+    const stream = await getOpenAI().responses.create({
       model,
       instructions: systemPrompt,
       input: messages,
