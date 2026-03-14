@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowUp, ExternalLink, Loader2, Tag, PenLine, X, Link2, ClipboardPaste, StickyNote, Camera, ImageIcon, Trash2, RotateCcw, Sparkles, ChevronDown, BookOpen } from "lucide-react";
+import { ArrowUp, ExternalLink, Loader2, Tag, PenLine, X, Link2, ClipboardPaste, StickyNote, Camera, ImageIcon, Trash2, RotateCcw, Sparkles, ChevronDown, BookOpen, Search, LayoutList, Rows3 } from "lucide-react";
 import { logEvent, loggedFetch } from "@/lib/debug-log";
 
 type InputTab = "url" | "paste" | "note" | "image";
@@ -36,6 +36,8 @@ export default function ResearchPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [summaries, setSummaries] = useState<KnowledgeSummary[]>([]);
   const [kbExpanded, setKbExpanded] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<"flat" | "grouped">("flat");
 
   // URL tab
   const [url, setUrl] = useState("");
@@ -594,33 +596,71 @@ export default function ResearchPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-xs text-muted">{items.length} source{items.length === 1 ? "" : "s"} saved</p>
-              {filterTag && (
+            {/* Toolbar: search, view toggle, filter pill, condense */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Search bar */}
+                <div className="relative flex-1 min-w-[180px]">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted pointer-events-none" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search sources…"
+                    className="w-full rounded-xl border border-border/70 bg-muted-surface pl-8 pr-3 py-1.5 text-sm text-foreground placeholder:text-muted focus:border-accent/40 focus:outline-none"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-foreground"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+                {/* View mode toggle */}
+                <div className="flex gap-0.5 rounded-xl border border-border/70 bg-muted-surface p-0.5">
+                  <button
+                    onClick={() => setViewMode("flat")}
+                    title="Flat view (newest first)"
+                    className={`rounded-lg p-1.5 transition ${viewMode === "flat" ? "bg-background text-foreground shadow-sm" : "text-muted hover:text-foreground"}`}
+                  >
+                    <LayoutList className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode("grouped")}
+                    title="Group by tag"
+                    className={`rounded-lg p-1.5 transition ${viewMode === "grouped" ? "bg-background text-foreground shadow-sm" : "text-muted hover:text-foreground"}`}
+                  >
+                    <Rows3 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                {summarizeResult && (
+                  <span className="text-xs text-muted">{summarizeResult}</span>
+                )}
                 <button
-                  onClick={() => setFilterTag(null)}
-                  className="flex items-center gap-1.5 rounded-full border border-accent/40 bg-accent/10 px-2.5 py-1 text-xs text-accent hover:bg-accent/20 transition"
+                  onClick={handleSummarize}
+                  disabled={summarizing || items.length < 2}
+                  title="Compress all research into tag-based summaries for use in briefs and chat"
+                  className="flex items-center gap-1.5 rounded-xl border border-border/70 bg-muted-surface px-3 py-1.5 text-xs font-medium text-muted transition hover:border-accent/40 hover:text-accent disabled:opacity-40"
                 >
-                  {filterTag} <X className="h-3 w-3" />
+                  {summarizing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                  {summarizing ? "Condensing…" : "Condense knowledge"}
                 </button>
-              )}
+              </div>
+              {/* Active filters row */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-xs text-muted">{items.length} source{items.length === 1 ? "" : "s"} saved</p>
+                {filterTag && (
+                  <button
+                    onClick={() => setFilterTag(null)}
+                    className="flex items-center gap-1.5 rounded-full border border-accent/40 bg-accent/10 px-2.5 py-1 text-xs text-accent hover:bg-accent/20 transition"
+                  >
+                    {filterTag} <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              {summarizeResult && (
-                <span className="text-xs text-muted">{summarizeResult}</span>
-              )}
-              <button
-                onClick={handleSummarize}
-                disabled={summarizing || items.length < 2}
-                title="Compress all research into tag-based summaries for use in briefs and chat"
-                className="flex items-center gap-1.5 rounded-xl border border-border/70 bg-muted-surface px-3 py-1.5 text-xs font-medium text-muted transition hover:border-accent/40 hover:text-accent disabled:opacity-40"
-              >
-                {summarizing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                {summarizing ? "Condensing…" : "Condense knowledge"}
-              </button>
-            </div>
-          </div>
 
             {/* Knowledge Base panel */}
             {summaries.length > 0 && (
@@ -644,7 +684,15 @@ export default function ResearchPage() {
                     {summaries.map((s) => (
                       <div key={s.tag} className="rounded-2xl border border-border/50 bg-muted-surface/60 p-4 space-y-2">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-semibold text-accent">{s.tag}</span>
+                          <button
+                            onClick={() => { setFilterTag(filterTag === s.tag ? null : s.tag); setKbExpanded(false); }}
+                            title={`Filter list to "${s.tag}" items`}
+                            className={`rounded-full px-2.5 py-0.5 text-xs font-semibold transition hover:ring-1 hover:ring-accent/50 ${
+                              filterTag === s.tag ? "bg-accent text-accent-foreground" : "bg-accent/10 text-accent"
+                            }`}
+                          >
+                            {s.tag}
+                          </button>
                           <span className="text-xs text-muted">{s.item_count} item{s.item_count === 1 ? "" : "s"} · updated {new Date(s.updated_at).toLocaleDateString()}</span>
                         </div>
                         <div className="text-sm text-foreground/90 leading-6 whitespace-pre-wrap">{s.summary}</div>
@@ -654,134 +702,187 @@ export default function ResearchPage() {
                 )}
               </div>
             )}
-            {(filterTag ? items.filter((i) => i.tags?.includes(filterTag)) : items).map((item) => {
-              const isExpanded = expandedId === item.id;
-              const isHttp = item.url.startsWith("http");
-              const isImage = item.url.startsWith("image://");
-              const isPaste = item.url.startsWith("paste://");
-              const isBrief = item.url.startsWith("brief://");
-              const sourceTypeLabel = isImage ? "Screenshot" : isPaste ? "Pasted text" : isBrief ? "Daily Brief" : null;
-              return (
-              <article key={item.id} className="glass-panel rounded-3xl p-5 space-y-3">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    {isHttp ? (
+            {(() => {
+              const filtered = items.filter((item) => {
+                const matchesTag = filterTag ? item.tags?.includes(filterTag) : true;
+                const q = searchQuery.trim().toLowerCase();
+                const matchesSearch = q
+                  ? (item.title ?? "").toLowerCase().includes(q) || (item.summary ?? "").toLowerCase().includes(q)
+                  : true;
+                return matchesTag && matchesSearch;
+              });
+
+              const renderItem = (item: ResearchItem) => {
+                const isExpanded = expandedId === item.id;
+                const isHttp = item.url.startsWith("http");
+                const isImage = item.url.startsWith("image://");
+                const isPaste = item.url.startsWith("paste://");
+                const isBrief = item.url.startsWith("brief://");
+                const sourceTypeLabel = isImage ? "Screenshot" : isPaste ? "Pasted text" : isBrief ? "Daily Brief" : null;
+                return (
+                  <article key={item.id} className="glass-panel rounded-3xl p-5 space-y-3">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        {isHttp ? (
+                          <a
+                            href={item.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-medium leading-snug hover:text-accent hover:underline transition cursor-pointer"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {item.title || item.url}
+                          </a>
+                        ) : (
+                          <button
+                            className="text-left font-medium leading-snug text-foreground hover:text-foreground/80 transition cursor-pointer w-full"
+                            onClick={() => setExpandedId(isExpanded ? null : item.id)}
+                          >
+                            {item.title || item.url}
+                          </button>
+                        )}
+                        {isHttp && (
+                          <a
+                            href={item.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted hover:text-accent"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {item.url.replace(/^https?:\/\//, "").split("/")[0]}
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        )}
+                        {sourceTypeLabel && (
+                          <span className="mt-0.5 block text-xs text-muted/60">{sourceTypeLabel}</span>
+                        )}
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <button
+                          onClick={() => setExpandedId(isExpanded ? null : item.id)}
+                          title={isExpanded ? "Collapse" : "Expand"}
+                          className="rounded-lg p-1.5 text-muted transition hover:text-foreground"
+                        >
+                          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                        </button>
+                        <span className="text-xs text-muted">
+                          {new Date(item.created_at).toLocaleDateString()}
+                        </span>
+                        {isHttp && (
+                          <button
+                            onClick={() => handleReanalyze(item)}
+                            disabled={reanalyzingId === item.id || !!deletingId}
+                            title="Re-analyze with current context"
+                            className="rounded-lg p-1.5 text-muted transition hover:text-accent disabled:opacity-30"
+                          >
+                            {reanalyzingId === item.id
+                              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              : <RotateCcw className="h-3.5 w-3.5" />}
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          disabled={deletingId === item.id || !!reanalyzingId}
+                          title="Delete"
+                          className="rounded-lg p-1.5 text-muted transition hover:text-red-400 disabled:opacity-30"
+                        >
+                          {deletingId === item.id
+                            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            : <Trash2 className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {item.summary && (
+                      <p className={`text-sm leading-6 text-muted ${isExpanded ? "" : "line-clamp-2"}`}>
+                        {item.summary}
+                      </p>
+                    )}
+
+                    {isExpanded && item.verdict && (
+                      <div className="rounded-xl border border-border/70 bg-muted-surface px-4 py-2.5 text-sm">
+                        <span className="font-medium">Verdict: </span>
+                        <span className="text-muted">{item.verdict}</span>
+                      </div>
+                    )}
+
+                    {isExpanded && isHttp && (
                       <a
                         href={item.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-medium leading-snug hover:text-accent hover:underline transition cursor-pointer"
-                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-accent/40 bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/20 transition"
                       >
-                        {item.title || item.url}
-                      </a>
-                    ) : (
-                      <button
-                        className="text-left font-medium leading-snug text-foreground hover:text-foreground/80 transition cursor-pointer w-full"
-                        onClick={() => setExpandedId(isExpanded ? null : item.id)}
-                      >
-                        {item.title || item.url}
-                      </button>
-                    )}
-                    {isHttp && (
-                      <a
-                        href={item.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted hover:text-accent"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {item.url.replace(/^https?:\/\//, "").split("/")[0]}
-                        <ExternalLink className="h-3 w-3" />
+                        Open article <ExternalLink className="h-3 w-3" />
                       </a>
                     )}
-                    {sourceTypeLabel && (
-                      <span className="mt-0.5 block text-xs text-muted/60">{sourceTypeLabel}</span>
+
+                    {item.tags && item.tags.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <Tag className="h-3 w-3 text-muted shrink-0" />
+                        {item.tags.map((tag) => (
+                          <button
+                            key={tag}
+                            onClick={() => setFilterTag(filterTag === tag ? null : tag)}
+                            className={`cursor-pointer rounded-full border px-2.5 py-0.5 text-xs transition ${
+                              tag === "vibe-coding"
+                                ? "border-accent/40 bg-accent/10 text-accent hover:ring-1 hover:ring-accent/50"
+                                : tag === "competitor"
+                                ? "border-orange-500/30 bg-orange-500/10 text-orange-400 hover:ring-1 hover:ring-orange-500/40"
+                                : "border-border/70 bg-muted-surface text-muted hover:border-border hover:text-foreground"
+                            } ${filterTag === tag ? "ring-1 ring-current" : ""}`}
+                          >
+                            {tag}
+                          </button>
+                        ))}
+                      </div>
                     )}
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1">
-                    <button
-                      onClick={() => setExpandedId(isExpanded ? null : item.id)}
-                      title={isExpanded ? "Collapse" : "Expand"}
-                      className="rounded-lg p-1.5 text-muted transition hover:text-foreground"
-                    >
-                      <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
-                    </button>
-                    <span className="text-xs text-muted">
-                      {new Date(item.created_at).toLocaleDateString()}
-                    </span>
-                    {isHttp && (
+                  </article>
+                );
+              };
+
+              if (viewMode === "grouped") {
+                const grouped = new Map<string, ResearchItem[]>();
+                const untagged: ResearchItem[] = [];
+                for (const item of filtered) {
+                  if (!item.tags || item.tags.length === 0) {
+                    untagged.push(item);
+                  } else {
+                    const primary = item.tags[0];
+                    if (!grouped.has(primary)) grouped.set(primary, []);
+                    grouped.get(primary)!.push(item);
+                  }
+                }
+                if (untagged.length > 0) grouped.set("untagged", untagged);
+
+                if (grouped.size === 0) {
+                  return <p className="text-sm text-muted">No sources match your search.</p>;
+                }
+
+                return Array.from(grouped.entries()).map(([groupTag, groupItems]) => (
+                  <div key={groupTag} className="space-y-3">
+                    <div className="flex items-center gap-2">
                       <button
-                        onClick={() => handleReanalyze(item)}
-                        disabled={reanalyzingId === item.id || !!deletingId}
-                        title="Re-analyze with current context"
-                        className="rounded-lg p-1.5 text-muted transition hover:text-accent disabled:opacity-30"
+                        onClick={() => setFilterTag(filterTag === groupTag && groupTag !== "untagged" ? null : groupTag === "untagged" ? null : groupTag)}
+                        className={`rounded-full px-3 py-1 text-xs font-semibold transition hover:ring-1 hover:ring-accent/50 ${
+                          filterTag === groupTag ? "bg-accent text-accent-foreground" : "bg-accent/10 text-accent"
+                        }`}
                       >
-                        {reanalyzingId === item.id
-                          ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          : <RotateCcw className="h-3.5 w-3.5" />}
+                        {groupTag}
                       </button>
-                    )}
-                    <button
-                      onClick={() => handleDelete(item.id)}
-                      disabled={deletingId === item.id || !!reanalyzingId}
-                      title="Delete"
-                      className="rounded-lg p-1.5 text-muted transition hover:text-red-400 disabled:opacity-30"
-                    >
-                      {deletingId === item.id
-                        ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        : <Trash2 className="h-3.5 w-3.5" />}
-                    </button>
+                      <span className="text-xs text-muted">{groupItems.length} item{groupItems.length === 1 ? "" : "s"}</span>
+                    </div>
+                    {groupItems.map(renderItem)}
                   </div>
-                </div>
+                ));
+              }
 
-                {item.summary && (
-                  <p className={`text-sm leading-6 text-muted ${isExpanded ? "" : "line-clamp-2"}`}>
-                    {item.summary}
-                  </p>
-                )}
+              if (filtered.length === 0) {
+                return <p className="text-sm text-muted">No sources match your search.</p>;
+              }
 
-                {isExpanded && item.verdict && (
-                  <div className="rounded-xl border border-border/70 bg-muted-surface px-4 py-2.5 text-sm">
-                    <span className="font-medium">Verdict: </span>
-                    <span className="text-muted">{item.verdict}</span>
-                  </div>
-                )}
-
-                {isExpanded && isHttp && (
-                  <a
-                    href={item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-accent/40 bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/20 transition"
-                  >
-                    Open article <ExternalLink className="h-3 w-3" />
-                  </a>
-                )}
-
-                {item.tags && item.tags.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <Tag className="h-3 w-3 text-muted shrink-0" />
-                    {item.tags.map((tag) => (
-                      <button
-                        key={tag}
-                        onClick={() => setFilterTag(filterTag === tag ? null : tag)}
-                        className={`cursor-pointer rounded-full border px-2.5 py-0.5 text-xs transition ${
-                          tag === "vibe-coding"
-                            ? "border-accent/40 bg-accent/10 text-accent hover:ring-1 hover:ring-accent/50"
-                            : tag === "competitor"
-                            ? "border-orange-500/30 bg-orange-500/10 text-orange-400 hover:ring-1 hover:ring-orange-500/40"
-                            : "border-border/70 bg-muted-surface text-muted hover:border-border hover:text-foreground"
-                        } ${filterTag === tag ? "ring-1 ring-current" : ""}`}
-                      >
-                        {tag}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </article>
-              );
-            })}
+              return filtered.map(renderItem);
+            })()}
           </div>
         )}
       </div>
