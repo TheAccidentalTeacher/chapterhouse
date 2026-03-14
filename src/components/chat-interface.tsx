@@ -408,7 +408,7 @@ export function ChatInterface() {
           { role: "system" as const, content: `Saved to founder memory: "${note}"` },
         ];
         setMessages(updated);
-        saveMessages(updated, threadId);
+        saveMessages(updated as Message[], threadId);
       } catch {
         const updated = [
           ...messages,
@@ -419,9 +419,9 @@ export function ChatInterface() {
       return;
     }
 
-    const newMessages: Message[] = [
+    const newMessages: DisplayMessage[] = [
       ...messages,
-      { role: "user", content: trimmed },
+      { role: "user" as const, content: trimmed },
     ];
     setMessages(newMessages);
     setInput("");
@@ -591,7 +591,7 @@ export function ChatInterface() {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: newMessages, model: selectedModel.id }),
+        body: JSON.stringify({ messages: newMessages.filter((m) => !isCouncilMessage(m)), model: selectedModel.id }),
       });
 
       log.data("HTTP status", `${response.status} ${response.statusText}`);
