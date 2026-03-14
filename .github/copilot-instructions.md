@@ -21,7 +21,7 @@
 - Her audience is a warm launch market for all products — not yet actively marketed to.
 
 **Trisha Goyer** — former partner at Epic Learning. Parting ways amicably March 2026.
-- SomersSchool is moving off her platform and becoming its own SaaS under NCHO umbrella.
+- SomerSchool is moving off her platform and becoming its own SaaS under NCHO umbrella.
 - Keep relationship positive — she is now a competitor, not an enemy.
 - Revenue share model ($100 Scott / $49 Trisha) no longer applies going forward.
 
@@ -81,8 +81,8 @@ Scott is the Ring-bearer. The Council advises. He decides. But they will absolut
 | AI — Azure | Azure AI Foundry (Content Safety, Doc Intelligence, Azure OpenAI FERPA layer) |
 | Images | GPT Image 1 (text-in-images) + Stability AI + Leonardo.ai (Gimli) |
 | Voice | ElevenLabs TTS (scoped keys per project) |
-| TTS bulk/STT | Azure Speech (somersschool1, westus) |
-| Translation | Azure Translator (somersschooltranslator, westus3) |
+| TTS bulk/STT | Azure Speech (SomerSchool1, westus) |
+| Translation | Azure Translator (SomerSchooltranslator, westus3) |
 | 3D/Physics | Babylon.js + Ammo.js (WASM) |
 | Email (transactional) | Resend |
 | Email (bulk/marketing) | Brevo (free tier) |
@@ -109,7 +109,7 @@ Scott is the Ring-bearer. The Council advises. He decides. But they will absolut
 | roleplaying | TS | 🔴 Active | AI RPG: DM + 3D physics dice (Babylon+Ammo) + ElevenLabs TTS + DALL-E + Supabase |
 | chapterhouse | TS | 🔴 Active | Private ops brain — daily brief, multi-model AI, research ingestion |
 | NextChapterHomeschool | TS | 🔴 Active | ClassCiv — real-time multiplayer classroom civilization, 29 tables, 11-phase epoch FSM. **Live in Scott's classroom in ~1 week for 6-week alpha/beta run. Market after classroom test.** |
-| CoursePlatform | TS | 🔴 Active | SomersSchool — homeschool SaaS course platform. 52-course target. Secular. COPPA. Clerk + Supabase + Stripe. github.com/TheAccidentalTeacher/CoursePlatform |
+| CoursePlatform | TS | 🔴 Active | SomerSchool — homeschool SaaS course platform. 52-course target. Secular. COPPA. Clerk + Supabase + Stripe. github.com/TheAccidentalTeacher/CoursePlatform |
 | agentsvercel | JS | 🟡 Warm | Hypomnemata — 12 AI personas, 39 serverless fns, 6 AI providers, YouTube intelligence |
 | arms-of-deliverance | TS | 🟡 Warm | Epub/course generator / curriculum builder |
 | BibleSAAS | TS | 🟡 Warm | Personal use (Scott + son). Beta needed before commercial. SM-2, TSK 344K refs, living portrait, Stripe. Long-game product. |
@@ -163,7 +163,7 @@ Scott is the Ring-bearer. The Council advises. He decides. But they will absolut
 | Track | Brand | Platform | Status |
 |---|---|---|---|
 | 1 | Next Chapter Homeschool Outpost | Shopify + Ingram Spark | **Launching within 1 week** — Anna primary builder, curated one-by-one product curation |
-| 2 | SomersSchool / SomersVerse | CoursePlatform repo (standalone SaaS) | **Path B active** — standalone platform, off Trisha Goyer. SomersVerse = umbrella (working name). SomersSchool = curriculum wing. Revenue target before August 2026. |
+| 2 | SomerSchool / SomersVerse | CoursePlatform repo (standalone SaaS) | **Path B active** — standalone platform, off Trisha Goyer. SomersVerse = umbrella (working name). SomerSchool = curriculum wing. Revenue target before August 2026. |
 | 3 | Mt. Drum Homeschool Outpost | In-person, Glennallen | 2027 planning |
 | Long game | The Platform | Personalized AI curriculum SaaS | "Pluto Phase" — all repos unified |
 
@@ -184,18 +184,18 @@ Use these when generating copy, landing pages, ad campaigns, email sequences, or
 | **Visual Identity** | Earthy, warm, organic. Olive greens, dusty roses, teals. No corporate navy/gray. No aggressive reds. Think curated lifestyle blog, not educational supplier. |
 | **Voice** | Empathetic, specific, convictional. We see her child. We have a point of view. We are the calm exhale, not a generic catalog. **Always say "your child" not "your student."** Parents see their kids as children first, learners second. Validated by Facebook click testing — emotional resonance peaks when the child is referenced personally, not academically. This applies to all copy, emails, in-product notifications, and landing pages. Never lead with curriculum features; always lead with the child. |
 
-### Track 2: SomersSchool / SomersVerse
+### Track 2: SomerSchool / SomersVerse
 
-> ⚠️ **ClassCiv is COMPLETELY SEPARATE — never mention ClassCiv in any SomersSchool conversation. Different audience, different codebase, different context.**
+> ⚠️ **ClassCiv is COMPLETELY SEPARATE — never mention ClassCiv in any SomerSchool conversation. Different audience, different codebase, different context.**
 
 | Element | Definition |
 |---|---|
 | **Umbrella brand** | **SomersVerse** — working name, pending domain confirmation before finalizing |
-| **Curriculum wing** | **SomersSchool** — the course platform. This is what customers see and buy. |
+| **Curriculum wing** | **SomerSchool** — the course platform. This is what customers see and buy. |
 | **Repo** | `https://github.com/TheAccidentalTeacher/CoursePlatform` |
 | **Local path** | `C:\Users\Valued Customer\OneDrive\Desktop\1st-Grade-Science-TEMPLATE` |
 | **Business** | Full homeschool SaaS — standalone course platform. Scott owns the platform, the audience, the revenue. Off Trisha Goyer / Epic Learning permanently. |
-| **Content** | ALL SECULAR. Alaska Statute 14.03.320 (nonsectarian requirement for state-funded education). No faith content in any SomersSchool course. Faith resources still available in NCHO store — different product, different context. |
+| **Content** | ALL SECULAR. Alaska Statute 14.03.320 (nonsectarian requirement for state-funded education). No faith content in any SomerSchool course. Faith resources still available in NCHO store — different product, different context. |
 | **Scale target** | 52 courses — 13 grades × 4 core subjects (ELA, Math, Science, Social Studies) |
 | **Visual identity** | **Red and white.** Bold, clean, educational. Confirmed via Facebook ad test. NOT earthy/organic (that's NCHO — separate brand, separate palette). |
 | **Anna's courses** | "Newsies: The American Story" + "Les Misérables: Revolution and Justice" — her two literary courses |
@@ -264,7 +264,7 @@ Base rate: $49/mo (1 student). Each additional student adds $25/mo. Capped at 5 
 `users`, `children`, `products`, `enrollments`, `lesson_progress`, `vocab_mastery`, `credits`, `credit_transactions`, `xp_transactions`, `children_badges`, `shopify_webhooks_log`, `clerk_webhook_log`
 
 #### Pending Schema Changes
-- Add `faith_based BOOLEAN DEFAULT false` to `products` (MUST be false for all SomersSchool courses)
+- Add `faith_based BOOLEAN DEFAULT false` to `products` (MUST be false for all SomerSchool courses)
 - Make `child_id NOT NULL` in lesson_progress (was nullable)
 - Complete credits/xp/badges tables (partially built)
 
@@ -287,9 +287,9 @@ Base rate: $49/mo (1 student). Each additional student adds $25/mo. Capped at 5 
 - Faith posture: homeschool store that *carries* faith resources, not a faith-branded store
 - Alaska allotment eligibility is a marketing feature
 - Curriculum guide model: fair use + companion guide + public domain = legal
-- SomersSchool / SomersVerse is standalone — off Epic Learning, off Trisha Goyer. Scott owns platform, audience, and 100% of revenue.
-- SomersSchool content is ALL SECULAR — Alaska Statute 14.03.320 compliance required
-- ClassCiv is a COMPLETELY SEPARATE product — never mentioned in SomersSchool context
+- SomerSchool / SomersVerse is standalone — off Epic Learning, off Trisha Goyer. Scott owns platform, audience, and 100% of revenue.
+- SomerSchool content is ALL SECULAR — Alaska Statute 14.03.320 compliance required
+- ClassCiv is a COMPLETELY SEPARATE product — never mentioned in SomerSchool context
 - COPPA: children cannot self-register; parent account → child profile → child login
 - Payment: Shopify = one-time + school-year upfront; Stripe Billing = all recurring (monthly/quarterly/annual); both feed same `enrollments` table
 - Subscription pricing: $49/mo (1 student), +$25 each, capped at $149/mo (5+ students). Quarterly/School Year/Annual tiers locked per table above.
@@ -305,11 +305,11 @@ Base rate: $49/mo (1 student). Each additional student adds $25/mo. Capped at 5 
 - BibleSaaS is personal use first (Scott + son). Needs beta before commercial. Not the current revenue priority.
 - NCHO two-layer messaging: Brand = emotional ("for the child who doesn't fit in a box"), Offer = practical ("your one-stop homeschool shop"). Validated by Facebook click tests.
 - **NCHO (store) visual identity: earthy/warm palette (olive, rose, teal).** No corporate or aggressive colors. Data-backed.
-- **SomersSchool visual identity: RED AND WHITE.** Bold, clean, educational. Confirmed via Facebook ad test. These are different brands — do NOT mix or confuse the palettes.
+- **SomerSchool visual identity: RED AND WHITE.** Bold, clean, educational. Confirmed via Facebook ad test. These are different brands — do NOT mix or confuse the palettes.
 - Full customer avatar documented in `customer-avatar.md` — "Alaskan Annie."
 - Email domain: **buttercup.cfd** on Porkbun → Cloudflare catch-all → `alaskanguy555@yahoo.com`. Verified and active.
 - **Always say "your child" not "your student."** Parents see their kids as children first, learners second. Validated by Facebook click testing — emotional resonance peaks when the child is referenced personally, not academically. This applies to all copy, emails, in-product notifications, and landing pages. Never lead with curriculum features; always lead with the child.
-- **Visible progress is the SomersSchool retention mechanism** — not decoration. Every lesson ends with a badge unlocked, XP added, and a parent notification sent. RevenueCat 2026: AI apps churn 30% faster than non-AI apps when they lack visible outcome tracking. Design question before shipping any feature: *"What does the child get to SHOW for finishing this?"*
+- **Visible progress is the SomerSchool retention mechanism** — not decoration. Every lesson ends with a badge unlocked, XP added, and a parent notification sent. RevenueCat 2026: AI apps churn 30% faster than non-AI apps when they lack visible outcome tracking. Design question before shipping any feature: *"What does the child get to SHOW for finishing this?"*
 - **PRH "Grace Corner" D2C launching Q1 2026 validates the homeschool digital market — it is positioning fuel for NCHO, not a threat.** The bigger the publishing giants get, the more NCHO's teacher-curated identity stands out. Counter-position: "curated by a real classroom teacher" vs "shipped by a publishing conglomerate."
 
 ---
@@ -413,14 +413,14 @@ The end state: every major decision — product, architecture, curriculum, marke
 | **Minvo** | ✅ Yes | $3.49-19.99 | Repurpose long lessons → TikTok/Reel clips for course promotion | N/A |
 | **Lordicon PRO** | ✅ Yes | $8 | Animated icons in Next.js apps (Lottie/GIF/SVG) | N/A |
 | **Doodly (Voomly Cloud)** | 🔴 Get this | ~$50-97 | Whiteboard Gimli via Smart Draw — perfect consistency, draws him on screen | ★★★★★ |
-| **ToonBee** | ✅ Buy it | $77 | AI cartoon Gimli — Character Consistency Engine; faith + education explicitly supported. **Confirmed for SomersSchool K-5 lessons.** | ★★★★☆ |
+| **ToonBee** | ✅ Buy it | $77 | AI cartoon Gimli — Character Consistency Engine; faith + education explicitly supported. **Confirmed for SomerSchool K-5 lessons.** | ★★★★☆ |
 | **Kling AI** | 🟡 Consider | ~$29.99 | Motion-rich Gimli — rebuilt 3.0 architecture for cross-scene visual identity binding | ★★★★☆ |
 | **Animaker Pro** | 🔵 Option | $43 | Volume production — 30 custom characters, commercial rights, 2K exports | ★★★☆☆ |
 
 **Full-stack curriculum production pipeline:**
 `Descript (record/edit) → HeyGen (avatar intro) → Doodly/ToonBee (Gimli explains) → Flixier (assemble/caption) → Minvo (clip for social)`
 
-**ToonBee:** ✅ Confirmed — buy it. Gimli character for K-5 SomersSchool lessons. **HeyGen = Scott avatar (all grades). Do NOT use HeyGen for Gimli.** These are two separate video roles.
+**ToonBee:** ✅ Confirmed — buy it. Gimli character for K-5 SomerSchool lessons. **HeyGen = Scott avatar (all grades). Do NOT use HeyGen for Gimli.** These are two separate video roles.
 
 ---
 
@@ -437,7 +437,7 @@ The end state: every major decision — product, architecture, curriculum, marke
 | **Character animation** | "Build an animated pelican riding a bicycle in a single HTML file using CSS animation." | One `.html` file |
 | **Historical diorama** | "Build an explorable 3D Roman forum in Three.js — columns, market stalls, NPCs." | One `.html` file |
 
-**Rule of thumb:** "Single-file HTML, no external libraries" = instant, deployable, embeddable in any stack. Use this constantly for ClassCiv era visuals, BibleSaaS visualizations, SomersSchool lesson assets.
+**Rule of thumb:** "Single-file HTML, no external libraries" = instant, deployable, embeddable in any stack. Use this constantly for ClassCiv era visuals, BibleSaaS visualizations, SomerSchool lesson assets.
 
 ### Vibe-Coding Patterns That Reliably Work
 
@@ -546,7 +546,7 @@ The end state: every major decision — product, architecture, curriculum, marke
 
 ## AI Landscape Intel — What's Current (March 2026)
 
-- **Claude Sonnet 4.6** — current default in VS Code Copilot. Use `claude-sonnet-4-6` in all new code. Full Claude family: Opus 4.6 (most capable, $5/$25 per MTok), Sonnet 4.6 (best speed+intelligence, $3/$15), Haiku 4.5 (fastest, $1/$5). **1M token context window now GA at standard pricing for both Sonnet 4.6 and Opus 4.6 (Mar 13, 2026) — no long-context surcharge. OpenAI charges a premium above 272K tokens; Gemini above 200K. Anthropic is eating the cost to differentiate. Means Chapterhouse, BibleSaaS, and SomersSchool can use full-document context without worrying about cost spikes — automatic, no API changes needed.** **Architectural implication: design new features to ingest full documents — entire textbooks, full curricula, complete lesson archives — as context. Do NOT chunk content unnecessarily. No RAG workarounds needed for most use cases when content fits in 1M tokens (~750K words). This changes the default architecture for SomersSchool lesson pipelines, Chapterhouse research ingestion, and BibleSaaS commentary synthesis.**
+- **Claude Sonnet 4.6** — current default in VS Code Copilot. Use `claude-sonnet-4-6` in all new code. Full Claude family: Opus 4.6 (most capable, $5/$25 per MTok), Sonnet 4.6 (best speed+intelligence, $3/$15), Haiku 4.5 (fastest, $1/$5). **1M token context window now GA at standard pricing for both Sonnet 4.6 and Opus 4.6 (Mar 13, 2026) — no long-context surcharge. OpenAI charges a premium above 272K tokens; Gemini above 200K. Anthropic is eating the cost to differentiate. Means Chapterhouse, BibleSaaS, and SomerSchool can use full-document context without worrying about cost spikes — automatic, no API changes needed.** **Architectural implication: design new features to ingest full documents — entire textbooks, full curricula, complete lesson archives — as context. Do NOT chunk content unnecessarily. No RAG workarounds needed for most use cases when content fits in 1M tokens (~750K words). This changes the default architecture for SomerSchool lesson pipelines, Chapterhouse research ingestion, and BibleSaaS commentary synthesis.**
 - **GPT-5.4** — **live in the OpenAI API now**, not just Copilot. `model: "gpt-5.4"`. 1M token context, built-in computer use, tool search, native compaction. Full family: gpt-5.4 (flagship), gpt-5.4-pro (deepest reasoning), gpt-5-mini (cost-optimized), gpt-5-nano (high-throughput). Use **Responses API** (`client.responses.create`) not Chat Completions for GPT-5.4 — passes chain-of-thought between turns, fewer tokens, better performance. DALL-E 3 is now **GPT Image 1** (`model: "gpt-image-1"`).
 - **Claude Cowork** — Anthropic's real product at claude.com/product/cowork. Collaborative AI workspace. Built in partnership with Microsoft — powering Copilot Cowork inside M365.
 - **Claude Code** — terminal-based autonomous coding agent. Has voice mode. The one thing it does that Copilot doesn't: fully unsupervised iteration loop. Use for "go fix this while I sleep" jobs.
@@ -585,9 +585,9 @@ The end state: every major decision — product, architecture, curriculum, marke
 6. **Shopify API section in api-guide-master.md** — Add before NCHO launches. Need Admin API key + `SHOPIFY_WEBHOOK_SECRET` for order webhook verification.
 7. ~~**Helicone**~~ — DEAD. Acquired by Mintlify March 3, 2026. Maintenance mode. Replaced by Langfuse.
 8. ~~**Langfuse**~~ — DONE ✅. Keys in hand (see api-guide-master.md and .env.master). Wire into all AI-calling apps before charging customers.
-9. **N8N on Railway** — Park until SomersSchool enrollments or Stripe→Supabase flows need automation wiring.
+9. **N8N on Railway** — Park until SomerSchool enrollments or Stripe→Supabase flows need automation wiring.
 10. ~~dreamer.py~~ — killed, no action needed.
-11. **SomersSchool DB schema** — apply pending changes: `faith_based BOOLEAN`, `child_id NOT NULL`, complete credits/xp/badges tables before first enrollment.
+11. **SomerSchool DB schema** — apply pending changes: `faith_based BOOLEAN`, `child_id NOT NULL`, complete credits/xp/badges tables before first enrollment.
 12. **ToonBee** — Subscribe and run Gimli character consistency test. Commission 5-8 Gimli pose illustrations.
 13. **Mat-Su Central allotment** — contact gena.chastain@matsuk12.us after conflict-of-interest question resolved.
 14. **CLAUDE.md per active repo** — create in CoursePlatform, roleplaying, BibleSaaS, chapterhouse. Claude Code reads it automatically when you run `claude` in that directory.
@@ -621,10 +621,10 @@ The end state: every major decision — product, architecture, curriculum, marke
 ---
 
 ## Last Updated
-March 13, 2026 (Session 5) — Locked new SomersSchool pricing model: per-student subscription tiers ($49/mo base, +$25/student, capped $149 at 5+), quarterly/school-year/annual tiers locked. À la carte $149/course (competitor-matched). 3-course bundle $379. 5-course bundle $559. Add-on products (Shopify only, outside subscription). Shopify promo mechanics (freebies/BOGO) flagged for later. Upgrade credit system (Shopify gift card, not cash refund). "Tell Mom" feature concept logged (spec TBD). Stripe coupon approach flagged for subscription credit application. Old credit-per-course ($149/credit) and volume discount model retired.
+March 13, 2026 (Session 5) — Locked new SomerSchool pricing model: per-student subscription tiers ($49/mo base, +$25/student, capped $149 at 5+), quarterly/school-year/annual tiers locked. À la carte $149/course (competitor-matched). 3-course bundle $379. 5-course bundle $559. Add-on products (Shopify only, outside subscription). Shopify promo mechanics (freebies/BOGO) flagged for later. Upgrade credit system (Shopify gift card, not cash refund). "Tell Mom" feature concept logged (spec TBD). Stripe coupon approach flagged for subscription credit application. Old credit-per-course ($149/credit) and volume discount model retired.
 
-March 12, 2026 (Session 4) — Batch B publishing intel sweep. Created `intel/2026-03-12/intel-2026-03-12-publishing.md`. Reorganized intel files into `intel/YYYY-MM-DD/` folder structure. Updated `/memories/ai-education-competitors.md`. Full Fellowship Council synthesis briefing: ClassCiv ready for classroom alpha, SomersSchool has 10 weeks before contract ends, BibleSaaS Phase 26/27 complete pending LLC, NCHO timing signal (Homeschool Graduation Act Senate-pending), Anna/Alana Terry signal (S&S religion list + Baker Haven).
+March 12, 2026 (Session 4) — Batch B publishing intel sweep. Created `intel/2026-03-12/intel-2026-03-12-publishing.md`. Reorganized intel files into `intel/YYYY-MM-DD/` folder structure. Updated `/memories/ai-education-competitors.md`. Full Fellowship Council synthesis briefing: ClassCiv ready for classroom alpha, SomerSchool has 10 weeks before contract ends, BibleSaaS Phase 26/27 complete pending LLC, NCHO timing signal (Homeschool Graduation Act Senate-pending), Anna/Alana Terry signal (S&S religion list + Baker Haven).
 
-March 11, 2026 (Session 3) — Created `api-guide-master.md` (30+ services, live keys, local only). Updated SomersSchool Track 2 with all Session 2+3 locked decisions: SomersVerse umbrella brand, SomersSchool curriculum wing, red/white visual identity confirmed, 52-course secular target, Alaska Statute 14.03.320, COPPA architecture, payment routing (Shopify = one-time / Stripe = recurring), credit system ($149/credit), volume discounts, 12-table DB schema + 3 pending changes, CoursePlatform repo added. Anna's courses locked in. Free lead-gen courses locked in. ToonBee confirmed for Gimli. HeyGen = Scott only. Corrected NCHO/SomersSchool visual identity contradiction. Added ClassCiv separation warning. Updated Pending Actions with SomersSchool build checklist items.
+March 11, 2026 (Session 3) — Created `api-guide-master.md` (30+ services, live keys, local only). Updated SomerSchool Track 2 with all Session 2+3 locked decisions: SomersVerse umbrella brand, SomerSchool curriculum wing, red/white visual identity confirmed, 52-course secular target, Alaska Statute 14.03.320, COPPA architecture, payment routing (Shopify = one-time / Stripe = recurring), credit system ($149/credit), volume discounts, 12-table DB schema + 3 pending changes, CoursePlatform repo added. Anna's courses locked in. Free lead-gen courses locked in. ToonBee confirmed for Gimli. HeyGen = Scott only. Corrected NCHO/SomerSchool visual identity contradiction. Added ClassCiv separation warning. Updated Pending Actions with SomerSchool build checklist items.
 
 March 11, 2026 (Session 2) — Added Video & Animation Production Stack (Gimli framework, 10-tool survey, consistency spectrum). Added Copilot Capability Reference (single-file HTML deliverables, vibe-coding patterns, Instagram carousel parsing via screenshots, Gimli script format, edge cases). Updated Tool Evaluations with full video stack. GPT-5.4 capabilities fact-checked from @getintoai carousel. Added Thinking Prompts framework (7 prompts, Scott-specific use cases, power combinations). Added Brainstorm Session Protocol (trigger phrases, problem-type→prompt sequences, session structure, long-session principles, co-founder vision). Added GitHub Copilot SDK + MCP architecture intel (execution-as-infrastructure pattern, Scott-specific application mapping, N8N complementarity, MCP long-term signal). Added The Fellowship Council persona system (all members, voice guidelines, named speaker rules, Council rules).

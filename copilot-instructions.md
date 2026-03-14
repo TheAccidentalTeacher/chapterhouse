@@ -20,7 +20,7 @@
 - Her audience is a warm launch market for all products.
 
 **Trisha Goyer** — former partner at Epic Learning. Parting ways amicably March 2026.
-- SomersSchool is now a standalone SaaS platform — off Epic Learning permanently.
+- SomerSchool is now a standalone SaaS platform — off Epic Learning permanently.
 - Relationship is positive; she is now a competitor, not an enemy. Revenue share model no longer applies.
 
 ---
@@ -112,7 +112,7 @@
 | Track | Brand | Platform | Status |
 |---|---|---|---|
 | 1 | Next Chapter Homeschool Outpost | Shopify + Ingram Spark | Building — launch before June 2026 |
-| 2 | SomersSchool | CoursePlatform (standalone SaaS) | Path B active — off Trisha Goyer / Epic Learning. Revenue target before August 2026. |
+| 2 | SomerSchool | CoursePlatform (standalone SaaS) | Path B active — off Trisha Goyer / Epic Learning. Revenue target before August 2026. |
 | 3 | Mt. Drum Homeschool Outpost | In-person, Glennallen | 2027 planning |
 | Long game | The Platform | Personalized AI curriculum SaaS | "Pluto Phase" — all repos unified |
 
@@ -133,7 +133,7 @@ Use these when generating copy, landing pages, ad campaigns, email sequences, or
 | **Visual Identity** | Earthy, warm, organic. Olive greens, dusty roses, teals. No corporate navy/gray. No aggressive reds. Think curated lifestyle blog, not educational supplier. |
 | **Voice** | Empathetic, specific, convictional. We see her child. We have a point of view. We are the calm exhale, not a generic catalog. |
 
-### Track 2: SomersSchool (Standalone SaaS)
+### Track 2: SomerSchool (Standalone SaaS)
 | Element | Definition |
 |---|---|
 | **Business** | Full homeschool SaaS — standalone course platform. Scott owns the platform, the audience, the revenue. Off Trisha Goyer / Epic Learning permanently. ALL SECULAR — Alaska Statute 14.03.320 compliance required. |

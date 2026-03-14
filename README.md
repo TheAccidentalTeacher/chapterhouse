@@ -10,7 +10,7 @@
 
 **Next Chapter Homeschool Outpost** — that's the name. Won via Facebook ad click tests. Anna brought it back.
 
-This is the working session building three interconnected brands: a Shopify store (Next Chapter Homeschool Outpost), a standalone AI-powered curriculum SaaS (**SomersSchool**, off Epic Learning — Scott owns platform and revenue), and a local teaching operation (Mt. Drum Homeschool Outpost) — with a SaaS platform as the long game. Built through a series of conversations between Scott Somers, Anna Somers, and the Brand Whisperer (AI strategic partner).
+This is the working session building three interconnected brands: a Shopify store (Next Chapter Homeschool Outpost), a standalone AI-powered curriculum SaaS (**SomerSchool**, off Epic Learning — Scott owns platform and revenue), and a local teaching operation (Mt. Drum Homeschool Outpost) — with a SaaS platform as the long game. Built through a series of conversations between Scott Somers, Anna Somers, and the Brand Whisperer (AI strategic partner).
 
 Everything in this folder is a working document. Nothing is final. Everything is real.
 
@@ -20,7 +20,7 @@ Everything in this folder is a working document. Nothing is final. Everything is
 
 ## The Business in One Paragraph
 
-Three brands, one mission. **Next Chapter Homeschool Outpost** is the Shopify storefront — curated books, curriculum, games, toys, and digital products (PDF discussion guides, course-like materials) — powered by Ingram Spark for dropship fulfillment. Anna curates every product personally. **SomersSchool** is Scott's standalone curriculum SaaS — full K-12 courses on a platform Scott owns entirely, built by an AI-powered production pipeline that generates a complete 24-lesson course in ~4 hours. All secular. COPPA-compliant. **Mt. Drum Homeschool Outpost** is the local play — in-person homeschool classes in Glennallen starting 2027. Anna curates the book catalog with editorial instinct and a literature-first philosophy. The store serves every kind of homeschooler — faith-based, secular, classical, eclectic — with clean filters and no judgment. Long-term, all of this feeds into a personalized curriculum SaaS platform. Right now, it pays the bills three different ways.
+Three brands, one mission. **Next Chapter Homeschool Outpost** is the Shopify storefront — curated books, curriculum, games, toys, and digital products (PDF discussion guides, course-like materials) — powered by Ingram Spark for dropship fulfillment. Anna curates every product personally. **SomerSchool** is Scott's standalone curriculum SaaS — full K-12 courses on a platform Scott owns entirely, built by an AI-powered production pipeline that generates a complete 24-lesson course in ~4 hours. All secular. COPPA-compliant. **Mt. Drum Homeschool Outpost** is the local play — in-person homeschool classes in Glennallen starting 2027. Anna curates the book catalog with editorial instinct and a literature-first philosophy. The store serves every kind of homeschooler — faith-based, secular, classical, eclectic — with clean filters and no judgment. Long-term, all of this feeds into a personalized curriculum SaaS platform. Right now, it pays the bills three different ways.
 
 ---
 
@@ -29,7 +29,7 @@ Three brands, one mission. **Next Chapter Homeschool Outpost** is the Shopify st
 | Brand | What It Is | Platform | Timeline |
 |-------|-----------|----------|----------|
 | **Next Chapter Homeschool Outpost** | Shopify storefront — books, curriculum, games, digital products, discussion guides | Shopify + Ingram Spark | NOW |
-| **SomersSchool** | Scott's standalone curriculum SaaS — full K-12 courses, AI-generated, secular, COPPA-compliant | CoursePlatform (standalone SaaS) | Building — off Epic Learning, Scott owns platform + revenue |
+| **SomerSchool** | Scott's standalone curriculum SaaS — full K-12 courses, AI-generated, secular, COPPA-compliant | CoursePlatform (standalone SaaS) | Building — off Epic Learning, Scott owns platform + revenue |
 | **Mt. Drum Homeschool Outpost** | Local homeschool classes taught by Scott in Glennallen | In-person | 2027 |
 | **The Platform** | Personalized AI curriculum generator — the SaaS endgame | TBD | PLUTO PHASE |
 
@@ -225,7 +225,7 @@ Locks the first practical implementation decisions for Chapterhouse: app locatio
 
 | Platform | URL | Role |
 |---------|-----|------|
-| Epic Learning (historical) | https://epiclearning.learnworlds.com | LearnWorlds — SomersSchool moved off this platform March 2026; now standalone SaaS |
+| Epic Learning (historical) | https://epiclearning.learnworlds.com | LearnWorlds — SomerSchool moved off this platform March 2026; now standalone SaaS |
 
 ---
 
