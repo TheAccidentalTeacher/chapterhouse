@@ -2,13 +2,16 @@ import type { LucideIcon } from "lucide-react";
 import {
   BookOpen,
   ClipboardList,
+  Cpu,
   FileText,
+  GitBranch,
   Home,
   Layers3,
   Lightbulb,
   Search,
   Settings,
   Sparkles,
+  Zap,
 } from "lucide-react";
 
 export type NavigationItem = {
@@ -66,6 +69,24 @@ export const navigationItems: NavigationItem[] = [
     href: "/documents",
     description: "Core brand memory and operating references.",
     icon: BookOpen,
+  },
+  {
+    label: "Job Runner",
+    href: "/jobs",
+    description: "Background AI jobs with live progress. Fire and sleep.",
+    icon: Cpu,
+  },
+  {
+    label: "Curriculum Factory",
+    href: "/curriculum-factory",
+    description: "4-pass Council critique loop. 70 scope & sequences overnight.",
+    icon: Zap,
+  },
+  {
+    label: "Pipelines",
+    href: "/pipelines",
+    description: "Monitor and trigger n8n automation workflows.",
+    icon: GitBranch,
   },
   {
     label: "Settings",
