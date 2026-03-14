@@ -14,6 +14,7 @@ const environmentSchema = z.object({
   UPSTASH_REDIS_REST_URL: z.string().url().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
   RAILWAY_WORKER_URL: z.string().url().optional(),
+  COUNCIL_WORKER_URL: z.string().url().optional(),
   RESEND_API_KEY: z.string().min(1).optional(),
   ALERT_EMAIL_TO: z.string().email().optional(),
   // Phase 3 — n8n Control Panel
@@ -36,6 +37,7 @@ const envSource = {
   UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
   UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
   RAILWAY_WORKER_URL: process.env.RAILWAY_WORKER_URL,
+  COUNCIL_WORKER_URL: process.env.COUNCIL_WORKER_URL,
   RESEND_API_KEY: process.env.RESEND_API_KEY,
   ALERT_EMAIL_TO: process.env.ALERT_EMAIL_TO,
   // Phase 3 — n8n Control Panel
@@ -53,7 +55,7 @@ export function getEnvironmentStatus() {
       present: Boolean(value),
       group: key.startsWith("NEXT_PUBLIC_SUPABASE") || key === "SUPABASE_SERVICE_ROLE_KEY"
         ? "supabase"
-        : key.startsWith("QSTASH") || key.startsWith("UPSTASH") || key === "RAILWAY_WORKER_URL"
+        : key.startsWith("QSTASH") || key.startsWith("UPSTASH") || key === "RAILWAY_WORKER_URL" || key === "COUNCIL_WORKER_URL"
         ? "jobs"
         : key === "RESEND_API_KEY" || key === "ALERT_EMAIL_TO"
         ? "email"

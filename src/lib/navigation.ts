@@ -11,6 +11,7 @@ import {
   Search,
   Settings,
   Sparkles,
+  Users,
   Zap,
 } from "lucide-react";
 
@@ -87,6 +88,12 @@ export const navigationItems: NavigationItem[] = [
     href: "/pipelines",
     description: "Monitor and trigger n8n automation workflows.",
     icon: GitBranch,
+  },
+  {
+    label: "Council Chamber",
+    href: "/council",
+    description: "5-agent agentic system: Gandalf drafts, Legolas critiques, Aragorn finalizes, Gimli stress tests, Frodo signs off.",
+    icon: Users,
   },
   {
     label: "Settings",

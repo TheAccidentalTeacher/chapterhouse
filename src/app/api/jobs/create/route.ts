@@ -45,25 +45,36 @@ export async function POST(req: Request) {
     return Response.json({ error: "Failed to create job" }, { status: 500 });
   }
 
-  // Publish to QStash — Railway worker picks this up
+  // Publish to QStash — route council_session to Python council-worker, others to TypeScript worker
   const workerUrl = process.env.RAILWAY_WORKER_URL;
+  const councilWorkerUrl = process.env.COUNCIL_WORKER_URL;
   const qstashToken = process.env.QSTASH_TOKEN;
 
-  if (workerUrl && qstashToken) {
-    try {
-      const qstash = new Client({ token: qstashToken });
-      await qstash.publishJSON({
-        url: `${workerUrl}/process-job`,
-        body: { jobId: job.id, type: job.type, payload: job.input_payload },
-        retries: 3,
-      });
-    } catch (qErr) {
-      console.error("[jobs/create] QStash publish error:", qErr);
-      // Job is already in Supabase — don't fail the request, but log it
-      // The job will sit in 'queued' state until manually retried
+  if (qstashToken) {
+    const isCouncilJob = type === "council_session";
+    const targetUrl = isCouncilJob
+      ? councilWorkerUrl ? `${councilWorkerUrl}/council-session` : null
+      : workerUrl ? `${workerUrl}/process-job` : null;
+
+    if (targetUrl) {
+      try {
+        const qstash = new Client({ token: qstashToken });
+        await qstash.publishJSON({
+          url: targetUrl,
+          body: { jobId: job.id, type: job.type, payload: job.input_payload },
+          retries: 3,
+        });
+      } catch (qErr) {
+        console.error("[jobs/create] QStash publish error:", qErr);
+        // Job is already in Supabase — don't fail the request, but log it
+        // The job will sit in 'queued' state until manually retried
+      }
+    } else {
+      const missing = isCouncilJob ? "COUNCIL_WORKER_URL" : "RAILWAY_WORKER_URL";
+      console.warn(`[jobs/create] ${missing} not set — job queued in DB only`);
     }
   } else {
-    console.warn("[jobs/create] RAILWAY_WORKER_URL or QSTASH_TOKEN not set — job queued in DB only");
+    console.warn("[jobs/create] QSTASH_TOKEN not set — job queued in DB only");
   }
 
   return Response.json({ jobId: job.id, status: "queued" }, { status: 201 });
