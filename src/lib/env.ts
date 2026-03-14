@@ -16,6 +16,9 @@ const environmentSchema = z.object({
   RAILWAY_WORKER_URL: z.string().url().optional(),
   RESEND_API_KEY: z.string().min(1).optional(),
   ALERT_EMAIL_TO: z.string().email().optional(),
+  // Phase 3 — n8n Control Panel
+  N8N_BASE_URL: z.string().url().optional(),
+  N8N_API_KEY: z.string().min(1).optional(),
 });
 
 const envSource = {
@@ -35,6 +38,9 @@ const envSource = {
   RAILWAY_WORKER_URL: process.env.RAILWAY_WORKER_URL,
   RESEND_API_KEY: process.env.RESEND_API_KEY,
   ALERT_EMAIL_TO: process.env.ALERT_EMAIL_TO,
+  // Phase 3 — n8n Control Panel
+  N8N_BASE_URL: process.env.N8N_BASE_URL,
+  N8N_API_KEY: process.env.N8N_API_KEY,
 };
 
 export function getEnvironmentStatus() {
@@ -51,6 +57,8 @@ export function getEnvironmentStatus() {
         ? "jobs"
         : key === "RESEND_API_KEY" || key === "ALERT_EMAIL_TO"
         ? "email"
+        : key === "N8N_BASE_URL" || key === "N8N_API_KEY"
+        ? "n8n"
         : "ai",
     })),
   };
