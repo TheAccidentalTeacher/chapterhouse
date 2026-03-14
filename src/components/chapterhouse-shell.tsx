@@ -26,6 +26,8 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
   });
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [tooltipRect, setTooltipRect] = useState<DOMRect | null>(null);
+  const [hoveredRailItem, setHoveredRailItem] = useState<string | null>(null);
+  const [railTooltipRect, setRailTooltipRect] = useState<DOMRect | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
@@ -179,7 +181,10 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
               <span className="font-medium">Help Guide</span>
             </Link>
 
-            <div className="mt-auto space-y-3 rounded-3xl border border-border bg-card/80 p-5 text-sm text-muted">
+            <div
+              className="mt-auto space-y-3 rounded-3xl border border-border bg-card/80 p-5 text-sm text-muted"
+              title="Your Chapterhouse workspace identity and connection status. Green dot = Supabase connected and ready."
+            >
               <div className="flex items-center justify-between">
                 <span>Workspace</span>
                 <span className="rounded-full bg-muted-surface px-2.5 py-1 text-xs font-medium text-foreground">
@@ -255,6 +260,14 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
                   <Link
                     key={item.href}
                     href={item.href}
+                    onMouseEnter={(e) => {
+                      setHoveredRailItem(item.href);
+                      setRailTooltipRect(e.currentTarget.getBoundingClientRect());
+                    }}
+                    onMouseLeave={() => {
+                      setHoveredRailItem(null);
+                      setRailTooltipRect(null);
+                    }}
                     className="flex items-center gap-3 rounded-xl border border-border/50 bg-muted-surface/50 px-3 py-2 transition hover:border-accent/40 hover:text-accent"
                   >
                     <span className={`h-2 w-2 shrink-0 rounded-full ${
@@ -282,6 +295,51 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
             style={{
               top: tooltipRect.top,
               left: tooltipRect.right + 12,
+            }}
+          >
+            <p className="mb-2 font-semibold text-foreground">{item.label}</p>
+            <p className="mb-3 leading-relaxed">{item.tooltip.summary}</p>
+            {item.tooltip.features.length > 0 && (
+              <>
+                <p className="mb-1 font-semibold text-foreground/80 text-[10px] uppercase tracking-wider">What it does</p>
+                <ul className="mb-3 space-y-0.5">
+                  {item.tooltip.features.map((f, i) => (
+                    <li key={i} className="flex gap-1.5">
+                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-accent/60" />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            {item.tooltip.tips.length > 0 && (
+              <>
+                <p className="mb-1 font-semibold text-amber-400/80 text-[10px] uppercase tracking-wider">Testing tips</p>
+                <ul className="space-y-0.5">
+                  {item.tooltip.tips.map((t, i) => (
+                    <li key={i} className="flex gap-1.5">
+                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-amber-400/60" />
+                      <span>{t}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>,
+          document.body
+        );
+      })()}
+
+      {/* Right rail tooltip portal — positioned to the left of the rail items */}
+      {mounted && hoveredRailItem && railTooltipRect && (() => {
+        const item = navigationGroups.flatMap(g => g.items).find(i => i.href === hoveredRailItem);
+        if (!item?.tooltip) return null;
+        return createPortal(
+          <div
+            className="pointer-events-none fixed z-[9999] w-80 rounded-2xl border border-border bg-card p-4 text-xs leading-5 text-muted shadow-xl shadow-black/30"
+            style={{
+              top: railTooltipRect.top,
+              left: railTooltipRect.left - 320 - 12,
             }}
           >
             <p className="mb-2 font-semibold text-foreground">{item.label}</p>
