@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { updateProgress } from "../lib/progress";
+import { notifyJobComplete } from "../lib/notify";
 import { COUNCIL_PROMPTS, type CouncilMember } from "../lib/council-prompts";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -87,11 +88,13 @@ export async function runCurriculumFactory(
     };
 
     await updateProgress(jobId, 100, "Complete — all 4 passes done.", "completed", finalOutput);
+    await notifyJobComplete(jobId, `${subject} Grade ${gradeLevel}`, "completed");
 
     console.log(`[curriculum-factory] Job ${jobId} completed — ${subject} Grade ${gradeLevel}`);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error(`[curriculum-factory] Job ${jobId} failed:`, message);
     await updateProgress(jobId, 0, "Failed", "failed", undefined, message);
+    await notifyJobComplete(jobId, `${subject} Grade ${gradeLevel}`, "failed", message);
   }
 }

@@ -17,7 +17,8 @@ export async function updateProgress(
     updated_at: new Date().toISOString(),
   };
 
-  if (progress === 1 || status === "running") {
+  // Only set started_at on the first transition to running
+  if (progress <= 1 && status === "running") {
     update.started_at = new Date().toISOString();
   }
 
