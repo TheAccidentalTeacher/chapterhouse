@@ -147,9 +147,35 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
 
                               {/* Tooltip — appears on hover */}
                               {isHovered && item.tooltip && (
-                                <div className="pointer-events-none absolute left-full top-0 z-50 ml-3 w-64 rounded-2xl border border-border bg-card p-4 text-xs leading-5 text-muted shadow-xl shadow-black/30">
-                                  <p className="mb-1.5 font-semibold text-foreground">{item.label}</p>
-                                  <p>{item.tooltip}</p>
+                                <div className="pointer-events-none absolute left-full top-0 z-50 ml-3 w-80 rounded-2xl border border-border bg-card p-4 text-xs leading-5 text-muted shadow-xl shadow-black/30">
+                                  <p className="mb-2 font-semibold text-foreground">{item.label}</p>
+                                  <p className="mb-3 leading-relaxed">{item.tooltip.summary}</p>
+                                  {item.tooltip.features.length > 0 && (
+                                    <>
+                                      <p className="mb-1 font-semibold text-foreground/80 text-[10px] uppercase tracking-wider">What it does</p>
+                                      <ul className="mb-3 space-y-0.5">
+                                        {item.tooltip.features.map((f, i) => (
+                                          <li key={i} className="flex gap-1.5">
+                                            <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-accent/60" />
+                                            <span>{f}</span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </>
+                                  )}
+                                  {item.tooltip.tips.length > 0 && (
+                                    <>
+                                      <p className="mb-1 font-semibold text-amber-400/80 text-[10px] uppercase tracking-wider">Testing tips</p>
+                                      <ul className="space-y-0.5">
+                                        {item.tooltip.tips.map((t, i) => (
+                                          <li key={i} className="flex gap-1.5">
+                                            <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-amber-400/60" />
+                                            <span>{t}</span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </>
+                                  )}
                                 </div>
                               )}
                             </div>

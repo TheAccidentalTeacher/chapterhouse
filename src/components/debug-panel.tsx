@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { X, ChevronUp, ChevronDown, Trash2, RefreshCw, Bug, Download, MessageSquare } from "lucide-react";
-import { getEntries, clearLog, subscribe, type LogEntry, type LogLevel } from "@/lib/debug-log";
+import { X, ChevronUp, ChevronDown, Trash2, RefreshCw, Bug, Download, MessageSquare, Search, Activity } from "lucide-react";
+import { getEntries, clearLog, subscribe, sessionStats, type LogEntry, type LogLevel } from "@/lib/debug-log";
 
 function exportLog(entries: LogEntry[]) {
   const text = entries.map(e =>
-    `[${new Date(e.ts).toISOString()}] [${e.level.toUpperCase()}] ${e.label}${e.detail !== undefined ? "\n" + JSON.stringify(e.detail, null, 2) : ""}`
+    `[${new Date(e.ts).toISOString()}] [${e.level.toUpperCase()}] ${e.label}${e.durationMs !== undefined ? ` (${e.durationMs}ms)` : ""}${e.detail !== undefined ? "\n" + JSON.stringify(e.detail, null, 2) : ""}`
   ).join("\n\n");
   const blob = new Blob([text], { type: "text/plain" });
   const url = URL.createObjectURL(blob);
@@ -20,10 +20,17 @@ function exportLog(entries: LogEntry[]) {
 function sendToChat(entries: LogEntry[]) {
   const recent = entries.slice(-50);
   const formatted = recent.map(e =>
-    `[${e.level.toUpperCase()}] ${e.label}${e.detail !== undefined ? " → " + JSON.stringify(e.detail) : ""}`
+    `[${e.level.toUpperCase()}] ${e.label}${e.durationMs !== undefined ? ` (${e.durationMs}ms)` : ""}${e.detail !== undefined ? " → " + JSON.stringify(e.detail) : ""}`
   ).join("\n");
   const text = `Here is my Chapterhouse debug log (last ${recent.length} events). Can you help me understand what happened or diagnose any issues?\n\n\`\`\`\n${formatted}\n\`\`\``;
   window.dispatchEvent(new CustomEvent("chapterhouse:prefill", { detail: text }));
+}
+
+function formatUptime(startMs: number): string {
+  const s = Math.floor((Date.now() - startMs) / 1000);
+  if (s < 60) return `${s}s`;
+  if (s < 3600) return `${Math.floor(s / 60)}m ${s % 60}s`;
+  return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -32,22 +39,30 @@ function ts(entry: LogEntry) {
   return new Date(entry.ts).toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit", fractionalSecondDigits: 2 });
 }
 
+const ALL_LEVELS: LogLevel[] = ["click", "api", "success", "error", "brain", "info", "perf", "nav", "realtime"];
+
 const LEVEL_STYLES: Record<LogLevel, string> = {
-  click:   "text-sky-400",
-  api:     "text-violet-400",
-  success: "text-emerald-400",
-  error:   "text-red-400",
-  brain:   "text-amber-400",
-  info:    "text-muted",
+  click:    "text-sky-400",
+  api:      "text-violet-400",
+  success:  "text-emerald-400",
+  error:    "text-red-400",
+  brain:    "text-amber-400",
+  info:     "text-muted",
+  perf:     "text-orange-400",
+  nav:      "text-cyan-400",
+  realtime: "text-teal-400",
 };
 
 const LEVEL_BADGE: Record<LogLevel, string> = {
-  click:   "bg-sky-500/20 text-sky-300 border-sky-500/30",
-  api:     "bg-violet-500/20 text-violet-300 border-violet-500/30",
-  success: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-  error:   "bg-red-500/20 text-red-300 border-red-500/30",
-  brain:   "bg-amber-500/20 text-amber-300 border-amber-500/30",
-  info:    "bg-muted/20 text-muted border-border/30",
+  click:    "bg-sky-500/20 text-sky-300 border-sky-500/30",
+  api:      "bg-violet-500/20 text-violet-300 border-violet-500/30",
+  success:  "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+  error:    "bg-red-500/20 text-red-300 border-red-500/30",
+  brain:    "bg-amber-500/20 text-amber-300 border-amber-500/30",
+  info:     "bg-muted/20 text-muted border-border/30",
+  perf:     "bg-orange-500/20 text-orange-300 border-orange-500/30",
+  nav:      "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
+  realtime: "bg-teal-500/20 text-teal-300 border-teal-500/30",
 };
 
 function JsonTree({ data, depth = 0 }: { data: unknown; depth?: number }) {
@@ -103,6 +118,66 @@ function JsonTree({ data, depth = 0 }: { data: unknown; depth?: number }) {
   return <span>{String(data)}</span>;
 }
 
+// ── Performance Tab ────────────────────────────────────────────────────────────
+
+function PerfTab({ entries }: { entries: LogEntry[] }) {
+  const perfEntries = entries.filter(e => e.durationMs !== undefined).sort((a, b) => (b.durationMs ?? 0) - (a.durationMs ?? 0));
+  const apiEntries = perfEntries.filter(e => e.level === "api" || e.level === "success" || e.level === "error");
+  const avgMs = apiEntries.length > 0 ? Math.round(apiEntries.reduce((s, e) => s + (e.durationMs ?? 0), 0) / apiEntries.length) : 0;
+  const slowest = apiEntries[0];
+
+  return (
+    <div className="space-y-3">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="rounded-lg border border-border/30 bg-muted-surface/40 p-2 text-center">
+          <div className="text-lg font-bold text-violet-400">{sessionStats.apiCalls}</div>
+          <div className="text-[10px] text-muted">API Calls</div>
+        </div>
+        <div className="rounded-lg border border-border/30 bg-muted-surface/40 p-2 text-center">
+          <div className="text-lg font-bold text-orange-400">{avgMs}ms</div>
+          <div className="text-[10px] text-muted">Avg Response</div>
+        </div>
+        <div className="rounded-lg border border-border/30 bg-muted-surface/40 p-2 text-center">
+          <div className="text-lg font-bold text-red-400">{sessionStats.errors}</div>
+          <div className="text-[10px] text-muted">Errors</div>
+        </div>
+      </div>
+
+      {/* Slowest Call */}
+      {slowest && (
+        <div className="rounded-lg border border-orange-500/30 bg-orange-500/5 p-2">
+          <div className="text-[10px] text-orange-400 font-semibold mb-0.5">Slowest Call</div>
+          <div className="text-xs text-foreground truncate">{slowest.label}</div>
+          <div className="text-[10px] text-muted">{slowest.durationMs}ms</div>
+        </div>
+      )}
+
+      {/* Timing Waterfall */}
+      <div className="space-y-1">
+        <div className="text-[10px] text-muted font-semibold uppercase tracking-wider">Timing Waterfall</div>
+        {perfEntries.length === 0 && (
+          <p className="text-xs text-muted/60 py-2 text-center">No timed entries yet.</p>
+        )}
+        {perfEntries.slice(0, 30).map((entry) => {
+          const maxMs = perfEntries[0]?.durationMs ?? 1;
+          const pct = Math.min(100, ((entry.durationMs ?? 0) / maxMs) * 100);
+          const barColor = (entry.durationMs ?? 0) < 500 ? "bg-emerald-500/50" : (entry.durationMs ?? 0) < 2000 ? "bg-amber-500/50" : "bg-red-500/50";
+          return (
+            <div key={entry.id} className="flex items-center gap-2 text-[11px]">
+              <span className="w-12 shrink-0 text-right text-muted font-mono">{entry.durationMs}ms</span>
+              <div className="flex-1 h-3 rounded-full bg-muted-surface/40 overflow-hidden">
+                <div className={`h-full rounded-full ${barColor} transition-all`} style={{ width: `${pct}%` }} />
+              </div>
+              <span className="flex-1 truncate text-muted">{entry.label.replace(/^[←→✗⏱]\s*/, "")}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Brain Context Tab ──────────────────────────────────────────────────────────
 
 function BrainTab() {
@@ -146,7 +221,7 @@ function BrainTab() {
 
 // ── Main Panel ─────────────────────────────────────────────────────────────────
 
-type Tab = "log" | "brain";
+type Tab = "log" | "perf" | "brain";
 
 export function DebugPanel() {
   const [open, setOpen] = useState(false);
@@ -154,6 +229,7 @@ export function DebugPanel() {
   const [tab, setTab] = useState<Tab>("log");
   const [entries, setEntries] = useState<LogEntry[]>(() => getEntries());
   const [filter, setFilter] = useState<LogLevel | "all">("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -161,7 +237,11 @@ export function DebugPanel() {
 
   useEffect(() => subscribe(refresh), [refresh]);
 
-  const filtered = filter === "all" ? entries : entries.filter((e) => e.level === filter);
+  const errorCount = entries.filter(e => e.level === "error").length;
+
+  const filtered = entries
+    .filter(e => filter === "all" || e.level === filter)
+    .filter(e => !searchQuery || e.label.toLowerCase().includes(searchQuery.toLowerCase()));
 
   if (!open) {
     return (
@@ -172,9 +252,15 @@ export function DebugPanel() {
       >
         <Bug className="h-3.5 w-3.5" />
         Debug
-        {entries.filter(e => e.level === "error").length > 0 && (
+        <span className="text-[10px] text-muted font-mono">{formatUptime(sessionStats.startedAt)}</span>
+        {sessionStats.apiCalls > 0 && (
+          <span className="rounded-full bg-violet-500/20 border border-violet-500/30 px-1.5 py-0.5 text-[10px] text-violet-300 font-bold leading-none">
+            {sessionStats.apiCalls}
+          </span>
+        )}
+        {errorCount > 0 && (
           <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] text-white font-bold leading-none">
-            {entries.filter(e => e.level === "error").length}
+            {errorCount}
           </span>
         )}
       </button>
@@ -183,16 +269,17 @@ export function DebugPanel() {
 
   return (
     <div className="fixed bottom-24 right-4 z-50 flex flex-col rounded-2xl border border-border/60 bg-background/95 shadow-2xl backdrop-blur"
-      style={{ width: "480px", maxHeight: minimized ? "auto" : "70vh" }}>
+      style={{ width: "520px", maxHeight: minimized ? "auto" : "75vh" }}>
 
       {/* Header */}
       <div className="flex items-center justify-between gap-2 border-b border-border/40 px-4 py-2.5">
         <div className="flex items-center gap-2">
           <Bug className="h-3.5 w-3.5 text-accent" />
           <span className="text-xs font-semibold">Chapterhouse Debug</span>
-          {entries.filter(e => e.level === "error").length > 0 && (
+          <span className="text-[10px] text-muted font-mono">{formatUptime(sessionStats.startedAt)}</span>
+          {errorCount > 0 && (
             <span className="rounded-full bg-red-500/20 border border-red-500/30 px-1.5 py-0.5 text-[10px] text-red-400 font-bold leading-none">
-              {entries.filter(e => e.level === "error").length} errors
+              {errorCount} errors
             </span>
           )}
         </div>
@@ -210,13 +297,18 @@ export function DebugPanel() {
         <>
           {/* Tabs */}
           <div className="flex gap-1 border-b border-border/40 px-3 pt-2">
-            {(["log", "brain"] as Tab[]).map((t) => (
+            {([
+              { key: "log" as Tab, label: `Event Log (${entries.length})` },
+              { key: "perf" as Tab, label: "Performance" },
+              { key: "brain" as Tab, label: "Brain Context" },
+            ]).map((t) => (
               <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-t transition ${tab === t ? "bg-muted-surface text-foreground" : "text-muted hover:text-foreground"}`}
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-t transition ${tab === t.key ? "bg-muted-surface text-foreground" : "text-muted hover:text-foreground"}`}
               >
-                {t === "log" ? `Event Log (${entries.length})` : "Brain Context"}
+                {t.key === "perf" && <Activity className="h-3 w-3" />}
+                {t.label}
               </button>
             ))}
           </div>
@@ -225,43 +317,57 @@ export function DebugPanel() {
           <div className="flex-1 overflow-y-auto px-3 py-3 min-h-0" ref={logRef}>
             {tab === "log" && (
               <div className="space-y-2">
-                {/* Controls */}
-                <div className="flex items-center gap-1.5 flex-wrap pb-1">
-                  {(["all", "click", "api", "success", "error", "brain", "info"] as const).map((f) => (
-                    <button
-                      key={f}
-                      onClick={() => setFilter(f)}
-                      className={`rounded-full border px-2 py-0.5 text-[11px] transition ${filter === f ? "border-accent/60 bg-accent/15 text-accent" : "border-border/40 text-muted hover:text-foreground"}`}
-                    >
-                      {f}
-                    </button>
-                  ))}
-                  <div className="ml-auto flex items-center gap-1">
-                    <button
-                      onClick={() => exportLog(entries)}
-                      title="Download log as text file"
-                      className="flex items-center gap-1 rounded-full border border-border/40 px-2 py-0.5 text-[11px] text-muted hover:text-foreground transition"
-                    >
-                      <Download className="h-2.5 w-2.5" /> Export
-                    </button>
-                    <button
-                      onClick={() => { sendToChat(entries); setOpen(false); }}
-                      title="Send log to chat for AI analysis"
-                      className="flex items-center gap-1 rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 text-[11px] text-accent hover:bg-accent/20 transition"
-                    >
-                      <MessageSquare className="h-2.5 w-2.5" /> Ask AI
-                    </button>
-                    <button
-                      onClick={() => { clearLog(); setExpandedId(null); }}
-                      className="flex items-center gap-1 rounded-full border border-border/40 px-2 py-0.5 text-[11px] text-muted hover:text-red-400 transition"
-                    >
-                      <Trash2 className="h-2.5 w-2.5" /> Clear
-                    </button>
+                {/* Search + Controls */}
+                <div className="space-y-1.5">
+                  <div className="relative">
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted/50" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search events..."
+                      className="w-full rounded-lg border border-border/40 bg-muted-surface/30 pl-7 pr-3 py-1.5 text-[11px] text-foreground placeholder:text-muted/40 focus:outline-none focus:border-accent/50"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap pb-1">
+                    {(["all", ...ALL_LEVELS] as const).map((f) => (
+                      <button
+                        key={f}
+                        onClick={() => setFilter(f)}
+                        className={`rounded-full border px-2 py-0.5 text-[11px] transition ${filter === f ? "border-accent/60 bg-accent/15 text-accent" : "border-border/40 text-muted hover:text-foreground"}`}
+                      >
+                        {f}
+                      </button>
+                    ))}
+                    <div className="ml-auto flex items-center gap-1">
+                      <button
+                        onClick={() => exportLog(entries)}
+                        title="Download log as text file"
+                        className="flex items-center gap-1 rounded-full border border-border/40 px-2 py-0.5 text-[11px] text-muted hover:text-foreground transition"
+                      >
+                        <Download className="h-2.5 w-2.5" /> Export
+                      </button>
+                      <button
+                        onClick={() => { sendToChat(entries); setOpen(false); }}
+                        title="Send log to chat for AI analysis"
+                        className="flex items-center gap-1 rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 text-[11px] text-accent hover:bg-accent/20 transition"
+                      >
+                        <MessageSquare className="h-2.5 w-2.5" /> Ask AI
+                      </button>
+                      <button
+                        onClick={() => { clearLog(); setExpandedId(null); setSearchQuery(""); }}
+                        className="flex items-center gap-1 rounded-full border border-border/40 px-2 py-0.5 text-[11px] text-muted hover:text-red-400 transition"
+                      >
+                        <Trash2 className="h-2.5 w-2.5" /> Clear
+                      </button>
+                    </div>
                   </div>
                 </div>
 
                 {filtered.length === 0 && (
-                  <p className="text-xs text-muted/60 py-4 text-center">No events yet. Click something.</p>
+                  <p className="text-xs text-muted/60 py-4 text-center">
+                    {searchQuery ? "No matching events." : "No events yet. Click something."}
+                  </p>
                 )}
 
                 {filtered.map((entry) => (
@@ -276,6 +382,11 @@ export function DebugPanel() {
                       <span className={`flex-1 text-xs leading-snug ${LEVEL_STYLES[entry.level]}`}>
                         {entry.label}
                       </span>
+                      {entry.durationMs !== undefined && (
+                        <span className={`shrink-0 text-[10px] font-mono mt-0.5 ${entry.durationMs < 500 ? "text-emerald-400" : entry.durationMs < 2000 ? "text-amber-400" : "text-red-400"}`}>
+                          {entry.durationMs}ms
+                        </span>
+                      )}
                       <span className="shrink-0 text-[10px] text-muted/50 font-mono mt-0.5">{ts(entry)}</span>
                     </button>
                     {expandedId === entry.id && entry.detail !== undefined && (
@@ -287,6 +398,8 @@ export function DebugPanel() {
                 ))}
               </div>
             )}
+
+            {tab === "perf" && <PerfTab entries={entries} />}
 
             {tab === "brain" && <BrainTab />}
           </div>

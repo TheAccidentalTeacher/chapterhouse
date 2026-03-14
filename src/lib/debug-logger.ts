@@ -143,6 +143,8 @@ export function mountConsoleHelpers(models: { id: string; label: string }[]) {
       console.log("%c  chapterhouseDebug.disable()        ", STYLES.info, "— disable debug logs");
       console.log("%c  chapterhouseDebug.models()         ", STYLES.info, "— list available models");
       console.log("%c  chapterhouseDebug.testChat(prompt) ", STYLES.info, "— fire a raw chat API call");
+      console.log("%c  chapterhouseDebug.perf()           ", STYLES.info, "— show performance summary from debug log");
+      console.log("%c  chapterhouseDebug.errors()         ", STYLES.info, "— show all error entries from debug log");
       console.groupEnd();
     },
 
@@ -166,6 +168,39 @@ export function mountConsoleHelpers(models: { id: string; label: string }[]) {
     models() {
       console.group("%c🏠 Available Models", STYLES.header);
       models.forEach((m) => console.log(`%c  • ${m.id} (${m.label})`, STYLES.muted));
+      console.groupEnd();
+    },
+
+    perf() {
+      const { getEntries, sessionStats: stats } = require("@/lib/debug-log");
+      const entries = getEntries();
+      const timed = entries.filter((e: { durationMs?: number }) => e.durationMs !== undefined);
+      console.group("%c🏠 Performance Summary", STYLES.header);
+      console.log(`%c  API calls: ${stats.apiCalls}`, STYLES.info);
+      console.log(`%c  Errors: ${stats.errors}`, stats.errors > 0 ? STYLES.error : STYLES.success);
+      console.log(`%c  Timed entries: ${timed.length}`, STYLES.info);
+      if (timed.length > 0) {
+        const sorted = [...timed].sort((a: { durationMs?: number }, b: { durationMs?: number }) => (b.durationMs ?? 0) - (a.durationMs ?? 0));
+        console.log("%c  Top 5 slowest:", STYLES.warn);
+        sorted.slice(0, 5).forEach((e: { label: string; durationMs?: number }) => {
+          console.log(`%c    ${e.durationMs}ms — ${e.label}`, e.durationMs! < 500 ? STYLES.success : e.durationMs! < 2000 ? STYLES.warn : STYLES.error);
+        });
+      }
+      console.groupEnd();
+    },
+
+    errors() {
+      const { getEntries } = require("@/lib/debug-log");
+      const errorEntries = getEntries().filter((e: { level: string }) => e.level === "error");
+      console.group(`%c🏠 Errors (${errorEntries.length})`, STYLES.header);
+      if (errorEntries.length === 0) {
+        console.log("%c  No errors 🎉", STYLES.success);
+      } else {
+        errorEntries.forEach((e: { label: string; ts: number; detail?: unknown }) => {
+          console.log(`%c  ✗ ${e.label}`, STYLES.error, e.detail ?? "");
+          console.log(`%c    at ${new Date(e.ts).toLocaleTimeString()}`, STYLES.muted);
+        });
+      }
       console.groupEnd();
     },
 

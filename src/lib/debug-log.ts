@@ -4,7 +4,7 @@
  * the DebugPanel will update in real time. Works in production.
  */
 
-export type LogLevel = "info" | "success" | "error" | "api" | "brain" | "click";
+export type LogLevel = "info" | "success" | "error" | "api" | "brain" | "click" | "perf" | "nav" | "realtime";
 
 export type LogEntry = {
   id: string;
@@ -13,20 +13,33 @@ export type LogEntry = {
   label: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   detail?: any;
+  /** Duration in ms, for perf entries */
+  durationMs?: number;
 };
 
-const MAX_ENTRIES = 300;
+const MAX_ENTRIES = 500;
 const entries: LogEntry[] = [];
 const listeners = new Set<() => void>();
 
-export function logEvent(level: LogLevel, label: string, detail?: unknown): void {
+/** Session stats — lightweight counters for the debug pill */
+export const sessionStats = {
+  apiCalls: 0,
+  errors: 0,
+  aiTokensEstimated: 0,
+  startedAt: Date.now(),
+};
+
+export function logEvent(level: LogLevel, label: string, detail?: unknown, durationMs?: number): void {
   entries.unshift({
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     ts: Date.now(),
     level,
     label,
     detail,
+    durationMs,
   });
+  if (level === "api") sessionStats.apiCalls++;
+  if (level === "error") sessionStats.errors++;
   if (entries.length > MAX_ENTRIES) entries.splice(MAX_ENTRIES);
   listeners.forEach((fn) => fn());
 }
@@ -37,6 +50,9 @@ export function getEntries(): LogEntry[] {
 
 export function clearLog(): void {
   entries.splice(0);
+  sessionStats.apiCalls = 0;
+  sessionStats.errors = 0;
+  sessionStats.aiTokensEstimated = 0;
   listeners.forEach((fn) => fn());
 }
 
@@ -46,7 +62,7 @@ export function subscribe(fn: () => void): () => void {
 }
 
 /**
- * Wraps a fetch call with automatic request/response logging.
+ * Wraps a fetch call with automatic request/response logging + performance timing.
  * Usage: loggedFetch("/api/summarize", { method: "POST" }, "Condense knowledge")
  */
 export async function loggedFetch(
@@ -72,12 +88,33 @@ export async function loggedFetch(
     logEvent(
       res.ok ? "success" : "error",
       `← ${tag} [${res.status}] ${elapsed}ms`,
-      resBody
+      resBody,
+      elapsed
     );
 
     return res;
   } catch (e) {
-    logEvent("error", `✗ ${tag} — network error`, String(e));
+    const elapsed = Date.now() - start;
+    logEvent("error", `✗ ${tag} — network error`, String(e), elapsed);
     throw e;
   }
+}
+
+/**
+ * Log a navigation event (page change).
+ */
+export function logNavigation(from: string, to: string): void {
+  logEvent("nav", `${from} → ${to}`);
+}
+
+/**
+ * Measure and log a performance-sensitive operation.
+ * Usage: const end = startPerfTimer("Council SSE parse"); ... end();
+ */
+export function startPerfTimer(label: string): () => void {
+  const start = Date.now();
+  return () => {
+    const elapsed = Date.now() - start;
+    logEvent("perf", `⏱ ${label}: ${elapsed}ms`, { durationMs: elapsed }, elapsed);
+  };
 }
