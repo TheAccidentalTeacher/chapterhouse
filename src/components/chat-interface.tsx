@@ -961,6 +961,18 @@ export function ChatInterface() {
         <div className="border-t border-border/70 bg-background/80 px-4 py-4 backdrop-blur sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl">
             <div className="flex items-end gap-3 rounded-3xl border border-border bg-card/80 px-4 py-3 focus-within:border-accent/40">
+              <button
+                onClick={() => setCouncilMode((c) => !c)}
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                  councilMode
+                    ? "border-amber-500/50 bg-amber-500/10 text-amber-400"
+                    : "border-border/70 bg-card/60 text-muted hover:border-accent/40 hover:text-foreground"
+                }`}
+                title={councilMode ? "Council Mode ON — all members will respond" : "Switch to Council Mode"}
+              >
+                <Users className="h-3 w-3" />
+                {councilMode ? "Council" : "Solo"}
+              </button>
               <textarea
                 ref={textareaRef}
                 rows={1}
@@ -987,21 +999,8 @@ export function ChatInterface() {
               </button>
             </div>
             <div className="mt-2 flex items-center justify-between px-1">
-              {/* Council toggle + Model picker */}
+              {/* Model picker */}
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setCouncilMode((c) => !c)}
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition ${
-                    councilMode
-                      ? "border-amber-500/50 bg-amber-500/10 text-amber-400"
-                      : "border-border/70 bg-card/60 text-muted hover:border-accent/40 hover:text-foreground"
-                  }`}
-                  title={councilMode ? "Council Mode ON — all members will respond" : "Switch to Council Mode"}
-                >
-                  <Users className="h-3 w-3" />
-                  {councilMode ? "Council" : "Solo"}
-                </button>
-
                 <div className="relative">
                 <button
                   onClick={() => setModelPickerOpen((o) => !o)}
