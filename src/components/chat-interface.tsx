@@ -13,6 +13,7 @@ import {
   Pin,
   PinOff,
   Trash2,
+  Users,
   X,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -61,6 +62,28 @@ const SUGGESTED_PROMPTS = [
 // Debounce delay for auto-saving messages to DB (ms)
 const SAVE_DELAY = 1500;
 
+// ── Council Types ──────────────────────────────────────────────────────────────
+
+type CouncilMemberInfo = {
+  name: string;
+  role: string;
+  color: string;
+};
+
+type CouncilMessage = {
+  role: "council";
+  memberName: string;
+  memberColor: string;
+  content: string;
+  isStreaming?: boolean;
+};
+
+type DisplayMessage = Message | CouncilMessage;
+
+function isCouncilMessage(msg: DisplayMessage): msg is CouncilMessage {
+  return msg.role === "council";
+}
+
 // ── Chat Interface ─────────────────────────────────────────────────────────────
 
 export function ChatInterface() {
@@ -70,13 +93,18 @@ export function ChatInterface() {
   const [loadingThreads, setLoadingThreads] = useState(true);
 
   // Message state
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [selectedModel, setSelectedModel] = useState<ModelOption>(MODELS[0]);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [learnedCount, setLearnedCount] = useState(0);
   const [isLearning, setIsLearning] = useState(false);
+
+  // Council mode
+  const [councilMode, setCouncilMode] = useState(false);
+  const [activeCouncilMembers, setActiveCouncilMembers] = useState<CouncilMemberInfo[]>([]);
+  const [currentSpeaker, setCurrentSpeaker] = useState<string | null>(null);
 
   // Rename state
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -423,6 +451,128 @@ export function ChatInterface() {
       .catch(() => null)
       .finally(() => setIsLearning(false));
 
+    // ── Council Mode ──────────────────────────────────────────────────────
+    if (councilMode) {
+      log.group("Council Session");
+      log.data("Mode", "Fellowship Council");
+      log.data("Messages in context", newMessages.length);
+      setActiveCouncilMembers([]);
+      setCurrentSpeaker(null);
+
+      try {
+        const response = await fetch("/api/chat/council", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: newMessages.filter((m) => !isCouncilMessage(m)), model: selectedModel.id }),
+        });
+
+        if (!response.ok || !response.body) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+
+          // Parse SSE events from buffer
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? ""; // keep incomplete line in buffer
+
+          let eventType = "";
+          for (const line of lines) {
+            if (line.startsWith("event: ")) {
+              eventType = line.slice(7).trim();
+            } else if (line.startsWith("data: ") && eventType) {
+              try {
+                const data = JSON.parse(line.slice(6));
+
+                if (eventType === "council_start") {
+                  setActiveCouncilMembers(data.members);
+                  log.info(`Council convened: ${data.members.map((m: CouncilMemberInfo) => m.name).join(", ")}`);
+                } else if (eventType === "member_start") {
+                  setCurrentSpeaker(data.name);
+                  log.info(`${data.name} is thinking... (${data.index + 1}/${data.total})`);
+                  // Add a new council message for this member
+                  setMessages((prev) => [
+                    ...prev,
+                    { role: "council" as const, memberName: data.name, memberColor: data.color, content: "", isStreaming: true },
+                  ]);
+                } else if (eventType === "member_delta") {
+                  // Stream text into the current council member's message
+                  setMessages((prev) => {
+                    const updated = [...prev];
+                    const lastIdx = updated.length - 1;
+                    const last = updated[lastIdx];
+                    if (isCouncilMessage(last) && last.memberName === data.name) {
+                      updated[lastIdx] = { ...last, content: last.content + data.delta };
+                    }
+                    return updated;
+                  });
+                } else if (eventType === "member_done") {
+                  // Mark done streaming
+                  setMessages((prev) => {
+                    const updated = [...prev];
+                    const lastIdx = updated.length - 1;
+                    const last = updated[lastIdx];
+                    if (isCouncilMessage(last) && last.memberName === data.name) {
+                      updated[lastIdx] = { ...last, isStreaming: false };
+                    }
+                    return updated;
+                  });
+                  log.success(`${data.name} done`);
+                } else if (eventType === "member_error") {
+                  setMessages((prev) => {
+                    const updated = [...prev];
+                    const lastIdx = updated.length - 1;
+                    const last = updated[lastIdx];
+                    if (isCouncilMessage(last) && last.memberName === data.name) {
+                      updated[lastIdx] = { ...last, content: `*${data.name} encountered an error: ${data.error}*`, isStreaming: false };
+                    }
+                    return updated;
+                  });
+                } else if (eventType === "council_done") {
+                  setCurrentSpeaker(null);
+                  log.success(`Council complete: ${data.membersResponded.join(", ")}`);
+                  // Save conversation
+                  setMessages((prev) => {
+                    if (threadId) {
+                      // Convert council messages to regular messages for storage
+                      const storable = prev.map((m) =>
+                        isCouncilMessage(m)
+                          ? { role: "assistant" as const, content: `**${m.memberName}:**\n${m.content}` }
+                          : m
+                      );
+                      saveMessages(storable as Message[], threadId);
+                    }
+                    return prev;
+                  });
+                }
+              } catch {
+                // skip malformed JSON
+              }
+              eventType = "";
+            }
+          }
+        }
+      } catch (e) {
+        const errorMsg = e instanceof Error ? e.message : String(e);
+        log.error("Council session failed", errorMsg);
+        setMessages((prev) => [...prev, { role: "assistant" as const, content: `Council error: ${errorMsg}` }]);
+      } finally {
+        log.groupEnd();
+        setIsStreaming(false);
+        setCurrentSpeaker(null);
+      }
+      return;
+    }
+
+    // ── Standard Chat Mode ────────────────────────────────────────────────
     const t0 = performance.now();
     let firstChunkTime: number | null = null;
     let totalChars = 0;
@@ -490,7 +640,7 @@ export function ChatInterface() {
       // Save the complete conversation to DB
       // Use a callback to get the final messages state
       setMessages((prev) => {
-        if (threadId) saveMessages(prev, threadId);
+        if (threadId) saveMessages(prev as Message[], threadId);
         return prev;
       });
     } catch (e) {
@@ -499,7 +649,7 @@ export function ChatInterface() {
       setMessages((prev) => {
         const updated = [...prev];
         updated[updated.length - 1] = { role: "assistant", content: `Error: ${errorMsg}` };
-        if (threadId) saveMessages(updated, threadId);
+        if (threadId) saveMessages(updated as Message[], threadId);
         return updated;
       });
     } finally {
@@ -650,7 +800,91 @@ export function ChatInterface() {
             </div>
           ) : (
             <div className="mx-auto max-w-3xl space-y-6">
-              {messages.map((msg, i) => (
+              {/* Council members bar — shows when council is active */}
+              {councilMode && activeCouncilMembers.length > 0 && isStreaming && (
+                <div className="flex items-center gap-2 rounded-2xl border border-border/40 bg-card/60 px-4 py-2.5">
+                  <Users className="h-4 w-4 text-muted" />
+                  <span className="text-xs text-muted">Council:</span>
+                  {activeCouncilMembers.map((m) => (
+                    <span
+                      key={m.name}
+                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium transition-all ${
+                        currentSpeaker === m.name
+                          ? "ring-2 ring-offset-1 ring-offset-background"
+                          : "opacity-50"
+                      }`}
+                      style={{
+                        backgroundColor: m.color + "18",
+                        color: m.color,
+                        ...(currentSpeaker === m.name ? { ringColor: m.color } : {}),
+                      }}
+                    >
+                      {currentSpeaker === m.name && <Loader2 className="h-3 w-3 animate-spin" />}
+                      {m.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {messages.map((msg, i) => {
+                // Council member message
+                if (isCouncilMessage(msg)) {
+                  return (
+                    <div key={i} className="flex gap-3 flex-row">
+                      <div
+                        className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl text-xs font-bold shadow"
+                        style={{ backgroundColor: msg.memberColor + "25", color: msg.memberColor }}
+                        title={msg.memberName}
+                      >
+                        {msg.memberName.charAt(0)}
+                      </div>
+                      <div
+                        className="max-w-[80%] rounded-3xl px-5 py-4 text-sm leading-7 glass-panel border"
+                        style={{ borderColor: msg.memberColor + "40" }}
+                      >
+                        {msg.content ? (
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
+                              h1: ({ children }) => <h1 className="mb-3 mt-4 text-lg font-semibold first:mt-0">{children}</h1>,
+                              h2: ({ children }) => <h2 className="mb-2 mt-4 text-base font-semibold first:mt-0">{children}</h2>,
+                              h3: ({ children }) => <h3 className="mb-2 mt-3 text-sm font-semibold first:mt-0">{children}</h3>,
+                              ul: ({ children }) => <ul className="mb-3 ml-4 list-disc space-y-1 last:mb-0">{children}</ul>,
+                              ol: ({ children }) => <ol className="mb-3 ml-4 list-decimal space-y-1 last:mb-0">{children}</ol>,
+                              li: ({ children }) => <li className="leading-6">{children}</li>,
+                              strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+                              code: ({ children, className }) => {
+                                const isInline = !className;
+                                return isInline ? (
+                                  <code className="rounded bg-muted-surface px-1.5 py-0.5 font-mono text-xs">{children}</code>
+                                ) : (
+                                  <code className="block overflow-x-auto rounded-xl bg-muted-surface px-4 py-3 font-mono text-xs leading-5">{children}</code>
+                                );
+                              },
+                              pre: ({ children }) => <pre className="mb-3 last:mb-0">{children}</pre>,
+                              blockquote: ({ children }) => <blockquote className="mb-3 border-l-2 border-accent/50 pl-4 text-muted last:mb-0">{children}</blockquote>,
+                              a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-accent underline underline-offset-2 hover:opacity-80">{children}</a>,
+                              table: ({ children }) => <div className="mb-3 overflow-x-auto last:mb-0"><table className="min-w-full text-xs">{children}</table></div>,
+                              th: ({ children }) => <th className="border border-border/70 bg-muted-surface px-3 py-2 text-left font-semibold">{children}</th>,
+                              td: ({ children }) => <td className="border border-border/70 px-3 py-2">{children}</td>,
+                            }}
+                          >
+                            {msg.content}
+                          </ReactMarkdown>
+                        ) : (
+                          <div className="flex items-center gap-2 text-muted">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span className="text-xs" style={{ color: msg.memberColor }}>{msg.memberName} is thinking…</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Regular messages
+                return (
                 <div
                   key={i}
                   className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : msg.role === "system" ? "justify-center" : "flex-row"}`}
@@ -716,7 +950,8 @@ export function ChatInterface() {
                     </div>
                   )}
                 </div>
-              ))}
+              );
+              })}
               <div ref={bottomRef} />
             </div>
           )}
@@ -752,14 +987,28 @@ export function ChatInterface() {
               </button>
             </div>
             <div className="mt-2 flex items-center justify-between px-1">
-              {/* Model picker */}
-              <div className="relative">
+              {/* Council toggle + Model picker */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCouncilMode((c) => !c)}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition ${
+                    councilMode
+                      ? "border-amber-500/50 bg-amber-500/10 text-amber-400"
+                      : "border-border/70 bg-card/60 text-muted hover:border-accent/40 hover:text-foreground"
+                  }`}
+                  title={councilMode ? "Council Mode ON — all members will respond" : "Switch to Council Mode"}
+                >
+                  <Users className="h-3 w-3" />
+                  {councilMode ? "Council" : "Solo"}
+                </button>
+
+                <div className="relative">
                 <button
                   onClick={() => setModelPickerOpen((o) => !o)}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-card/60 px-3 py-1 text-xs text-muted transition hover:border-accent/40 hover:text-foreground"
+                  className={`inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-card/60 px-3 py-1 text-xs text-muted transition hover:border-accent/40 hover:text-foreground ${councilMode ? "opacity-50 pointer-events-none" : ""}`}
                 >
                   <span className={`h-1.5 w-1.5 rounded-full ${selectedModel.provider === "openai" ? "bg-green-400" : "bg-orange-400"}`} />
-                  {selectedModel.label}
+                  {councilMode ? "Multi-model" : selectedModel.label}
                   <ChevronDown className="h-3 w-3" />
                 </button>
                 {modelPickerOpen && (
@@ -780,6 +1029,7 @@ export function ChatInterface() {
                     ))}
                   </div>
                 )}
+              </div>
               </div>
 
               {/* Brain indicator */}
