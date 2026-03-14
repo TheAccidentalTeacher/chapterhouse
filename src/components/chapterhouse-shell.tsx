@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Bell, ChevronDown, HelpCircle, LogOut, Search, Settings2, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { navigationGroups } from "@/lib/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { DebugPanel } from "@/components/debug-panel";
@@ -24,6 +25,10 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
     return initial;
   });
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [tooltipRect, setTooltipRect] = useState<DOMRect | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   // Auto-open group containing the active route
   useEffect(() => {
@@ -116,8 +121,14 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
                             <div key={item.href} className="relative">
                               <Link
                                 href={item.href}
-                                onMouseEnter={() => setHoveredItem(item.href)}
-                                onMouseLeave={() => setHoveredItem(null)}
+                                onMouseEnter={(e) => {
+                                  setHoveredItem(item.href);
+                                  setTooltipRect(e.currentTarget.getBoundingClientRect());
+                                }}
+                                onMouseLeave={() => {
+                                  setHoveredItem(null);
+                                  setTooltipRect(null);
+                                }}
                                 className={`block rounded-2xl border px-4 py-2.5 transition ${
                                   isActive
                                     ? "border-accent/35 bg-accent/12 text-foreground shadow-sm"
@@ -145,39 +156,7 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
                                 </div>
                               </Link>
 
-                              {/* Tooltip — appears on hover */}
-                              {isHovered && item.tooltip && (
-                                <div className="pointer-events-none absolute left-full top-0 z-50 ml-3 w-80 rounded-2xl border border-border bg-card p-4 text-xs leading-5 text-muted shadow-xl shadow-black/30">
-                                  <p className="mb-2 font-semibold text-foreground">{item.label}</p>
-                                  <p className="mb-3 leading-relaxed">{item.tooltip.summary}</p>
-                                  {item.tooltip.features.length > 0 && (
-                                    <>
-                                      <p className="mb-1 font-semibold text-foreground/80 text-[10px] uppercase tracking-wider">What it does</p>
-                                      <ul className="mb-3 space-y-0.5">
-                                        {item.tooltip.features.map((f, i) => (
-                                          <li key={i} className="flex gap-1.5">
-                                            <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-accent/60" />
-                                            <span>{f}</span>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </>
-                                  )}
-                                  {item.tooltip.tips.length > 0 && (
-                                    <>
-                                      <p className="mb-1 font-semibold text-amber-400/80 text-[10px] uppercase tracking-wider">Testing tips</p>
-                                      <ul className="space-y-0.5">
-                                        {item.tooltip.tips.map((t, i) => (
-                                          <li key={i} className="flex gap-1.5">
-                                            <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-amber-400/60" />
-                                            <span>{t}</span>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </>
-                                  )}
-                                </div>
-                              )}
+                              {/* Tooltip renders via portal below */}
                             </div>
                           );
                         })}
@@ -292,6 +271,52 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
           </div>
         </aside>
       </div>
+
+      {/* Tooltip portal — renders outside sidebar overflow context */}
+      {mounted && hoveredItem && tooltipRect && (() => {
+        const item = navigationGroups.flatMap(g => g.items).find(i => i.href === hoveredItem);
+        if (!item?.tooltip) return null;
+        return createPortal(
+          <div
+            className="pointer-events-none fixed z-[9999] w-80 rounded-2xl border border-border bg-card p-4 text-xs leading-5 text-muted shadow-xl shadow-black/30"
+            style={{
+              top: tooltipRect.top,
+              left: tooltipRect.right + 12,
+            }}
+          >
+            <p className="mb-2 font-semibold text-foreground">{item.label}</p>
+            <p className="mb-3 leading-relaxed">{item.tooltip.summary}</p>
+            {item.tooltip.features.length > 0 && (
+              <>
+                <p className="mb-1 font-semibold text-foreground/80 text-[10px] uppercase tracking-wider">What it does</p>
+                <ul className="mb-3 space-y-0.5">
+                  {item.tooltip.features.map((f, i) => (
+                    <li key={i} className="flex gap-1.5">
+                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-accent/60" />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            {item.tooltip.tips.length > 0 && (
+              <>
+                <p className="mb-1 font-semibold text-amber-400/80 text-[10px] uppercase tracking-wider">Testing tips</p>
+                <ul className="space-y-0.5">
+                  {item.tooltip.tips.map((t, i) => (
+                    <li key={i} className="flex gap-1.5">
+                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-amber-400/60" />
+                      <span>{t}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>,
+          document.body
+        );
+      })()}
+
       <DebugPanel />
     </div>
   );
