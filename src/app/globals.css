@@ -1,20 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f6f2ea;
-  --foreground: #1f1a17;
-  --card: rgba(255, 255, 255, 0.72);
-  --card-foreground: #1f1a17;
-  --border: rgba(93, 78, 66, 0.18);
-  --muted: #6f6258;
-  --muted-surface: rgba(120, 100, 84, 0.08);
-  --accent: #6c4cf1;
-  --accent-foreground: #f8f6ff;
-  --success: #1d7f5f;
+  --background: #f3f0f5;
+  --foreground: #1a1520;
+  --card: rgba(255, 252, 255, 0.74);
+  --card-foreground: #1a1520;
+  --border: rgba(88, 52, 110, 0.16);
+  --muted: #6e5a7a;
+  --muted-surface: rgba(100, 60, 130, 0.07);
+  --accent: #7b2d8e;
+  --accent-foreground: #faf5ff;
+  --success: #2d8659;
   --warning: #a76516;
-  --danger: #b23a48;
-  --sidebar: rgba(255, 248, 239, 0.82);
-  --rail: rgba(255, 255, 255, 0.56);
+  --danger: #c4233c;
+  --sidebar: rgba(248, 242, 252, 0.85);
+  --rail: rgba(252, 248, 255, 0.58);
 }
 
 @theme inline {
@@ -38,20 +38,20 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #100f12;
-    --foreground: #f5f1ec;
-    --card: rgba(23, 24, 31, 0.78);
-    --card-foreground: #f5f1ec;
-    --border: rgba(255, 255, 255, 0.08);
-    --muted: #b6a99d;
-    --muted-surface: rgba(255, 255, 255, 0.05);
-    --accent: #8d72ff;
-    --accent-foreground: #f8f6ff;
+    --background: #0d0a11;
+    --foreground: #ede6f2;
+    --card: rgba(22, 16, 30, 0.82);
+    --card-foreground: #ede6f2;
+    --border: rgba(160, 120, 200, 0.12);
+    --muted: #a898b4;
+    --muted-surface: rgba(160, 120, 200, 0.06);
+    --accent: #b44dcc;
+    --accent-foreground: #faf5ff;
     --success: #54c59d;
     --warning: #ffbf70;
-    --danger: #ff7d8b;
-    --sidebar: rgba(20, 21, 28, 0.84);
-    --rail: rgba(18, 19, 26, 0.68);
+    --danger: #ef4458;
+    --sidebar: rgba(14, 10, 20, 0.88);
+    --rail: rgba(16, 12, 22, 0.72);
   }
 }
 
@@ -76,13 +76,13 @@ a {
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
 }
 
 .chapterhouse-grid {
   background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    linear-gradient(to right, rgba(160, 120, 200, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(160, 120, 200, 0.04) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 
@@ -90,7 +90,22 @@ a {
   background: var(--card);
   backdrop-filter: blur(20px);
   border: 1px solid var(--border);
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(200, 160, 240, 0.06);
+}
+
+/* Metallic purple shimmer for accent surfaces */
+.metallic-accent {
+  background: linear-gradient(135deg, #7b2d8e 0%, #a855c7 40%, #c084e0 55%, #a855c7 70%, #7b2d8e 100%);
+  background-size: 200% 200%;
+}
+
+@media (prefers-color-scheme: dark) {
+  .metallic-accent {
+    background: linear-gradient(135deg, #6a1f80 0%, #b44dcc 35%, #d4a0e8 50%, #b44dcc 65%, #6a1f80 100%);
+    background-size: 200% 200%;
+  }
 }
 
 .section-title {

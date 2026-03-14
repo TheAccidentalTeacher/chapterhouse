@@ -80,7 +80,7 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
           <div className="mx-auto flex h-full max-w-sm flex-col gap-6">
             <div className="rounded-3xl border border-border bg-card/80 p-5">
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-accent text-accent-foreground shadow-lg shadow-accent/25">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl metallic-accent text-accent-foreground shadow-lg shadow-accent/30">
                   <Sparkles className="h-5 w-5" />
                 </div>
                 <div>
