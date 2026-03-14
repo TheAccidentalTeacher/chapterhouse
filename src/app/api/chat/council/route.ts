@@ -29,7 +29,7 @@ const COUNCIL: CouncilMember[] = [
 
 Your job: Give the definitive, well-reasoned answer to Scott's question. Do real analysis. Show your thinking. Push back on assumptions. Be direct, be sharp, be useful.
 
-Format: Start your response with **Gandalf:** on its own line. Write in character but keep it focused. No filler. If you need to be long, be long — but earn every paragraph.`,
+Format: Start your response with **Gandalf:** on its own line. Write in character but keep it focused. No filler. HARD LIMIT: 400 words max. Be dense, not long. If you can say it in 200, do.`,
   },
   {
     name: "Legolas",
@@ -42,7 +42,7 @@ Format: Start your response with **Gandalf:** on its own line. Write in characte
 
 Your job: Find what Gandalf missed, got wrong, or oversimplified. Spot edge cases, logical gaps, competitive threats he underweighted, or assumptions that don't hold. If Gandalf nailed it, say so briefly and add the one thing he likely skipped.
 
-Format: Start with **Legolas:** on its own line. Be concise. Numbered points if critiquing. Don't repeat what Gandalf said — only add, correct, or sharpen.`,
+Format: Start with **Legolas:** on its own line. Be concise. Numbered points if critiquing. Don't repeat what Gandalf said — only add, correct, or sharpen. HARD LIMIT: 300 words max.`,
   },
   {
     name: "Aragorn",
@@ -55,7 +55,7 @@ Format: Start with **Legolas:** on its own line. Be concise. Numbered points if 
 
 Your job: Make the call. Given everything said, what should Scott actually DO? What's the decision? What's the priority? What's the first concrete action? If Gandalf and Legolas disagreed, resolve it.
 
-Format: Start with **Aragorn:** on its own line. Be decisive. Short paragraphs. End with a clear action item or decision.`,
+Format: Start with **Aragorn:** on its own line. Be decisive. Short paragraphs. End with a clear action item or decision. HARD LIMIT: 250 words max.`,
   },
   {
     name: "Gimli",
@@ -68,7 +68,7 @@ Format: Start with **Aragorn:** on its own line. Be decisive. Short paragraphs. 
 
 Your job: Gut-check everything against reality. What sounds good in theory but falls apart on a Tuesday in October? What's been overcomplicated? What would actually work for a teacher in Glennallen, Alaska making $55K/year with a May deadline? What would Anna say about this?
 
-Format: Start with **Gimli:** on its own line. Be gruff. Be brief. Cut through the noise. If everyone else is right, just say "Right then. Do it." and add nothing.`,
+Format: Start with **Gimli:** on its own line. Be gruff. Be brief. Cut through the noise. If everyone else is right, just say "Right then. Do it." and add nothing. HARD LIMIT: 200 words max.`,
   },
   {
     name: "Merry & Pippin",
@@ -223,6 +223,69 @@ export async function POST(request: Request) {
               name: member.name,
               error: errMsg,
             }));
+          }
+        }
+
+        // ── Rebuttal Round ─────────────────────────────────────────────
+        // Each member gets 2-3 sentences to respond to what the others said
+        const rebuttalMembers = members.filter((m) => m.name !== "Merry & Pippin");
+
+        if (rebuttalMembers.length > 1) {
+          controller.enqueue(sseEvent(encoder, "rebuttal_start", {
+            members: rebuttalMembers.map((m) => ({ name: m.name, color: m.color })),
+          }));
+
+          for (let i = 0; i < rebuttalMembers.length; i++) {
+            const member = rebuttalMembers[i];
+
+            controller.enqueue(sseEvent(encoder, "member_start", {
+              name: member.name,
+              color: member.color,
+              role: "Rebuttal",
+              index: i,
+              total: rebuttalMembers.length,
+            }));
+
+            const rebuttalPrompt = `You just participated in a Council discussion. Here is the FULL transcript:\n\n${councilTranscript}\n\nNow respond to what the OTHER members said. Agree, disagree, push back, build on their points. 2-3 sentences MAXIMUM. Be sharp, be direct. Stay in character. Start with **${member.name}:** on its own line.`;
+
+            try {
+              let rebuttalText = "";
+
+              if (member.provider === "anthropic") {
+                const stream = getAnthropic().messages.stream({
+                  model: member.model,
+                  max_tokens: 300,
+                  system: member.systemPrompt,
+                  messages: [...messages, { role: "user", content: rebuttalPrompt }],
+                });
+                for await (const chunk of stream) {
+                  if (chunk.type === "content_block_delta" && chunk.delta.type === "text_delta") {
+                    rebuttalText += chunk.delta.text;
+                    controller.enqueue(sseEvent(encoder, "member_delta", { name: member.name, delta: chunk.delta.text }));
+                  }
+                }
+              } else {
+                const stream = await getOpenAI().responses.create({
+                  model: member.model,
+                  instructions: member.systemPrompt,
+                  input: [...messages, { role: "user", content: rebuttalPrompt }],
+                  stream: true,
+                  max_output_tokens: 300,
+                });
+                for await (const event of stream) {
+                  if (event.type === "response.output_text.delta" && event.delta) {
+                    rebuttalText += event.delta;
+                    controller.enqueue(sseEvent(encoder, "member_delta", { name: member.name, delta: event.delta }));
+                  }
+                }
+              }
+
+              controller.enqueue(sseEvent(encoder, "member_done", { name: member.name, fullResponse: rebuttalText }));
+              councilTranscript += rebuttalText + "\n\n";
+            } catch (err) {
+              const errMsg = err instanceof Error ? err.message : String(err);
+              controller.enqueue(sseEvent(encoder, "member_error", { name: member.name, error: errMsg }));
+            }
           }
         }
 

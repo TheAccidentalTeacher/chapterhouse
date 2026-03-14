@@ -536,6 +536,13 @@ export function ChatInterface() {
                     }
                     return updated;
                   });
+                } else if (eventType === "rebuttal_start") {
+                  log.info("Rebuttal round beginning...");
+                  // Insert a visual divider
+                  setMessages((prev) => [
+                    ...prev,
+                    { role: "system" as const, content: "— The Council responds to each other —" },
+                  ]);
                 } else if (eventType === "council_done") {
                   setCurrentSpeaker(null);
                   log.success(`Council complete: ${data.membersResponded.join(", ")}`);
