@@ -57,7 +57,7 @@
 | Repo | Stack | Status | What It Is |
 |---|---|---|---|
 | roleplaying | TS | 🔴 Active | AI RPG: DM + 3D physics dice (Babylon+Ammo) + ElevenLabs TTS + DALL-E + Supabase |
-| chapterhouse | TS | 🔴 Active | Private ops brain — daily brief (live + auto-cron), multi-model AI, research ingestion. Deployed: chapterhouse.vercel.app |
+| chapterhouse | TS | 🔴 Active | Private ops brain — daily brief (live + auto-cron), multi-model AI, research ingestion, Council Mode (SSE multi-member), job runner, curriculum factory, n8n pipelines. Deployed: chapterhouse.vercel.app |
 | NextChapterHomeschool | TS | 🔴 Active | ClassCiv — real-time multiplayer classroom civilization, 29 tables, 11-phase epoch FSM |
 | agentsvercel | JS | 🟡 Warm | Hypomnemata — 12 AI personas, 39 serverless fns, 6 AI providers, YouTube intelligence |
 | arms-of-deliverance | TS | 🟡 Warm | Epub/course generator / curriculum builder |
@@ -348,11 +348,11 @@ Use these when generating copy, landing pages, ad campaigns, email sequences, or
 
 ---
 
-## Chapterhouse Feature Status — March 11, 2026
+## Chapterhouse Feature Status — March 14, 2026
 
 | Screen | Status | What works |
 |--------|--------|------------|
-| Chat (Home) | ✅ WORKING | Streaming, 5 model options (GPT-5.4/Pro/Mini, Claude Opus/Sonnet 4.6), persistent threads, auto-learn, founder memory + knowledge summaries + brief + research injected into context |
+| Chat (Home) | ✅ WORKING | Streaming, 5 model options (GPT-5.4/Pro/Mini, Claude Opus/Sonnet 4.6), persistent threads, auto-learn, founder memory + knowledge summaries + brief + research injected into context. **Council Mode toggle** — Solo/Council switch in input bar. Council mode streams multi-member Fellowship responses via SSE with rebuttal round. |
 | Daily Brief | ✅ WORKING | Real RSS (9 feeds, all URLs verified) + GitHub (11 repos) → Claude Sonnet 4.6. Knowledge summaries injected. Generate + cron. Convert to task + Send to review on every item. |
 | Research | ✅ WORKING | URL fetch + GPT-5.4 analysis, paste text, quick note, screenshot/GPT Vision. Manual fallback. SSRF protection. Condense knowledge button → /api/summarize. |
 | Product Intelligence | ✅ WORKING | GPT-5.4 scores opportunities across Store/Curriculum/Content (A+ to C). Category filter. |
@@ -363,12 +363,18 @@ Use these when generating copy, landing pages, ad campaigns, email sequences, or
 | Settings | ✅ WORKING | Env status checker (present/missing). Founder Memory CRUD. Category picker. |
 | Help | ✅ WORKING | /help page serving chapterhouse-help-guide.md. Linked from sidebar. |
 | Login | ✅ WORKING | Supabase email/password auth. ALLOWED_EMAILS enforcement in middleware. |
+| **Job Runner** | ✅ WORKING | Background AI jobs via QStash → Railway workers. Supabase Realtime progress updates. Create/cancel/run jobs. |
+| **Curriculum Factory** | ✅ WORKING | 4-pass Council critique loop (Gandalf → Legolas → Aragorn → Gimli). Single + batch generation. |
+| **Council Chamber** | ✅ WORKING | 5-agent curriculum generation as background job. Select subject/grade/duration. |
+| **Pipelines** | ✅ WORKING | n8n workflow control panel. Status, execution history, manual triggers. Requires n8n API key. |
+
+### Sidebar
+Accordion-grouped navigation (5 sections: Command Center, Intelligence, Production, AI & Automation, System). Hover tooltips on every nav item. Status badges (live/beta/soon). Dynamic system status rail. Help link below nav.
 
 ### Known Issues
 | Issue | Severity | Detail |
 |-------|----------|--------|
-| `chat_threads` migration not run in production Supabase | **P0** | Chat works (best-effort fallback) but threads don’t persist. Run `supabase/migrations/20260309_006_create_chat_threads.sql` in Supabase SQL Editor. |
-| `knowledge_summaries` migration not run in production Supabase | **P0** | Stage 3 summarization deployed but table doesn't exist yet. Run `supabase/migrations/20260310_007_create_knowledge_summaries.sql` in SQL Editor. |
+
 | Migration schema conflicts | **P3** | `research_items` and `tasks` tables have competing CREATE TABLE IF NOT EXISTS across migration files. Production schema works but migration files are misleading. |
 
 ### AI Model Map
@@ -377,11 +383,17 @@ Use these when generating copy, landing pages, ad campaigns, email sequences, or
 | Daily Brief generation | claude-sonnet-4-6 | Anthropic |
 | Chat (default) | gpt-5.4 | OpenAI |
 | Chat (Claude option) | claude-* (user-selected) | Anthropic |
+| Council Mode — Gandalf | claude-sonnet-4-6 | Anthropic |
+| Council Mode — Legolas | claude-sonnet-4-6 | Anthropic |
+| Council Mode — Aragorn | gpt-5.4 | OpenAI |
+| Council Mode — Gimli | gpt-5.4 | OpenAI |
+| Council Mode — Merry & Pippin | gpt-5-mini | OpenAI |
 | Research analysis | gpt-5.4 | OpenAI (Responses API) |
 | Research screenshot | gpt-5.4 | OpenAI (Vision) |
 | Opportunity analyzer | gpt-5.4 | OpenAI (Responses API) |
 | Extract learnings | gpt-5.4 | OpenAI (Responses API) |
 | Content Studio | claude-sonnet-4-6 | Anthropic |
+| Curriculum Factory (4-pass) | claude-sonnet-4-6 | Anthropic |
 
 ### Supabase Tables (All Live)
 | Table | Used by |
@@ -393,6 +405,7 @@ Use these when generating copy, landing pages, ad campaigns, email sequences, or
 | `tasks` | Tasks page, Review Queue, Brief item cards |
 | `chat_threads` | Chat interface (persistent threads) |
 | `knowledge_summaries` | Stage 3 summarization — compressed research by tag, injected into brief + chat |
+| `jobs` | Job Runner, Curriculum Factory, Council Chamber — Realtime enabled |
 | `documents` | Schema exists — not used (Documents reads filesystem) |
 | `sources` | Schema exists — not used yet (RSS items go direct to Claude) |
 | `settings` | Schema exists — not used |
@@ -400,4 +413,4 @@ Use these when generating copy, landing pages, ad campaigns, email sequences, or
 ---
 
 ## Last Updated
-March 11, 2026 — Deep audit complete. All 9 screens WORKING + /help page. Auth gate live. RSS feeds all fixed (5 swapped for verified working URLs). SSRF protection added to research fetch. Stage 3 summarization pipeline deployed (POST /api/summarize + knowledge_summaries). Outstanding: run 2 pending Supabase migrations (chat_threads + knowledge_summaries). Verify cron first fire today.
+March 14, 2026 — All 15 screens WORKING. Council Mode in chat (Solo/Council toggle, SSE multi-member streaming, rebuttal round). Job Runner, Curriculum Factory, Council Chamber, Pipelines all built and deployed. Accordion sidebar with 5 groups, tooltips, status badges. Dynamic right rail.

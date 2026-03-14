@@ -12,15 +12,17 @@ Nobody else can see it. It's locked to your two email addresses.
 
 ---
 
-## The Nine Screens
+## All Screens
 
-Chapterhouse has nine screens, all accessible from the sidebar on the left. Here's what each one does.
+Chapterhouse has fifteen screens organized in five sidebar groups. Here's what each one does.
+
+### Command Center
 
 ---
 
 ### 1. Home (Chat)
 
-**What it is:** A chat window — like texting an assistant who knows your brand, your research, your daily brief, and your goals.
+**What it is:** A chat window — like texting an assistant who knows your brand, your research, your daily brief, and your goals. Supports two modes: **Solo** (one AI responds) and **Council** (multiple Fellowship members respond).
 
 **How to use it:**
 - Type a question or request in the box at the bottom and press Enter
@@ -28,6 +30,10 @@ Chapterhouse has nine screens, all accessible from the sidebar on the left. Here
 - Start new conversations with the **+** button
 - Pin important conversations so they stay at the top
 - Rename or delete old conversations
+
+**Council Mode:** Click the amber **Council** pill button next to the text input to toggle Council Mode on/off:
+- **Solo mode** (default) — one AI model responds, like a normal chat
+- **Council mode** — your question goes to multiple Fellowship members (Gandalf, Legolas, Aragorn, and on complex questions Gimli and Merry & Pippin). Each responds in character, with colored avatar bubbles. After the initial round, a **rebuttal round** follows where members respond to each other.
 
 **Special trick:** Type `/remember [any fact]` and the system will memorize it permanently. Example: `/remember We decided to launch the first curriculum guide by September`. That fact then gets included in every future chat automatically.
 
@@ -52,6 +58,8 @@ Chapterhouse has nine screens, all accessible from the sidebar on the left. Here
 **Where the data comes from:** 9 RSS news feeds (education, homeschool, edtech) + 11 GitHub repos you follow. The AI reads all of it and writes the summary.
 
 ---
+
+### Intelligence
 
 ### 3. Research
 
@@ -87,6 +95,8 @@ Chapterhouse has nine screens, all accessible from the sidebar on the left. Here
 **The more research you save, the better these suggestions get.**
 
 ---
+
+### Production
 
 ### 5. Content Studio
 
@@ -158,6 +168,8 @@ Each task shows where it came from (brief, opportunity, or manual) so you always
 
 ---
 
+### System
+
 ### 9. Settings
 
 **What it is:** System configuration and your "founder memory" manager.
@@ -167,6 +179,104 @@ Each task shows where it came from (brief, opportunity, or manual) so you always
 **Founder Memory** — Facts the AI should always know about you. Add facts like "We don't do discount pricing" or "Anna handles all curriculum reviews." These get injected into every chat conversation automatically. You can also add them via `/remember` in chat.
 
 **Environment Status** — Shows green/yellow dots for each required service connection (API keys, database, etc.). If something is yellow, that service isn't configured.
+
+---
+
+### AI & Automation
+
+### 10. Job Runner
+
+**What it is:** A dashboard for background AI jobs that run while you sleep. Jobs are queued, processed by a Railway worker, and report progress in real time.
+
+**How to use it:**
+- Click **Create Job** to queue a new background AI task
+- Watch progress bars update live as jobs run (powered by Supabase Realtime — no page refresh needed)
+- Each job shows: label, type badge, status badge (queued/running/completed/failed), and a progress bar
+- Click any job to see full details, output, or error messages
+- Cancel running jobs if needed
+
+**Behind the scenes:** Jobs are published to QStash (Upstash), which delivers them to a Railway worker service. The worker processes the AI task, writes progress updates to Supabase, and the UI picks up changes in real time.
+
+---
+
+### 11. Curriculum Factory
+
+**What it is:** A 4-pass AI pipeline that generates curriculum scope & sequences using the Council's critique loop.
+
+**How to use it:**
+- Select a subject, grade level, and duration
+- Optionally add standards alignment or additional context
+- Click **Generate** for a single curriculum, or use **Batch** mode to generate many at once
+- The 4-pass process:
+  1. **Gandalf** drafts the initial scope & sequence
+  2. **Legolas** critiques it for gaps, errors, and missequencing
+  3. **Aragorn** synthesizes the best of both into a final version
+  4. **Gimli** stress-tests it for real classroom viability
+- View the final output as rendered Markdown, download it, or copy to clipboard
+
+**Batch mode:** Generate up to 70 curricula overnight (10 subjects × 7 grade levels). Jobs are staggered to avoid API rate limits.
+
+---
+
+### 12. Council Chamber
+
+**What it is:** A purpose-built 5-agent system for generating curriculum scope & sequences as a background job. Similar to Curriculum Factory but runs all 5 Council members as a longer, more thorough process.
+
+**How to use it:**
+- Select subject, grade, and duration
+- Submit to start the job — it runs in the background
+- Check the Job Runner page for progress
+- Results appear when complete
+
+**How it differs from Council Mode in Chat:** Council Mode in Chat is real-time, general-purpose, and handles any topic. Council Chamber is purpose-built for curriculum generation and runs as a background job.
+
+---
+
+### 13. Pipelines
+
+**What it is:** A control panel for n8n automation workflows running on Railway.
+
+**How to use it:**
+- View all your n8n workflows with their current status (active/inactive)
+- See the last run timestamp and result (success/failed/running)
+- Click **Run now** to manually trigger any workflow
+- Auto-refreshes every 30 seconds
+
+**Requires:** n8n API key configured in environment variables. Without it, shows a setup message.
+
+---
+
+### 14. Help
+
+**What it is:** This page! A plain-English guide to every feature in Chapterhouse.
+
+---
+
+### 15. Login
+
+**What it is:** The authentication gate. Locked to two email addresses only.
+
+---
+
+## The Sidebar
+
+The sidebar on the left organizes all 15 screens into five collapsible groups:
+
+| Group | Screens |
+|-------|---------|
+| **Command Center** | Home (Chat), Daily Brief |
+| **Intelligence** | Research, Product Intelligence |
+| **Production** | Content Studio, Review Queue, Tasks, Documents |
+| **AI & Automation** | Job Runner, Curriculum Factory, Pipelines, Council Chamber |
+| **System** | Settings |
+
+Click a group header to expand/collapse it. The group containing the current page opens automatically.
+
+**Tooltips:** Hover over any nav item to see a tooltip card explaining what that screen does.
+
+**Status badges:** Some items show a badge — "beta" (amber) means partially working, "soon" (blue) means planned but not built yet.
+
+**Right sidebar:** Shows a dynamic system status rail with colored dots for every screen (green = live, amber = beta, blue = planned).
 
 ---
 
@@ -186,18 +296,14 @@ Here's how a typical day might look:
 
 ---
 
-## What Doesn't Work Yet
-
-Being honest about the edges:
+## Known Limitations
 
 | Item | Status |
 |------|--------|
-| **Top search bar** | Decorative only — you can't type in it. It's a visual placeholder for a future feature. |
-| **Bell icon** (top right) | Does nothing yet. Future: notifications. |
-| **Settings gear** (top right) | Does nothing yet. Use the Settings page in the sidebar instead. |
-| **Right sidebar "Build Status"** | Always shows green dots. It's a static display, not a live health check. |
+| **Bell icon** (top right) | Links to Review Queue — not a notification system yet. |
 | **Some RSS feeds** | About 3 of 9 feeds work reliably. The others are blocked by the source websites. The brief still generates — it just has fewer sources some days. |
 | **Document editing** | Documents are read-only. To edit them, you'd edit the files directly in the codebase. |
+| **n8n Pipelines** | Requires n8n API key configured. Without it, the page shows a setup message. |
 
 ---
 
@@ -208,7 +314,7 @@ Being honest about the edges:
 | **Who can access this?** | Only scott@somers.com and anna@somers.com |
 | **Where does it live?** | chapterhouse.vercel.app |
 | **Is my data private?** | Yes — stored in your private Supabase database. No one else has access. |
-| **What AI models are used?** | GPT-5.4 (chat, research, opportunities), Claude Sonnet 4.6 (daily brief, content studio) |
+| **What AI models are used?** | GPT-5.4 (chat, research, opportunities), Claude Sonnet 4.6 (daily brief, content studio, curriculum factory). Council Mode uses both: Gandalf + Legolas on Claude, Aragorn + Gimli on GPT-5.4, Merry & Pippin on GPT-5-mini. |
 | **Does it cost money to run?** | Vercel Pro hosting + AI API usage. No per-user fees. |
 | **How do I sign out?** | Click the door icon in the top right corner |
 | **How do I teach it something?** | Type `/remember [fact]` in chat, or add facts in Settings → Founder Memory |
@@ -216,4 +322,4 @@ Being honest about the edges:
 
 ---
 
-*This guide lives in the Documents section of Chapterhouse. Last updated: June 2025.*
+*This guide lives in the Documents section of Chapterhouse. Last updated: March 14, 2026.*

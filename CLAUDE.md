@@ -14,73 +14,110 @@ This document is your complete technical brief. Read all of it before touching a
 
 ---
 
-## What Chapterhouse Already Is (Current State)
+## What Chapterhouse Already Is (Current State — Updated March 14, 2026)
 
 **Stack:** Next.js 16.1.6 (App Router), React 19, TypeScript, Tailwind 4, Supabase (auth + DB + realtime), Anthropic SDK, OpenAI SDK, Zod
 
-**Existing routes:**
-- `/daily-brief` — automated news brief pulled from RSS + GitHub
-- `/research` — web research ingestion
-- `/content-studio` — AI content generation
-- `/tasks` — task management
-- `/documents` — document store
-- `/product-intelligence` — opportunity analysis
-- `/review-queue` — content review pipeline
-- `/settings`, `/help`
+**All routes — grouped by sidebar section:**
 
-**Existing API routes under `/api/`:**
-- `briefs/` — brief generation + listing
-- `chat/` — chat interface
-- `content-studio/` — content generation
-- `cron/daily-brief/` — scheduled brief generation
-- `research/` — research queries
-- `tasks/[id]` — task CRUD
-- `threads/[id]` — chat thread management
-- `opportunities/analyze` — opportunity scoring
-- `extract-learnings/`, `summarize/`, `founder-notes/`
+### Command Center
+- `/` (Home) — Chat-first interface with Solo/Council mode toggle. Council mode streams multi-member Fellowship responses via SSE (Gandalf, Legolas, Aragorn + Gimli & Merry & Pippin for complex queries). Rebuttal round after initial responses.
+- `/daily-brief` — Automated daily brief from RSS feeds + GitHub activity. Cron runs at 3:00 UTC.
 
-**Existing Supabase tables:**
-- `briefs`
-- `research_items`
-- `opportunities`
-- `tasks`
-- `chat_threads`
-- `knowledge_summaries`
+### Intelligence
+- `/research` — URL ingest, manual paste, screenshot attach. AI extraction, tagging, knowledge summaries. Full CRUD.
+- `/product-intelligence` — Scored opportunity cards (A+/A/B). Competitive analysis, market signals.
 
-**Key env vars already expected:** `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `QSTASH_TOKEN`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `TAVILY_API_KEY`, `NEWSAPI_API_KEY`
+### Production
+- `/content-studio` — AI content generation (newsletters, curriculum guides, product descriptions) via Claude.
+- `/review-queue` — Combined research + opportunity review queue. Approve/reject/flag.
+- `/tasks` — Task board with status tracking (open/in-progress/blocked/done/canceled). CRUD.
+- `/documents` — Workspace markdown files rendered and searchable.
 
-**NOT installed yet:** `@upstash/qstash`, `@upstash/redis` — install before building the job system.
+### AI & Automation
+- `/jobs` — Real-time job dashboard. QStash → Railway workers. Supabase Realtime progress updates.
+- `/curriculum-factory` — 4-pass Council curriculum generation form (Gandalf → Legolas → Aragorn → Gimli).
+- `/pipelines` — n8n workflow control panel. Status, execution history, manual triggers.
+- `/council` — 5-agent Council Chamber for curriculum scope & sequence generation. Background job.
+
+### System
+- `/settings` — Environment status, provider configuration, founder memory panel.
+- `/help` — Help guide rendered from `chapterhouse-help-guide.md`.
+- `/login` — Supabase email/password auth.
+
+**API routes under `/api/`:**
+- `auth/signout` — Sign out
+- `briefs/` — Brief CRUD + `generate/` for AI generation
+- `chat/` — Single-model chat endpoint (OpenAI + Anthropic)
+- `chat/council/` — Multi-member Council SSE endpoint with rebuttal round
+- `content-studio/` — AI content generation (3 modes)
+- `cron/daily-brief/` — Vercel cron endpoint
+- `debug/` — Debug context
+- `extract-learnings/` — Auto-learn facts from chat
+- `founder-notes/` — Founder memory CRUD
+- `jobs/` — Job list (GET), `create/` (POST), `[id]/` (GET), `[id]/run/` (POST), `[id]/cancel/` (POST)
+- `n8n/workflows/`, `n8n/executions/` — n8n proxy routes
+- `opportunities/` — Opportunity list + `analyze/` + `[id]/` (PATCH)
+- `research/` — Full CRUD (GET, POST, PATCH, DELETE)
+- `summarize/` — AI summarization
+- `tasks/` — Task list + create, `[id]/` (PATCH, DELETE)
+- `threads/` — Chat thread list + create, `[id]/` (PATCH)
+
+**Supabase tables:**
+- `briefs`, `research_items`, `opportunities`, `tasks`, `chat_threads`, `knowledge_summaries`, `founder_notes`, `jobs`
+
+**Key env vars:** `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `TAVILY_API_KEY`, `NEWSAPI_API_KEY`, `N8N_BASE_URL`, `N8N_API_KEY`, `RAILWAY_WORKER_URL`, `ALERT_EMAIL_TO`
+
+**Installed and active:** `@upstash/qstash`, `@upstash/redis`, `@anthropic-ai/sdk`, `openai`, `@supabase/supabase-js`, `@supabase/ssr`, `zod`, `react-markdown`, `remark-gfm`
+
+**UI features built in this session (March 14, 2026):**
+- Council Mode toggle (Solo/Council) inside chat input bar
+- SSE-based multi-member streaming with colored avatar bubbles per member
+- Council members bar with active speaker indicator
+- Rebuttal round with visual divider
+- Word limits on all Council member responses
+- Accordion-grouped sidebar navigation with 5 sections
+- Hover tooltips on all nav items showing purpose/context
+- Dynamic system status rail (replaces hardcoded build status)
+- Status badges (live/beta/soon) on each nav item
 
 ---
 
-## What Chapterhouse Is Becoming
+## Build Phase Status
 
-Three new major capabilities, built in phases:
+All four original phases are **built and deployed**. Current focus is polish, documentation, and production hardening.
 
 ```
-PHASE 1 — The Job Runner
-  Background AI jobs that run while Scott sleeps.
-  Trigger from Chapterhouse UI, work happens on Railway, 
-  results appear live via Supabase Realtime.
+PHASE 1 — The Job Runner                    ✅ COMPLETE
+  Background AI jobs via QStash → Railway workers.
+  Supabase Realtime progress. Jobs dashboard at /jobs.
+  API: /api/jobs/ (list, create, [id], [id]/cancel, [id]/run)
 
-PHASE 2 — The Curriculum Factory  
-  Specific job type: generate curriculum scope & sequences
-  using a 4-pass Council critique loop (Gandalf → Legolas → Aragorn → Gimli).
-  Built on Phase 1 infrastructure.
+PHASE 2 — The Curriculum Factory             ✅ COMPLETE
+  4-pass Council critique loop (Gandalf → Legolas → Aragorn → Gimli).
+  Form + batch support at /curriculum-factory.
+  Also Council Chamber at /council (5-agent background job variant).
 
-PHASE 3 — n8n Control Panel
-  See, trigger, and monitor n8n pipeline workflows
-  running on Railway. One tab in Chapterhouse.
+PHASE 3 — n8n Control Panel                  ✅ COMPLETE
+  Proxy routes at /api/n8n/workflows/ and /api/n8n/executions/.
+  Pipelines dashboard at /pipelines.
 
-PHASE 4 — Council Chamber (Future)
-  Real multi-agent CrewAI workflows.
-  Watch the Council argue in real time.
-  Not Phase 1 — architect for it but don't build yet.
+PHASE 4 — Council Mode in Chat               ✅ COMPLETE (scope expanded)
+  Originally planned as "Council Chamber (Future)." Now TWO implementations:
+  1. /council — Background job: purpose-built curriculum generator
+  2. Home chat — Real-time Council Mode: toggle Solo/Council in main chat,
+     SSE-streamed multi-member responses with rebuttal round.
+     Members: Gandalf, Legolas, Aragorn, Gimli, Merry & Pippin.
+
+BONUS — Sidebar & Help System                ✅ COMPLETE
+  Accordion-grouped navigation (5 sections).
+  Hover tooltips on every nav item. Status badges (live/beta/soon).
+  Dynamic system status rail. Help guide at /help.
 ```
 
 ---
 
-## PHASE 1 — The Job Runner
+## Architecture Reference — Phase 1: Job Runner (BUILT ✅)
 
 ### Conceptual Architecture
 
@@ -391,7 +428,7 @@ export async function updateProgress(
 
 ---
 
-## PHASE 2 — The Curriculum Factory
+## Architecture Reference — Phase 2: Curriculum Factory (BUILT ✅)
 
 This is a specific job type (`curriculum_factory`) that generates curriculum scope & sequences using a **4-pass Council critique loop**.
 
@@ -551,7 +588,7 @@ Components needed:
 
 ---
 
-## PHASE 3 — n8n Control Panel
+## Architecture Reference — Phase 3: n8n Control Panel (BUILT ✅)
 
 ### What n8n Is
 
@@ -592,78 +629,42 @@ Simple table view:
 
 ---
 
-## Navigation Updates
+## Navigation (BUILT ✅)
 
-Add the new routes to `src/lib/navigation.ts`:
+Navigation uses a grouped accordion system defined in `src/lib/navigation.ts`:
 
 ```typescript
-// Add to existing navigation array:
-{ href: '/jobs', label: 'Job Runner', icon: 'Cpu' },
-{ href: '/curriculum-factory', label: 'Curriculum Factory', icon: 'BookOpen' },
-{ href: '/pipelines', label: 'Pipelines', icon: 'GitBranch' },
+// 5 groups: Command Center, Intelligence, Production, AI & Automation, System
+// Each item has: label, href, description, icon, tooltip, status ("live" | "partial" | "planned")
+// Sidebar renders with collapsible groups, hover tooltips, status badges
+export const navigationGroups: NavigationGroup[] = [...]
+// Backward-compatible flat export:
+export const navigationItems: NavigationItem[] = navigationGroups.flatMap((g) => g.items);
 ```
 
-And update `src/components/chapterhouse-shell.tsx` to include these in the sidebar.
+Sidebar component in `src/components/chapterhouse-shell.tsx` renders accordion groups with:
+- ChevronDown toggle per group
+- Auto-open group containing active route
+- Hover tooltip cards (264px wide, positioned to the right)
+- Status badges: "beta" (amber) for partial, "soon" (blue) for planned
+- Dynamic right rail showing all items with colored status dots
 
 ---
 
-## Build Order
+## Build History (ALL COMPLETE ✅)
 
-Build strictly in this order. Each phase depends on the previous.
+All 10 build steps completed across March 13-14 sessions. Deployed on Vercel.
 
-### Step 1: Database (15 min)
-- Write and run migration `20260313_008_create_jobs.sql`
-- Verify Realtime is enabled on `jobs` table in Supabase dashboard
-
-### Step 2: Install dependencies (2 min)
-```bash
-npm install @upstash/qstash @upstash/redis
-```
-
-### Step 3: Job API routes (45 min)
-- `src/app/api/jobs/create/route.ts`
-- `src/app/api/jobs/route.ts`
-- `src/app/api/jobs/[id]/route.ts`
-- `src/app/api/jobs/[id]/cancel/route.ts`
-
-### Step 4: Jobs dashboard UI (60 min)
-- `src/app/jobs/page.tsx`
-- `src/components/jobs-dashboard.tsx` (list + realtime)
-- `src/components/job-detail-drawer.tsx`
-- Test with manually inserted Supabase rows before Railway worker exists
-
-### Step 5: Railway worker — setup (30 min)
-- Create `worker/` directory at repo root
-- `worker/package.json` with express, @anthropic-ai/sdk, @supabase/supabase-js, @upstash/qstash
-- `worker/index.ts` — Express server with QStash signature verification
-- `worker/lib/supabase.ts`, `worker/lib/progress.ts`
-- Deploy to Railway as separate service
-
-### Step 6: Curriculum factory worker (90 min)
-- `worker/lib/council-prompts.ts`
-- `worker/jobs/curriculum-factory.ts`
-- Wire into `worker/jobs/router.ts`
-- Test with a single job end-to-end
-
-### Step 7: Curriculum factory UI (60 min)
-- `src/app/curriculum-factory/page.tsx`
-- `src/components/curriculum-factory-form.tsx`
-- `src/components/curriculum-output-viewer.tsx`
-
-### Step 8: Batch job system (60 min)
-- Batch payload handling in worker
-- Parent/child job tracking
-- Resend completion email
-
-### Step 9: n8n control panel (45 min)
-- API proxy routes
-- `src/app/pipelines/page.tsx`
-
-### Step 10: Navigation + polish (20 min)
-- Add all routes to sidebar
-- Loading states
-- Error states
-- Mobile layout check
+1. Database — `20260313_008_create_jobs.sql` migration applied, Realtime enabled
+2. Dependencies — `@upstash/qstash`, `@upstash/redis` installed
+3. Job API routes — `/api/jobs/` (list, create, [id], [id]/cancel, [id]/run)
+4. Jobs dashboard — `/jobs` with Supabase Realtime subscription
+5. Railway worker — `worker/` directory, Express + QStash signature verification
+6. Curriculum factory worker — 4-pass Council logic with progress updates
+7. Curriculum factory UI — `/curriculum-factory` form + output viewer
+8. Batch job system — parent/child tracking, Resend email on completion
+9. n8n control panel — `/pipelines` + proxy routes
+10. Navigation + polish — accordion sidebar, tooltips, status badges, dynamic right rail
 
 ---
 
@@ -695,9 +696,8 @@ if (!isValid) return res.status(401).json({ error: 'Invalid signature' })
 
 ---
 
-## What NOT to Build Yet
+## What NOT to Build
 
-- **CrewAI / multi-agent Council Chamber** — Phase 4. Architect for it but don't build. The jobs table `type` field already includes `council_session` as a valid enum value.
 - **Public-facing anything** — Chapterhouse is private. No public routes, no public API.
 - **Clerk auth** — Chapterhouse uses Supabase auth (`auth/callback` already exists). Don't swap it.
 - **The NCHO Shopify integration** — That's a different shop for a different day.
@@ -727,5 +727,5 @@ Do this before the Railway worker exists. Validate the UI layer independently.
 
 ---
 
-*Document version: March 13, 2026*
-*Created in the email workspace. Copy to Chapterhouse repo root as `CLAUDE.md`.*
+*Document version: March 14, 2026*
+*All four phases built and deployed. Session 6 updates: accordion nav, tooltips, status badges, Council Mode in chat, documentation sync.*

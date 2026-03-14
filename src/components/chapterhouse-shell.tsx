@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, HelpCircle, LogOut, Search, Settings2, Sparkles } from "lucide-react";
+import { Bell, ChevronDown, HelpCircle, LogOut, Search, Settings2, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { navigationItems } from "@/lib/navigation";
+import { navigationGroups } from "@/lib/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { DebugPanel } from "@/components/debug-panel";
 
@@ -18,6 +18,26 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    navigationGroups.forEach((g) => { initial[g.id] = g.defaultOpen ?? false; });
+    return initial;
+  });
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+
+  // Auto-open group containing the active route
+  useEffect(() => {
+    for (const group of navigationGroups) {
+      if (group.items.some((item) => item.href === pathname)) {
+        setOpenGroups((prev) => ({ ...prev, [group.id]: true }));
+        break;
+      }
+    }
+  }, [pathname]);
+
+  function toggleGroup(id: string) {
+    setOpenGroups((prev) => ({ ...prev, [id]: !prev[id] }));
+  }
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -68,29 +88,76 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
               </p>
             </div>
 
-            <nav className="space-y-1">
-              {navigationItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = pathname === item.href;
+            <nav className="space-y-3">
+              {navigationGroups.map((group) => {
+                const isOpen = openGroups[group.id] ?? false;
+                const hasActiveItem = group.items.some((item) => item.href === pathname);
 
                 return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`block rounded-2xl border px-4 py-3 transition ${
-                      isActive
-                        ? "border-accent/35 bg-accent/12 text-foreground shadow-sm"
-                        : "border-transparent bg-transparent text-muted hover:border-border hover:bg-card/75 hover:text-foreground"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <Icon className={`mt-0.5 h-4 w-4 ${isActive ? "text-accent" : "text-muted"}`} />
-                      <div>
-                        <p className="font-medium">{item.label}</p>
-                        <p className="mt-1 text-xs leading-5 text-muted">{item.description}</p>
+                  <div key={group.id}>
+                    <button
+                      onClick={() => toggleGroup(group.id)}
+                      className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
+                        hasActiveItem ? "text-accent" : "text-muted hover:text-foreground"
+                      }`}
+                    >
+                      {group.label}
+                      <ChevronDown className={`h-3 w-3 transition-transform ${isOpen ? "rotate-0" : "-rotate-90"}`} />
+                    </button>
+
+                    {isOpen && (
+                      <div className="mt-1 space-y-0.5">
+                        {group.items.map((item) => {
+                          const Icon = item.icon;
+                          const isActive = pathname === item.href;
+                          const isHovered = hoveredItem === item.href;
+
+                          return (
+                            <div key={item.href} className="relative">
+                              <Link
+                                href={item.href}
+                                onMouseEnter={() => setHoveredItem(item.href)}
+                                onMouseLeave={() => setHoveredItem(null)}
+                                className={`block rounded-2xl border px-4 py-2.5 transition ${
+                                  isActive
+                                    ? "border-accent/35 bg-accent/12 text-foreground shadow-sm"
+                                    : "border-transparent bg-transparent text-muted hover:border-border hover:bg-card/75 hover:text-foreground"
+                                }`}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${isActive ? "text-accent" : "text-muted"}`} />
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <p className="font-medium text-sm">{item.label}</p>
+                                      {item.status === "partial" && (
+                                        <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-400">
+                                          beta
+                                        </span>
+                                      )}
+                                      {item.status === "planned" && (
+                                        <span className="rounded-full bg-blue-500/15 px-1.5 py-0.5 text-[10px] font-medium text-blue-400">
+                                          soon
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="mt-0.5 text-xs leading-5 text-muted truncate">{item.description}</p>
+                                  </div>
+                                </div>
+                              </Link>
+
+                              {/* Tooltip — appears on hover */}
+                              {isHovered && item.tooltip && (
+                                <div className="pointer-events-none absolute left-full top-0 z-50 ml-3 w-64 rounded-2xl border border-border bg-card p-4 text-xs leading-5 text-muted shadow-xl shadow-black/30">
+                                  <p className="mb-1.5 font-semibold text-foreground">{item.label}</p>
+                                  <p>{item.tooltip}</p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
-                    </div>
-                  </Link>
+                    )}
+                  </div>
                 );
               })}
             </nav>
@@ -177,28 +244,23 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
         <aside className="hidden overflow-y-auto bg-rail/70 px-5 py-6 lg:block">
           <div className="space-y-4">
             <div className="glass-panel rounded-3xl p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">Build status</p>
-              <div className="mt-4 space-y-3 text-sm">
-                <Link href="/daily-brief" className="flex items-center gap-3 rounded-2xl border border-border/70 bg-muted-surface px-4 py-3 transition hover:border-accent/40 hover:text-accent">
-                  <span className="status-dot bg-success shrink-0" />
-                  <span>Daily Brief — live</span>
-                </Link>
-                <Link href="/research" className="flex items-center gap-3 rounded-2xl border border-border/70 bg-muted-surface px-4 py-3 transition hover:border-accent/40 hover:text-accent">
-                  <span className="status-dot bg-success shrink-0" />
-                  <span>Research — live</span>
-                </Link>
-                <Link href="/product-intelligence" className="flex items-center gap-3 rounded-2xl border border-border/70 bg-muted-surface px-4 py-3 transition hover:border-accent/40 hover:text-accent">
-                  <span className="status-dot bg-success shrink-0" />
-                  <span>Product Intel — live</span>
-                </Link>
-                <Link href="/documents" className="flex items-center gap-3 rounded-2xl border border-border/70 bg-muted-surface px-4 py-3 transition hover:border-accent/40 hover:text-accent">
-                  <span className="status-dot bg-success shrink-0" />
-                  <span>Documents — live</span>
-                </Link>
-                <Link href="/login" className="flex items-center gap-3 rounded-2xl border border-border/70 bg-muted-surface px-4 py-3 transition hover:border-accent/40 hover:text-accent">
-                  <span className="status-dot bg-success shrink-0" />
-                  <span>Auth — live</span>
-                </Link>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">System Status</p>
+              <div className="mt-4 space-y-2 text-sm">
+                {navigationGroups.flatMap((g) => g.items).map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="flex items-center gap-3 rounded-xl border border-border/50 bg-muted-surface/50 px-3 py-2 transition hover:border-accent/40 hover:text-accent"
+                  >
+                    <span className={`h-2 w-2 shrink-0 rounded-full ${
+                      item.status === "live" ? "bg-success" : item.status === "partial" ? "bg-amber-400" : "bg-blue-400"
+                    }`} />
+                    <span className="truncate">{item.label}</span>
+                    <span className={`ml-auto text-[10px] font-medium ${
+                      item.status === "live" ? "text-success" : item.status === "partial" ? "text-amber-400" : "text-blue-400"
+                    }`}>{item.status}</span>
+                  </Link>
+                ))}
               </div>
             </div>
           </div>
