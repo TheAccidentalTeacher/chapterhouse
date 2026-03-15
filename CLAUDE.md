@@ -21,7 +21,7 @@ This document is your complete technical brief. Read all of it before touching a
 **All routes — grouped by sidebar section:**
 
 ### Command Center
-- `/` (Home) — Chat-first interface with Solo/Council mode toggle. Council mode streams multi-member Fellowship responses via SSE (Gandalf, Legolas, Aragorn + Gimli & Merry & Pippin for complex queries). Rebuttal round after initial responses.
+- `/` (Home) — Chat-first interface with Solo/Council mode toggle. Council mode streams multi-member Council of the Unserious responses via SSE (Gandalf, Data, Polgara, Earl, Beavis & Butthead). Rebuttal round after initial responses.
 - `/daily-brief` — Automated daily brief from RSS feeds + GitHub activity. Cron runs at 3:00 UTC.
 
 ### Intelligence
@@ -36,9 +36,9 @@ This document is your complete technical brief. Read all of it before touching a
 
 ### AI & Automation
 - `/jobs` — Real-time job dashboard. QStash → Railway workers. Supabase Realtime progress updates.
-- `/curriculum-factory` — 4-pass Council curriculum generation form (Gandalf → Legolas → Aragorn → Gimli).
+- `/curriculum-factory` — 5-pass Council of the Unserious curriculum generation form (Gandalf → Data → Polgara → Earl → Beavis & Butthead). National standards auto-aligned (CCSS-ELA, CCSS-M, NGSS, C3).
 - `/pipelines` — n8n workflow control panel. Status, execution history, manual triggers.
-- `/council` — 5-agent Council Chamber for curriculum scope & sequence generation. Background job.
+- `/council` — 5-agent Council of the Unserious Chamber for curriculum scope & sequence generation. Background job.
 
 ### System
 - `/settings` — Environment status, provider configuration, founder memory panel.
@@ -94,7 +94,8 @@ PHASE 1 — The Job Runner                    ✅ COMPLETE
   API: /api/jobs/ (list, create, [id], [id]/cancel, [id]/run)
 
 PHASE 2 — The Curriculum Factory             ✅ COMPLETE
-  4-pass Council critique loop (Gandalf → Legolas → Aragorn → Gimli).
+  5-pass Council of the Unserious critique loop (Gandalf → Data → Polgara → Earl → Beavis & Butthead).
+  National standards auto-alignment: CCSS-ELA, CCSS-M, NGSS, C3 Framework.
   Form + batch support at /curriculum-factory.
   Also Council Chamber at /council (5-agent background job variant).
 
@@ -107,7 +108,7 @@ PHASE 4 — Council Mode in Chat               ✅ COMPLETE (scope expanded)
   1. /council — Background job: purpose-built curriculum generator
   2. Home chat — Real-time Council Mode: toggle Solo/Council in main chat,
      SSE-streamed multi-member responses with rebuttal round.
-     Members: Gandalf, Legolas, Aragorn, Gimli, Merry & Pippin.
+     Members: Gandalf, Data, Polgara, Earl, Beavis & Butthead.
 
 BONUS — Sidebar & Help System                ✅ COMPLETE
   Accordion-grouped navigation (5 sections).
@@ -177,7 +178,7 @@ CREATE TABLE jobs (
   -- Status lifecycle: queued → running → completed | failed | cancelled
   status TEXT NOT NULL DEFAULT 'queued',
   progress INT NOT NULL DEFAULT 0,      -- 0-100
-  progress_message TEXT,                -- e.g. "Pass 2/4: Legolas critique..."
+  progress_message TEXT,                -- e.g. "Pass 2/5: Data auditing against CCSS-ELA..."
   
   -- Payload and output
   input_payload JSONB NOT NULL,         -- Full job parameters
@@ -430,41 +431,41 @@ export async function updateProgress(
 
 ## Architecture Reference — Phase 2: Curriculum Factory (BUILT ✅)
 
-This is a specific job type (`curriculum_factory`) that generates curriculum scope & sequences using a **4-pass Council critique loop**.
+This is a specific job type (`curriculum_factory`) that generates curriculum scope & sequences using a **5-pass Council of the Unserious critique loop**.
+
+### National Standards Auto-Alignment
+
+Standards are auto-detected from the subject field — no manual input needed:
+
+| Subject | National Framework |
+|---|---|
+| ELA, English, Reading, Writing, Language Arts | CCSS-ELA |
+| Math, Algebra, Geometry | CCSS-M |
+| Science, Biology, Chemistry, Physics, Earth Science | NGSS |
+| Social Studies, History, Geography, Civics, Economics | C3 Framework |
+
+The framework name is injected into the context string and Data's audit pass checks coverage against it. Future: state-by-state overlay via dropdown.
 
 ### The Council Members (System Prompts)
 
-Each pass uses the Anthropic Claude Sonnet 4.6 model with a different system prompt. These are the personas from the Fellowship Council:
+Each pass uses a different AI model with a character-specific system prompt. These are the Council of the Unserious:
 
-```typescript
-export const COUNCIL_PROMPTS = {
-  gandalf: `You are Gandalf the Grey — the most technically brilliant educator in any room. 
-You draft deeply researched, pedagogically rigorous scope and sequence documents.
-You think deeply about learning progressions, prerequisite knowledge, and developmental appropriateness.
-You are also slightly sarcastic about sloppy thinking. Show your reasoning.
-Output: A complete, well-structured scope and sequence in markdown format.`,
+| Pass | Member | Role | Model |
+|---|---|---|---|
+| 1 | Gandalf the Grey | Creator / Architect (Scott's mirror) | Claude Sonnet 4.6 |
+| 2 | Lt. Commander Data | Auditor / Analyst (standards + structure) | Claude Sonnet 4.6 |
+| 3 | Polgara the Sorceress | Content Director / Editor (Anna's mirror) | Claude Sonnet 4.6 |
+| 4 | Earl Harbinger | Operations Commander (business reality) | GPT-5.4 |
+| 5 | Beavis & Butthead | Engagement Stress Test (the kid in the chair) | GPT-5-mini |
 
-  legolas: `You are Legolas — precise, fast, and you spotted the problem before anyone else finished reading.
-Your job: critique the scope and sequence just written by Gandalf. Find every gap, 
-every anachronism, every missequenced skill, every age-inappropriate content, 
-every missing prerequisite, every redundancy, every missed standard alignment.
-Be specific. Reference line items. This is a code review, not a suggestion box.
-Output: A numbered critique list, then a revised version with your corrections applied.`,
+Prompts defined in `worker/src/lib/council-prompts.ts` (TS) and `council-worker/agents/*.py` (Python CrewAI).
 
-  aragorn: `You are Aragorn — no wasted words. You make the call.
-Review Gandalf's draft and Legolas's critique. Synthesize the best of both.
-Make decisive choices where they conflict. Cut what doesn't serve the learner.
-Add what is missing. You are finalizing this document. It ships after you.
-Output: The final, authoritative scope and sequence. No hedging. No "consider adding." Done.`,
-
-  gimli: `You are Gimli — gruff, loyal, and you have actually stood in front of real students.
-Stress test the scope and sequence Aragorn just finalized. 
-Ask: What breaks on a Tuesday in October when 6 of 24 kids are checked out?
-What's too abstract for this age? What assumes resources most teachers don't have?
-What would a parent question at curriculum night? What would a student find genuinely engaging vs. soul-destroying?
-Output: A classroom-viability report with PASS/FAIL on 10 criteria, then a final patch of specific changes.`,
-}
-```
+Output keys:
+- `finalScopeAndSequence` — Polgara's production-ready document
+- `operationalAssessment` — Earl's build/ship/revenue analysis
+- `engagementReport` — Beavis & Butthead's COOL/SUCKS verdict
+- `draftsRetained.gandalfInitialDraft` — Gandalf's original draft
+- `draftsRetained.dataCritique` — Data's numbered audit findings
 
 ### Job Input Payload Schema
 
@@ -486,82 +487,33 @@ const curriculumBatchSchema = z.object({
 // Batch creates one PARENT job + N child jobs (one per subject/grade combo)
 ```
 
-### The 4-Pass Worker Logic
+### The 5-Pass Worker Logic
 
-File: `worker/jobs/curriculum-factory.ts`
+File: `worker/src/jobs/curriculum-factory.ts`
 
+The worker auto-detects the national standards framework from the subject field, injects it into the context, then runs 5 sequential passes:
+
+1. **Gandalf drafts** — creates complete scope & sequence aligned to the detected national framework
+2. **Data audits** — checks against the specific framework (e.g., "Audit against CCSS-ELA for Grade 7"), finds missing standards, structural issues
+3. **Polgara finalizes** — synthesizes Gandalf + Data, produces production-ready document, child-first lens
+4. **Earl assesses** — operational viability: build order, revenue timeline, minimum viable version, go/no-go
+5. **Beavis & Butthead stress-test** — COOL/SUCKS/MEH per unit, engagement reality check
+
+Progress updates written to Supabase at each pass (5%, 22%, 45%, 65%, 82%, 100%).
+Resend email notification on completion.
+
+Final output shape:
 ```typescript
-import Anthropic from '@anthropic-ai/sdk'
-import { updateProgress } from '../lib/progress'
-import { COUNCIL_PROMPTS } from '../lib/council-prompts'
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-
-async function callCouncilMember(
-  memberName: keyof typeof COUNCIL_PROMPTS,
-  userMessage: string
-): Promise<string> {
-  const msg = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 4096,
-    system: COUNCIL_PROMPTS[memberName],
-    messages: [{ role: 'user', content: userMessage }],
-  })
-  return msg.content[0].type === 'text' ? msg.content[0].text : ''
-}
-
-export async function runCurriculumFactory(
-  jobId: string,
-  payload: z.infer<typeof curriculumJobSchema>
-) {
-  const { subject, gradeLevel, duration, standards, additionalContext } = payload
-  const context = `Subject: ${subject}\nGrade Level: ${gradeLevel}\nDuration: ${duration}${standards ? `\nStandards: ${standards}` : ''}${additionalContext ? `\nContext: ${additionalContext}` : ''}`
-
-  try {
-    // Pass 1: Gandalf drafts
-    await updateProgress(jobId, 10, 'Pass 1/4: Gandalf drafting scope and sequence...')
-    const gandalfDraft = await callCouncilMember('gandalf',
-      `Create a comprehensive scope and sequence for:\n${context}`
-    )
-
-    // Pass 2: Legolas critiques
-    await updateProgress(jobId, 35, 'Pass 2/4: Legolas reviewing for gaps and errors...')
-    const legolasCritique = await callCouncilMember('legolas',
-      `Review and critique this scope and sequence:\n\n${gandalfDraft}`
-    )
-
-    // Pass 3: Aragorn finalizes
-    await updateProgress(jobId, 60, 'Pass 3/4: Aragorn finalizing...')
-    const aragonFinal = await callCouncilMember('aragorn',
-      `Gandalf's draft:\n${gandalfDraft}\n\nLegolas's critique:\n${legolasCritique}\n\nFinalize this scope and sequence.`
-    )
-
-    // Pass 4: Gimli stress tests
-    await updateProgress(jobId, 80, 'Pass 4/4: Gimli stress-testing for real classroom viability...')
-    const gimliReport = await callCouncilMember('gimli',
-      `Stress test this finalized scope and sequence:\n\n${aragonFinal}`
-    )
-
-    // Compile final output
-    const finalOutput = {
-      subject,
-      gradeLevel,
-      duration,
-      finalScopeAndSequence: aragonFinal,
-      classroomViabilityReport: gimliReport,
-      draftsRetained: {
-        gandalfInitialDraft: gandalfDraft,
-        legolasCritique: legolasCritique,
-      },
-      generatedAt: new Date().toISOString(),
-    }
-
-    await updateProgress(jobId, 100, 'Complete.', 'completed', finalOutput)
-
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error'
-    await updateProgress(jobId, 0, 'Failed', 'failed', undefined, message)
-  }
+{
+  subject, gradeLevel, duration, standards,
+  finalScopeAndSequence: string,      // Polgara's final
+  operationalAssessment: string,      // Earl's report
+  engagementReport: string,           // Beavis & Butthead's verdict
+  draftsRetained: {
+    gandalfInitialDraft: string,
+    dataCritique: string,
+  },
+  generatedAt: string,
 }
 ```
 
@@ -584,7 +536,7 @@ Route: `/curriculum-factory`
 Components needed:
 1. **`CurriculumFactoryForm`** — selects subjects (multi-select checkboxes), grade range (5-12 slider), duration, optional standards. "Single generation" or "Full batch" toggle.
 2. **`BatchProgressOverview`** — when a batch is running, shows N/70 complete with a progress ring. Click → expands to show individual child job status.
-3. **`CurriculumOutputViewer`** — renders the `finalScopeAndSequence` markdown with the `gimliReport` underneath in a collapsible. "Download as .md" button.
+3. **`CurriculumOutputViewer`** — renders the `finalScopeAndSequence` markdown with Earl's `operationalAssessment` and Beavis & Butthead's `engagementReport` underneath in collapsibles. Export toolbar: HTML/PDF/DOCX download.
 
 ---
 
@@ -660,7 +612,7 @@ All 10 build steps completed across March 13-14 sessions. Deployed on Vercel.
 3. Job API routes — `/api/jobs/` (list, create, [id], [id]/cancel, [id]/run)
 4. Jobs dashboard — `/jobs` with Supabase Realtime subscription
 5. Railway worker — `worker/` directory, Express + QStash signature verification
-6. Curriculum factory worker — 4-pass Council logic with progress updates
+6. Curriculum factory worker — 5-pass Council of the Unserious logic with national standards auto-alignment
 7. Curriculum factory UI — `/curriculum-factory` form + output viewer
 8. Batch job system — parent/child tracking, Resend email on completion
 9. n8n control panel — `/pipelines` + proxy routes
@@ -706,7 +658,7 @@ if (!isValid) return res.status(401).json({ error: 'Invalid signature' })
 
 ## Useful Context About Scott
 
-- **The Council** is a persona system: Gandalf (brilliant drafter), Legolas (precision critic), Aragorn (decisive finalizer), Gimli (classroom stress tester), Frodo (mission anchor), Bilbo (context memory), Merry & Pippin (levity + accidental insight).
+- **The Council** is the Council of the Unserious: Gandalf (creator/architect — Scott's mirror), Lt. Commander Data (auditor/analyst — systematic, ego-free), Polgara the Sorceress (content director/editor — Anna's mirror), Earl Harbinger (operations commander — business reality), Beavis & Butthead (engagement stress test — the kid in the chair).
 - **SomersSchool** is the curriculum SaaS at `TheAccidentalTeacher/CoursePlatform`. The curriculum scope & sequences generated here feed directly into that product.
 - **"Secular only"** — all curriculum content generated by this factory must be secular. Alaska Statute 14.03.320 applies to allotment-funded curriculum.
 - **Scott vibe codes** — describe what you're building before writing code, propose the simplest approach, ask before adding abstractions.
@@ -728,4 +680,4 @@ Do this before the Railway worker exists. Validate the UI layer independently.
 ---
 
 *Document version: March 14, 2026*
-*All four phases built and deployed. Session 6 updates: accordion nav, tooltips, status badges, Council Mode in chat, documentation sync.*
+*All four phases built and deployed. Session 6 updates: Council of the Unserious (5-pass pipeline), national standards auto-alignment (CCSS-ELA/CCSS-M/NGSS/C3), HTML/PDF/DOCX export, accordion nav, tooltips, status badges, Council Mode in chat.*
