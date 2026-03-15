@@ -20,6 +20,8 @@ const environmentSchema = z.object({
   // Phase 3 — n8n Control Panel
   N8N_BASE_URL: z.string().url().optional(),
   N8N_API_KEY: z.string().min(1).optional(),
+  // Research
+  TAVILY_API_KEY: z.string().min(1).optional(),
 });
 
 const envSource = {
@@ -43,6 +45,8 @@ const envSource = {
   // Phase 3 — n8n Control Panel
   N8N_BASE_URL: process.env.N8N_BASE_URL,
   N8N_API_KEY: process.env.N8N_API_KEY,
+  // Research
+  TAVILY_API_KEY: process.env.TAVILY_API_KEY,
 };
 
 export function getEnvironmentStatus() {
@@ -61,6 +65,8 @@ export function getEnvironmentStatus() {
         ? "email"
         : key === "N8N_BASE_URL" || key === "N8N_API_KEY"
         ? "n8n"
+        : key === "TAVILY_API_KEY"
+        ? "research"
         : "ai",
     })),
   };

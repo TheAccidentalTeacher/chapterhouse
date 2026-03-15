@@ -4,7 +4,7 @@ const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
 
-const ALERT_EMAIL = process.env.ALERT_EMAIL_TO ?? "scott@nextchapterhomeschool.com";
+const ALERT_EMAIL = "scott@nextchapterhomeschool.com";
 
 export async function notifyJobComplete(
   jobId: string,

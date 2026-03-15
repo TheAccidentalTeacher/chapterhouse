@@ -14,7 +14,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from("research_items")
-    .select("id, url, title, summary, verdict, tags, status, created_at")
+    .select("id, url, title, summary, verdict, tags, status, created_at, site_name, author, published_at, og_image")
     .order("created_at", { ascending: false })
     .limit(50);
 
@@ -303,6 +303,24 @@ export async function POST(request: Request) {
       return Response.json({ error: `Could not fetch URL: ${String(e)}`, fetchFailed: true }, { status: 422 });
     }
 
+    // Extract metadata from raw HTML before stripping tags
+    function extractMeta(name: string): string | null {
+      // Try property= first (OG), then name= (standard meta)
+      const ogMatch = rawHtml.match(new RegExp(`<meta[^>]+property=["']${name}["'][^>]+content=["']([^"']+)["']`, "i"))
+        ?? rawHtml.match(new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+property=["']${name}["']`, "i"));
+      if (ogMatch) return ogMatch[1].trim();
+      const nameMatch = rawHtml.match(new RegExp(`<meta[^>]+name=["']${name}["'][^>]+content=["']([^"']+)["']`, "i"))
+        ?? rawHtml.match(new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+name=["']${name}["']`, "i"));
+      return nameMatch ? nameMatch[1].trim() : null;
+    }
+
+    const siteName = extractMeta("og:site_name");
+    const ogImage = extractMeta("og:image");
+    const author = extractMeta("author") ?? extractMeta("article:author");
+    const publishedRaw = extractMeta("article:published_time") ?? extractMeta("date") ?? extractMeta("pubdate");
+    const publishedAt = publishedRaw ? new Date(publishedRaw) : null;
+    const validPublishedAt = publishedAt && !isNaN(publishedAt.getTime()) ? publishedAt.toISOString() : null;
+
     // Strip HTML tags, collapse whitespace, take first 4000 chars of readable text
     const text = rawHtml
       .replace(/<script[\s\S]*?<\/script>/gi, " ")
@@ -337,8 +355,12 @@ export async function POST(request: Request) {
         verdict: analysis.verdict,
         tags: analysis.tags ?? [],
         status: "review",
+        site_name: siteName ?? null,
+        author: author ?? null,
+        published_at: validPublishedAt,
+        og_image: ogImage ?? null,
       })
-      .select("id, url, title, summary, verdict, tags, status, created_at")
+      .select("id, url, title, summary, verdict, tags, status, created_at, site_name, author, published_at, og_image")
       .single();
 
     if (error) {

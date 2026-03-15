@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ArrowUp, ExternalLink, Loader2, Tag, PenLine, X, Link2, ClipboardPaste, StickyNote, Camera, ImageIcon, Trash2, RotateCcw, Sparkles, ChevronDown, BookOpen, Search, LayoutList, Rows3 } from "lucide-react";
 import { logEvent, loggedFetch } from "@/lib/debug-log";
 
-type InputTab = "url" | "paste" | "note" | "image";
+type InputTab = "url" | "paste" | "note" | "image" | "auto";
 
 type KnowledgeSummary = {
   tag: string;
@@ -71,6 +71,12 @@ export default function ResearchPage() {
   const [savingImage, setSavingImage] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const [imageDragOver, setImageDragOver] = useState(false);
+
+  // Auto-research tab
+  const [autoTopic, setAutoTopic] = useState("");
+  const [autoSearching, setAutoSearching] = useState(false);
+  const [autoError, setAutoError] = useState<string | null>(null);
+  const [autoResultCount, setAutoResultCount] = useState<number | null>(null);
 
   useEffect(() => {
     logEvent("info", "Research page loaded — fetching items");
@@ -341,6 +347,7 @@ export default function ResearchPage() {
               { id: "paste", label: "Paste text", Icon: ClipboardPaste },
               { id: "note", label: "Quick note", Icon: StickyNote },
               { id: "image", label: "Screenshot", Icon: Camera },
+              { id: "auto", label: "Auto-research", Icon: Search },
             ] as { id: InputTab; label: string; Icon: React.ElementType }[]).map(({ id, label, Icon }) => (
               <button
                 key={id}
@@ -522,6 +529,69 @@ export default function ResearchPage() {
                 </button>
               </div>
               {imageError && <p className="text-xs text-red-400">{imageError}</p>}
+            </form>
+          )}
+
+          {/* Auto-research tab */}
+          {tab === "auto" && (
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const trimmed = autoTopic.trim();
+                if (!trimmed || autoSearching) return;
+                setAutoSearching(true);
+                setAutoError(null);
+                setAutoResultCount(null);
+                try {
+                  const res = await fetch("/api/research/auto", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ topic: trimmed, maxResults: 5 }),
+                  });
+                  const data = await res.json();
+                  if (!res.ok) throw new Error(data.error || res.statusText);
+                  setAutoResultCount(data.count);
+                  setAutoTopic("");
+                  // Refresh item list
+                  const refreshRes = await fetch("/api/research");
+                  const refreshData = await refreshRes.json();
+                  setItems(refreshData.items ?? []);
+                } catch (err) {
+                  setAutoError(String(err instanceof Error ? err.message : err));
+                } finally {
+                  setAutoSearching(false);
+                }
+              }}
+              className="space-y-3"
+            >
+              <label className="block text-xs font-semibold uppercase tracking-[0.12em] text-muted">
+                Search a topic — Chapterhouse will find, analyze, and save relevant sources automatically
+              </label>
+              <div className="flex gap-3">
+                <input
+                  value={autoTopic}
+                  onChange={(e) => setAutoTopic(e.target.value)}
+                  placeholder="e.g. homeschool market trends 2026, AI curriculum tools…"
+                  required
+                  className="flex-1 rounded-xl border border-border/70 bg-muted-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-accent/40 focus:outline-none"
+                />
+                <button
+                  type="submit"
+                  disabled={autoSearching || !autoTopic.trim()}
+                  className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-accent-foreground shadow shadow-accent/25 transition hover:opacity-90 disabled:opacity-40"
+                >
+                  {autoSearching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                  {autoSearching ? "Researching…" : "Research"}
+                </button>
+              </div>
+              {autoError && <p className="text-xs text-red-400">{autoError}</p>}
+              {autoResultCount !== null && (
+                <p className="text-xs text-emerald-400">
+                  {autoResultCount === 0
+                    ? "No new results found (may already be in your library)"
+                    : `${autoResultCount} new source${autoResultCount > 1 ? "s" : ""} ingested and queued for review`}
+                </p>
+              )}
             </form>
           )}
         </div>

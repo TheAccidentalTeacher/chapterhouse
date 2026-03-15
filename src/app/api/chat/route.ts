@@ -201,6 +201,66 @@ async function buildLiveContext(userMessage: string = ""): Promise<string> {
     : "";
 }
 
+// Extracts HTTP/HTTPS URLs from a text string
+function extractUrls(text: string): string[] {
+  const urlRegex = /https?:\/\/[^\s<>"')\]]+/gi;
+  const matches = text.match(urlRegex);
+  if (!matches) return [];
+  // Deduplicate and limit to 3 URLs to keep context reasonable
+  return [...new Set(matches)].slice(0, 3);
+}
+
+// Fetches a URL and extracts readable text content (with SSRF protection)
+async function fetchUrlContent(url: string): Promise<string | null> {
+  try {
+    const parsed = new URL(url);
+    // SSRF protection: block private/internal IPs and non-http(s) schemes
+    if (!["http:", "https:"].includes(parsed.protocol)) return null;
+    const hostname = parsed.hostname.toLowerCase();
+    if (
+      hostname === "localhost" ||
+      hostname.startsWith("127.") ||
+      hostname.startsWith("10.") ||
+      hostname.startsWith("192.168.") ||
+      hostname.startsWith("0.") ||
+      hostname === "[::1]" ||
+      hostname.endsWith(".internal") ||
+      hostname.endsWith(".local")
+    ) return null;
+
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Chapterhouse/1.0 (link preview)" },
+      signal: AbortSignal.timeout(8000),
+      redirect: "follow",
+    });
+    if (!res.ok) return null;
+    const contentType = res.headers.get("content-type") ?? "";
+    if (!contentType.includes("text/html") && !contentType.includes("text/plain")) return null;
+
+    const html = await res.text();
+    // Extract title
+    const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+    const title = titleMatch ? titleMatch[1].replace(/\s+/g, " ").trim() : "";
+    // Strip tags and get text
+    const text = html
+      .replace(/<script[\s\S]*?<\/script>/gi, "")
+      .replace(/<style[\s\S]*?<\/style>/gi, "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&#\d+;/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 4000);
+
+    return `[URL: ${url}]${title ? ` Title: ${title}` : ""}\n${text}`;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const { messages, model = "gpt-5.4" } = await request.json();
@@ -213,7 +273,20 @@ export async function POST(request: Request) {
 
     // Enrich system prompt with live context from Supabase (research ranked by relevance to this message)
     const liveContext = await buildLiveContext(lastUserMsg);
-    const systemPrompt = SYSTEM_PROMPT + liveContext;
+
+    // Detect URLs in the user's message and fetch their content
+    let urlContext = "";
+    const urls = extractUrls(lastUserMsg);
+    if (urls.length > 0) {
+      const fetched = await Promise.all(urls.map(fetchUrlContent));
+      const urlTexts = fetched.filter(Boolean) as string[];
+      if (urlTexts.length > 0) {
+        urlContext = "\n\n---\n\n## Live Context: URLs From This Message\n\nThe user shared these links. Their content has been fetched for you:\n\n" +
+          urlTexts.join("\n\n---\n\n");
+      }
+    }
+
+    const systemPrompt = SYSTEM_PROMPT + liveContext + urlContext;
 
     // Route to Anthropic if claude model requested
     if (model.startsWith("claude")) {

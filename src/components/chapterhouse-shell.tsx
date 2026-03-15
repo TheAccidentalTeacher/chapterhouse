@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, ChevronDown, HelpCircle, LogOut, Search, Settings2, Sparkles } from "lucide-react";
+import { Bell, ChevronDown, HelpCircle, LogOut, Search, Settings2, Sparkles, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { navigationGroups } from "@/lib/navigation";
@@ -19,6 +19,9 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
+  const [searchResults, setSearchResults] = useState<Array<{ id: string; type: string; title: string; snippet: string; status?: string; date: string }> | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const searchDropdownRef = useRef<HTMLDivElement>(null);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
     navigationGroups.forEach((g) => { initial[g.id] = g.defaultOpen ?? false; });
@@ -50,10 +53,55 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
     e.preventDefault();
     const q = searchQuery.trim();
     if (!q) return;
-    router.push(`/documents?q=${encodeURIComponent(q)}`);
+    setSearchLoading(true);
+    fetch(`/api/search?q=${encodeURIComponent(q)}`)
+      .then((r) => r.json())
+      .then((data) => setSearchResults(data.results ?? []))
+      .catch(() => setSearchResults([]))
+      .finally(() => setSearchLoading(false));
+  }
+
+  function clearSearch() {
     setSearchQuery("");
+    setSearchResults(null);
     searchRef.current?.blur();
   }
+
+  // Close search dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (searchDropdownRef.current && !searchDropdownRef.current.contains(e.target as Node) &&
+          searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setSearchResults(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const typeRoutes: Record<string, string> = {
+    task: "/tasks",
+    research: "/research",
+    opportunity: "/product-intelligence",
+    thread: "/",
+    brief: "/daily-brief",
+  };
+
+  const typeLabels: Record<string, string> = {
+    task: "Task",
+    research: "Research",
+    opportunity: "Opportunity",
+    thread: "Chat",
+    brief: "Brief",
+  };
+
+  const typeColors: Record<string, string> = {
+    task: "bg-blue-500/20 text-blue-400",
+    research: "bg-emerald-500/20 text-emerald-400",
+    opportunity: "bg-amber-500/20 text-amber-400",
+    thread: "bg-purple-500/20 text-purple-400",
+    brief: "bg-cyan-500/20 text-cyan-400",
+  };
 
   useEffect(() => {
     const client = getSupabaseBrowserClient();
@@ -205,19 +253,51 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
         <main className="flex min-h-0 min-w-0 flex-col border-b border-border/70 bg-background lg:border-b-0 lg:border-r">
           <div className="sticky top-0 z-10 border-b border-border/70 bg-background/80 px-4 py-4 backdrop-blur sm:px-6 lg:px-8">
             <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-              <form onSubmit={handleSearch} className="flex-1 xl:max-w-md">
-                <div className="flex items-center gap-3 rounded-full border border-border bg-card/80 px-4 py-3 text-sm text-muted focus-within:border-accent/40 focus-within:text-foreground">
-                  <Search className="h-4 w-4 shrink-0" />
-                  <input
-                    ref={searchRef}
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search documents…"
-                    className="flex-1 bg-transparent text-foreground placeholder:text-muted focus:outline-none"
-                  />
-                </div>
-              </form>
+              <div className="relative flex-1 xl:max-w-md">
+                <form onSubmit={handleSearch}>
+                  <div className="flex items-center gap-3 rounded-full border border-border bg-card/80 px-4 py-3 text-sm text-muted focus-within:border-accent/40 focus-within:text-foreground">
+                    <Search className="h-4 w-4 shrink-0" />
+                    <input
+                      ref={searchRef}
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search everything…"
+                      className="flex-1 bg-transparent text-foreground placeholder:text-muted focus:outline-none"
+                    />
+                    {searchQuery && (
+                      <button type="button" onClick={clearSearch} className="text-muted hover:text-foreground">
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </form>
+                {searchResults !== null && (
+                  <div ref={searchDropdownRef} className="absolute left-0 right-0 top-full z-50 mt-2 max-h-80 overflow-y-auto rounded-lg border border-border bg-card shadow-xl">
+                    {searchLoading ? (
+                      <div className="px-4 py-3 text-sm text-muted">Searching…</div>
+                    ) : searchResults.length === 0 ? (
+                      <div className="px-4 py-3 text-sm text-muted">No results found</div>
+                    ) : (
+                      searchResults.map((r) => (
+                        <button
+                          key={`${r.type}-${r.id}`}
+                          onClick={() => { router.push(typeRoutes[r.type] ?? "/"); clearSearch(); }}
+                          className="flex w-full items-start gap-3 border-b border-border/50 px-4 py-3 text-left transition last:border-0 hover:bg-muted-surface"
+                        >
+                          <span className={`mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${typeColors[r.type] ?? "bg-zinc-500/20 text-zinc-400"}`}>
+                            {typeLabels[r.type] ?? r.type}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-sm font-medium text-foreground">{r.title}</div>
+                            {r.snippet && <div className="mt-0.5 truncate text-xs text-muted">{r.snippet}</div>}
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
               <div className="flex items-center gap-3 text-sm">
                 <Link
                   href="/review-queue"
