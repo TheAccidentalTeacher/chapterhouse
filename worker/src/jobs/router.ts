@@ -1,4 +1,5 @@
 import { runCurriculumFactory, type CurriculumJobPayload } from "./curriculum-factory";
+import { runSocialBatch, type SocialBatchPayload } from "./social-batch";
 import { updateProgress } from "../lib/progress";
 
 export async function processJob(
@@ -25,6 +26,10 @@ export async function processJob(
       // Phase 4 — CrewAI multi-agent Council Chamber
       // Architecture is ready; implementation comes in Phase 4
       await updateProgress(jobId, 0, "council_session requires Phase 4 Council Worker", "failed", undefined, "Phase 4 not yet deployed");
+      break;
+
+    case "social_batch":
+      await runSocialBatch(jobId, payload as unknown as SocialBatchPayload);
       break;
 
     default:

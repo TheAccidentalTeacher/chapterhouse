@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/daily-brief",
       "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/cron/social-weekly",
+      "schedule": "0 5 * * 1"
     }
   ],
   "functions": {
@@ -14,6 +18,15 @@
     },
     "src/app/api/summarize/route.ts": {
       "maxDuration": 60
+    },
+    "src/app/api/social/generate/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/social/posts/[id]/approve/route.ts": {
+      "maxDuration": 30
+    },
+    "src/app/api/cron/social-weekly/route.ts": {
+      "maxDuration": 30
     }
   }
 }
