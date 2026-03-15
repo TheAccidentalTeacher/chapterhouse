@@ -1,55 +1,56 @@
-"""Alaska Grade Level Expectations and SomerSchool course catalog context."""
+"""National standards frameworks and SomerSchool course catalog context."""
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 
-# Inline context — no external dep needed for this core domain knowledge
-ALASKA_CONTEXT = """
-ALASKA EDUCATIONAL CONTEXT — Scott Somers, Glennallen Middle School
+# National standards as the primary reference; Alaska as supplemental context
+CURRICULUM_CONTEXT = """
+NATIONAL STANDARDS FRAMEWORKS:
 
-STUDENT DEMOGRAPHICS:
-- 65% Alaska Native students (Ahtna Athabascan, primarily)
-- Title 1 school — high poverty designation
-- Rural, pop. 439, Copper River Basin
-- -50°F winters. Subsistence culture (hunting, fishing, gathering) is real and current.
-- Many students have IEPs. Reading levels vary widely within same grade.
+ELA — Common Core State Standards for English Language Arts (CCSS-ELA)
+- Grade-specific standards K-12
+- Reading: Literature + Informational Text (50/50 by grade 8)
+- Writing: Narrative, Informational/Explanatory, Argument
+- Speaking & Listening, Language (vocabulary, grammar, conventions)
+- Text complexity increases by grade band (K-1, 2-3, 4-5, 6-8, 9-10, 11-12)
 
-ALASKA GRADE LEVEL EXPECTATIONS (GLE) — KEY STANDARDS:
-ELA:
-- Focus on informational text alongside literary text (50/50 by 8th grade)
-- Alaska Writing Project aligns with CCSS ELA adapted for AK
+Math — Common Core State Standards for Mathematics (CCSS-M)
+- Grade-specific standards K-8, then by course (Algebra, Geometry, etc.) in HS
+- Standards for Mathematical Practice (8 practices, all grades)
+- Domains shift by grade band (Counting & Cardinality → Ratios → Functions)
+- Coherence: each grade builds on prior, leads to next
+
+Science — Next Generation Science Standards (NGSS)
+- Organized by grade bands: K-2, 3-5, MS (6-8), HS (9-12)
+- Three dimensions: Disciplinary Core Ideas (DCI), Science & Engineering Practices (SEP),
+  Crosscutting Concepts (CCC)
+- Performance Expectations (PEs) define what students should be able to do
+- Life Science, Physical Science, Earth & Space Science, Engineering
+
+Social Studies — College, Career, and Civic Life (C3) Framework
+- Dimension-based, not strictly grade-locked
+- Dimension 1: Developing Questions and Planning Inquiries
+- Dimension 2: Applying Disciplinary Concepts (Civics, Economics, Geography, History)
+- Dimension 3: Evaluating Sources and Using Evidence
+- Dimension 4: Communicating Conclusions and Taking Informed Action
+- Supports inquiry-based design at all grade levels
+
+ALASKA SUPPLEMENTAL CONTEXT:
+- Alaska adopted standards align with CCSS (ELA/Math) and NGSS (Science) with state additions
+- Local/traditional ecological knowledge (TEK) integrated in science
+- Alaska Studies required at grade 4; Alaska Native history emphasis
 - Oral tradition and Alaska Native storytelling count as legitimate text structures
 
-Math:
-- Alaska Mathematics Standards align with CCSS-M with state additions
-- Real-world application required — Alaska examples (subsistence math, land measurement)
-
-Science:
-- Alaska Science Standards align with NGSS
-- Local/traditional ecological knowledge (TEK) is explicitly integrated
-- Land-based science units (biology of local species, earth science of permafrost) are encouraged
-
-Social Studies:
-- Alaska Studies required at grade 4 and optional middle school elective
-- History emphasis: Alaska Native history, ANCSA (1971), Alaska Statehood (1959)
-- Geography: Alaska size comparisons, biomes, indigenous place names
-
 SOMERSCHOOL CURRICULAR CONSTRAINTS:
-- ALL content must be secular — Alaska Statute 14.03.320 prohibits sectarian instruction
-  in state-funded education. This includes homeschool allotment purchases.
-- No religious references, no prayer, no faith-based framing in any SomerSchool course
-- Cultural references to Alaska Native spirituality are treated as cultural/historical content
-  only (not devotional or instructional from a faith perspective)
-- Curriculum must be appropriate for home use by a single parent — self-directed learner friendly
+- ALL content must be secular — Alaska Statute 14.03.320 (nonsectarian requirement)
+- No religious references, no prayer, no faith-based framing
+- Curriculum must be self-directed learner friendly (home use by a single parent)
+- Cultural references to Alaska Native spirituality treated as cultural/historical only
 
-SOMERSCHOOL COURSE CATALOG (current):
-- ELA grades 1-12 (in development)
-- Math grades 1-12 (targeting Algebra 1 by grade 8)
-- Science grades 1-12 (NGSS-aligned)
-- Social Studies grades 1-12 (Alaska & world emphasis)
+SOMERSCHOOL COURSE CATALOG (current targets):
+- ELA grades 1-12, Math grades 1-12, Science grades 1-12, Social Studies grades 1-12
 - "Newsies: The American Story" — Anna Somers, literary elective
 - "Les Misérables: Revolution and Justice" — Anna Somers, literary elective
-- "Balancing Your Checkbook" — free lead-gen, teen/adult
-- "Taxes 101" — free lead-gen, teen/adult
+- "Balancing Your Checkbook" + "Taxes 101" — free lead-gen courses
 """
 
 
@@ -60,11 +61,11 @@ class CurriculumContextInput(BaseModel):
 class CurriculumContextTool(BaseTool):
     name: str = "curriculum_context"
     description: str = (
-        "Retrieve Alaska Grade Level Expectations, SomerSchool constraints, and "
-        "classroom context for Scott's Glennallen school. Always call this when "
-        "drafting or reviewing curriculum to ensure Alaska-specific relevance."
+        "Retrieve national standards frameworks (CCSS-ELA, CCSS-M, NGSS, C3), "
+        "SomerSchool constraints, and supplemental Alaska context. Always call this "
+        "when drafting or reviewing curriculum to ensure standards alignment."
     )
     args_schema: type[BaseModel] = CurriculumContextInput
 
     def _run(self, topic: str) -> str:
-        return f"Context requested for: {topic}\n\n{ALASKA_CONTEXT}"
+        return f"Context requested for: {topic}\n\n{CURRICULUM_CONTEXT}"

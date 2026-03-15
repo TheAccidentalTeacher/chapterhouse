@@ -9,6 +9,42 @@ from agents.earl import create_earl
 from agents.beavis import create_beavis
 from lib.progress import update_progress
 
+# National standards framework mapping — auto-detected from subject
+NATIONAL_STANDARDS = {
+    "ela": "Common Core State Standards for English Language Arts (CCSS-ELA)",
+    "english": "Common Core State Standards for English Language Arts (CCSS-ELA)",
+    "reading": "Common Core State Standards for English Language Arts (CCSS-ELA)",
+    "writing": "Common Core State Standards for English Language Arts (CCSS-ELA)",
+    "language arts": "Common Core State Standards for English Language Arts (CCSS-ELA)",
+    "math": "Common Core State Standards for Mathematics (CCSS-M)",
+    "mathematics": "Common Core State Standards for Mathematics (CCSS-M)",
+    "algebra": "Common Core State Standards for Mathematics (CCSS-M)",
+    "geometry": "Common Core State Standards for Mathematics (CCSS-M)",
+    "science": "Next Generation Science Standards (NGSS)",
+    "biology": "Next Generation Science Standards (NGSS)",
+    "chemistry": "Next Generation Science Standards (NGSS)",
+    "physics": "Next Generation Science Standards (NGSS)",
+    "earth science": "Next Generation Science Standards (NGSS)",
+    "social studies": "College, Career, and Civic Life (C3) Framework for Social Studies",
+    "history": "College, Career, and Civic Life (C3) Framework for Social Studies",
+    "geography": "College, Career, and Civic Life (C3) Framework for Social Studies",
+    "civics": "College, Career, and Civic Life (C3) Framework for Social Studies",
+    "economics": "College, Career, and Civic Life (C3) Framework for Social Studies",
+    "us history": "College, Career, and Civic Life (C3) Framework for Social Studies",
+    "world history": "College, Career, and Civic Life (C3) Framework for Social Studies",
+}
+
+
+def get_standards_framework(subject: str) -> str:
+    """Auto-detect the national standards framework from the subject name."""
+    lower = subject.lower().strip()
+    if lower in NATIONAL_STANDARDS:
+        return NATIONAL_STANDARDS[lower]
+    for key, framework in NATIONAL_STANDARDS.items():
+        if key in lower:
+            return framework
+    return "National content standards for the subject area"
+
 
 def run_council_session(job_id: str, payload: dict) -> None:
     """
@@ -22,11 +58,14 @@ def run_council_session(job_id: str, payload: dict) -> None:
     standards = payload.get("standards", "")
     additional_context = payload.get("additionalContext", payload.get("additional_context", ""))
 
+    framework = get_standards_framework(subject)
+
     context_str = "\n".join(filter(None, [
         f"Subject: {subject}",
         f"Grade Level: {grade_level}",
         f"Duration: {duration}",
-        f"Standards: {standards}" if standards else None,
+        f"National Standards Framework: {framework}",
+        f"Additional Standards: {standards}" if standards else None,
         f"Additional Context: {additional_context}" if additional_context else None,
     ]))
 
@@ -40,11 +79,11 @@ def run_council_session(job_id: str, payload: dict) -> None:
 
     # Pass 1: Gandalf drafts from zero
     draft_task = Task(
-        description=f"Draft a comprehensive scope and sequence for:\n\n{context_str}",
+        description=f"Draft a comprehensive scope and sequence for:\n\n{context_str}\n\nAlign to the national standards framework specified above. Every unit should clearly connect to relevant standards from that framework.",
         expected_output=(
             "A complete scope and sequence with unit titles, learning objectives, "
-            "pacing guide, prerequisite skills, and suggested materials for each unit. "
-            "Alaska-relevant, secular, teacher-ready."
+            "standards alignment, pacing guide, prerequisite skills, and suggested "
+            "materials for each unit. Secular, teacher-ready."
         ),
         agent=gandalf,
     )
@@ -54,8 +93,11 @@ def run_council_session(job_id: str, payload: dict) -> None:
     # Pass 2: Data audits with systematic, ego-free critique
     audit_task = Task(
         description=(
-            "Review Gandalf's scope and sequence draft. "
-            "Check logical sequencing, prerequisite alignment, standards coverage, "
+            f"Review Gandalf's scope and sequence draft. "
+            f"Audit alignment to {framework}. "
+            "Identify grade-level standards that should be covered but are missing, "
+            "and flag content that does not map to a real standard. "
+            "Also check logical sequencing, prerequisite alignment, "
             "age-appropriateness, internal consistency, and pacing math. "
             "Every finding must be numbered, specific, and reference exact items."
         ),

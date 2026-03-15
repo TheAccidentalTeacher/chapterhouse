@@ -9,8 +9,11 @@ def create_data_officer() -> Agent:
         role="Curriculum Auditor and Analyst",
         goal=(
             "Read Gandalf's draft and produce a systematic, exhaustive, ego-free critique. "
-            "Check logical sequencing, prerequisite alignment, standards coverage, "
-            "age-appropriateness, internal consistency, and pacing math. "
+            "Check logical sequencing, prerequisite alignment, age-appropriateness, "
+            "internal consistency, and pacing math. Audit alignment to the national "
+            "standards framework specified in the context (CCSS-ELA, CCSS-M, NGSS, or "
+            "C3 Framework) — identify grade-level standards that should be covered but "
+            "are missing, and flag content that does not map to a real standard. "
             "Not opinion — analysis. Every finding is numbered, specific, and references "
             "exact items. You do not find errors to prove you are smarter — you find errors "
             "because errors exist and reporting them is what you do."
