@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowUp, ExternalLink, Loader2, Tag, PenLine, X, Link2, ClipboardPaste, StickyNote, Camera, ImageIcon, Trash2, RotateCcw, Sparkles, ChevronDown, BookOpen, Search, LayoutList, Rows3 } from "lucide-react";
+import { ArrowUp, ExternalLink, Loader2, Tag, PenLine, X, Link2, ClipboardPaste, StickyNote, Camera, ImageIcon, Trash2, RotateCcw, Sparkles, ChevronDown, BookOpen, Search, LayoutList, Rows3, Globe, ChevronRight } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { logEvent, loggedFetch } from "@/lib/debug-log";
 
-type InputTab = "url" | "paste" | "note" | "image" | "auto";
+type InputTab = "url" | "paste" | "note" | "image" | "auto" | "deep";
 
 type KnowledgeSummary = {
   tag: string;
@@ -77,6 +79,14 @@ export default function ResearchPage() {
   const [autoSearching, setAutoSearching] = useState(false);
   const [autoError, setAutoError] = useState<string | null>(null);
   const [autoResultCount, setAutoResultCount] = useState<number | null>(null);
+
+  // Deep research tab
+  const [deepQuery, setDeepQuery] = useState("");
+  const [deepSearching, setDeepSearching] = useState(false);
+  const [deepError, setDeepError] = useState<string | null>(null);
+  const [deepDepth, setDeepDepth] = useState<"quick" | "standard" | "deep">("standard");
+  const [deepSources, setDeepSources] = useState<string[]>(["tavily", "serpapi", "reddit", "newsapi", "internet-archive"]);
+  const [deepResult, setDeepResult] = useState<{ synthesis: string; sources: { url: string; title: string; source: string; excerpt: string; relevanceScore: number }[]; totalResults: number; savedCount: number; metadata: { searchDuration: number; tokensUsed: number; model: string } } | null>(null);
 
   useEffect(() => {
     logEvent("info", "Research page loaded — fetching items");
@@ -348,6 +358,7 @@ export default function ResearchPage() {
               { id: "note", label: "Quick note", Icon: StickyNote },
               { id: "image", label: "Screenshot", Icon: Camera },
               { id: "auto", label: "Auto-research", Icon: Search },
+              { id: "deep", label: "Deep Research", Icon: Globe },
             ] as { id: InputTab; label: string; Icon: React.ElementType }[]).map(({ id, label, Icon }) => (
               <button
                 key={id}
@@ -593,6 +604,153 @@ export default function ResearchPage() {
                 </p>
               )}
             </form>
+          )}
+
+          {/* Deep Research tab */}
+          {tab === "deep" && (
+            <div className="space-y-4">
+              <label className="block text-xs font-semibold uppercase tracking-[0.12em] text-muted">
+                Multi-source parallel deep research — searches Tavily, Google, Reddit, News, and Internet Archive simultaneously
+              </label>
+
+              {/* Source toggles */}
+              <div className="flex flex-wrap gap-2">
+                {([
+                  { id: "tavily", label: "Tavily" },
+                  { id: "serpapi", label: "Google" },
+                  { id: "reddit", label: "Reddit" },
+                  { id: "newsapi", label: "News" },
+                  { id: "internet-archive", label: "Archive" },
+                ] as const).map(({ id, label }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() =>
+                      setDeepSources((prev) =>
+                        prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+                      )
+                    }
+                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                      deepSources.includes(id)
+                        ? "bg-accent text-accent-foreground"
+                        : "bg-muted-surface text-muted hover:text-foreground"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Depth + query */}
+              <div className="flex gap-3">
+                <select
+                  value={deepDepth}
+                  onChange={(e) => setDeepDepth(e.target.value as "quick" | "standard" | "deep")}
+                  className="rounded-xl border border-border/70 bg-muted-surface px-3 py-2 text-sm text-foreground focus:border-accent/40 focus:outline-none"
+                >
+                  <option value="quick">Quick</option>
+                  <option value="standard">Standard</option>
+                  <option value="deep">Deep</option>
+                </select>
+                <input
+                  value={deepQuery}
+                  onChange={(e) => setDeepQuery(e.target.value)}
+                  placeholder="e.g. Alaska homeschool allotment regulations 2026…"
+                  className="flex-1 rounded-xl border border-border/70 bg-muted-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-accent/40 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  disabled={deepSearching || !deepQuery.trim() || deepSources.length === 0}
+                  onClick={async () => {
+                    const trimmed = deepQuery.trim();
+                    if (!trimmed || deepSearching || deepSources.length === 0) return;
+                    setDeepSearching(true);
+                    setDeepError(null);
+                    setDeepResult(null);
+                    try {
+                      const res = await fetch("/api/research/deep", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          query: trimmed,
+                          sources: deepSources,
+                          maxResultsPerSource: 5,
+                          analysisDepth: deepDepth,
+                        }),
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.error || res.statusText);
+                      setDeepResult(data);
+                      // Refresh items list
+                      const refreshRes = await fetch("/api/research");
+                      const refreshData = await refreshRes.json();
+                      setItems(refreshData.items ?? []);
+                    } catch (err) {
+                      setDeepError(String(err instanceof Error ? err.message : err));
+                    } finally {
+                      setDeepSearching(false);
+                    }
+                  }}
+                  className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-accent-foreground shadow shadow-accent/25 transition hover:opacity-90 disabled:opacity-40"
+                >
+                  {deepSearching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Globe className="h-3.5 w-3.5" />}
+                  {deepSearching ? "Searching…" : "Deep Research"}
+                </button>
+              </div>
+
+              {deepError && <p className="text-xs text-red-400">{deepError}</p>}
+
+              {/* Deep Research Results */}
+              {deepResult && (
+                <div className="space-y-4">
+                  {/* Metadata bar */}
+                  <div className="flex items-center gap-4 text-xs text-muted">
+                    <span>{deepResult.totalResults} results from {deepResult.metadata.searchDuration}ms search</span>
+                    <span>{deepResult.savedCount} saved to library</span>
+                    <span>Model: {deepResult.metadata.model}</span>
+                    <span>{deepResult.metadata.tokensUsed.toLocaleString()} tokens</span>
+                  </div>
+
+                  {/* Synthesis */}
+                  <div className="rounded-2xl border border-border/40 bg-muted-surface/50 p-4">
+                    <h4 className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted">AI Synthesis</h4>
+                    <div className="prose prose-invert prose-sm max-w-none text-foreground/90">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{deepResult.synthesis}</ReactMarkdown>
+                    </div>
+                  </div>
+
+                  {/* Source list */}
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">Sources ({deepResult.sources.length})</h4>
+                    {deepResult.sources.map((s, i) => (
+                      <div key={i} className="flex items-start gap-3 rounded-xl border border-border/30 bg-muted-surface/30 p-3">
+                        <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${
+                          s.source === "tavily" ? "bg-blue-500/20 text-blue-400" :
+                          s.source === "serpapi" ? "bg-green-500/20 text-green-400" :
+                          s.source === "reddit" ? "bg-orange-500/20 text-orange-400" :
+                          s.source === "newsapi" ? "bg-purple-500/20 text-purple-400" :
+                          "bg-amber-500/20 text-amber-400"
+                        }`}>
+                          {s.source === "internet-archive" ? "archive" : s.source}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <a
+                            href={s.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-medium text-foreground hover:text-accent transition line-clamp-1"
+                          >
+                            {s.title}
+                          </a>
+                          <p className="mt-0.5 text-xs text-muted line-clamp-2">{s.excerpt}</p>
+                        </div>
+                        <span className="shrink-0 text-[10px] text-muted">{(s.relevanceScore * 100).toFixed(0)}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
 

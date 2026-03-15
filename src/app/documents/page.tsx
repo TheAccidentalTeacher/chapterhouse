@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { DocumentsList } from "@/components/documents-list";
+import { DocumentUploadSection } from "@/components/document-upload-section";
 import type { SearchParams } from "next/dist/server/request/search-params";
 
 type DocFile = {
@@ -91,10 +92,12 @@ export default async function DocumentsPage({
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">Documents</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight">Brand memory, all of it.</h1>
           <p className="mt-2 text-sm text-muted">
-            Every document in the brand guide. Click any card to read the full content.
+            Every document in the brand guide, plus uploaded files for AI analysis.
             These feed the chat system prompt as research is saved and briefs are generated.
           </p>
         </div>
+
+        <DocumentUploadSection />
 
         <DocumentsList docs={docs} initialQuery={initialQuery} />
       </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Loader2, Copy, Check, Sparkles } from "lucide-react";
+import { Loader2, Copy, Check, Sparkles, Globe } from "lucide-react";
 import { PageFrame } from "@/components/page-frame";
 import { logEvent, loggedFetch } from "@/lib/debug-log";
 
@@ -39,7 +39,42 @@ function CopyButton({ text }: { text: string }) {
 
 // ── Output panel ───────────────────────────────────────────────────────────────
 
+const LANGUAGES = [
+  { code: "es", name: "Spanish" },
+  { code: "fr", name: "French" },
+  { code: "de", name: "German" },
+  { code: "zh", name: "Chinese" },
+  { code: "ko", name: "Korean" },
+  { code: "ja", name: "Japanese" },
+  { code: "pt", name: "Portuguese" },
+  { code: "ru", name: "Russian" },
+  { code: "ar", name: "Arabic" },
+  { code: "it", name: "Italian" },
+];
+
 function OutputPanel({ text, loading }: { text: string; loading: boolean }) {
+  const [targetLang, setTargetLang] = useState("es");
+  const [translatedText, setTranslatedText] = useState("");
+  const [translating, setTranslating] = useState(false);
+
+  // Clear translation when source text changes
+  useEffect(() => {
+    setTranslatedText("");
+  }, [text]);
+
+  async function handleTranslate() {
+    if (!text) return;
+    setTranslating(true);
+    const res = await fetch("/api/translate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, targetLanguage: targetLang }),
+    });
+    const data = await res.json();
+    setTranslatedText(data.translatedText ?? data.error ?? "Translation failed.");
+    setTranslating(false);
+  }
+
   if (loading) {
     return (
       <div className="glass-panel rounded-3xl p-8 flex items-center justify-center gap-3 text-muted min-h-[200px]">
@@ -51,12 +86,51 @@ function OutputPanel({ text, loading }: { text: string; loading: boolean }) {
   if (!text) return null;
 
   return (
-    <div className="glass-panel rounded-3xl p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">Output</p>
-        <CopyButton text={text} />
+    <div className="space-y-4">
+      <div className="glass-panel rounded-3xl p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">Output</p>
+          <div className="flex items-center gap-2">
+            <select
+              value={targetLang}
+              onChange={(e) => setTargetLang(e.target.value)}
+              className="rounded-full border border-border/70 bg-muted-surface px-2.5 py-1 text-xs text-muted focus:border-accent/50 focus:outline-none"
+            >
+              {LANGUAGES.map((l) => (
+                <option key={l.code} value={l.code}>
+                  {l.name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={handleTranslate}
+              disabled={translating}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border/70 px-3 py-1 text-xs text-muted transition hover:border-accent/40 hover:text-accent disabled:opacity-50"
+            >
+              {translating ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Globe className="h-3 w-3" />
+              )}
+              Translate
+            </button>
+            <CopyButton text={text} />
+          </div>
+        </div>
+        <pre className="whitespace-pre-wrap font-sans text-sm leading-7 text-foreground">{text}</pre>
       </div>
-      <pre className="whitespace-pre-wrap font-sans text-sm leading-7 text-foreground">{text}</pre>
+
+      {translatedText && (
+        <div className="glass-panel rounded-3xl p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">
+              Translation — {LANGUAGES.find((l) => l.code === targetLang)?.name}
+            </p>
+            <CopyButton text={translatedText} />
+          </div>
+          <pre className="whitespace-pre-wrap font-sans text-sm leading-7 text-foreground">{translatedText}</pre>
+        </div>
+      )}
     </div>
   );
 }

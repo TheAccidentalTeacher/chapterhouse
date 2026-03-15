@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
+import { getPersonaById } from "@/lib/personas";
 
 function getOpenAI() { return new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); }
 function getAnthropic() { return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }); }
@@ -309,7 +310,7 @@ async function fetchUrlContent(url: string): Promise<string | null> {
 
 export async function POST(request: Request) {
   try {
-    const { messages, model = "gpt-5.4" } = await request.json();
+    const { messages, model = "gpt-5.4", personaId } = await request.json();
 
     const encoder = new TextEncoder();
 
@@ -332,7 +333,12 @@ export async function POST(request: Request) {
       }
     }
 
-    const systemPrompt = SYSTEM_PROMPT + liveContext + urlContext;
+    // If a persona is selected, use its system prompt instead of the default
+    const persona = personaId ? getPersonaById(personaId) : null;
+    const basePrompt = persona
+      ? `${persona.systemPrompt}\n\n---\n\nYou are speaking as ${persona.name} (${persona.title}). Stay in character. Respond from your area of expertise. You are part of Chapterhouse — Scott Somers' internal intelligence system for Next Chapter Homeschool Outpost.`
+      : SYSTEM_PROMPT;
+    const systemPrompt = basePrompt + liveContext + urlContext;
 
     // Route to Anthropic if claude model requested
     if (model.startsWith("claude")) {

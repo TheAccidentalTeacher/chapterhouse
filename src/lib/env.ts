@@ -22,6 +22,36 @@ const environmentSchema = z.object({
   N8N_API_KEY: z.string().min(1).optional(),
   // Research
   TAVILY_API_KEY: z.string().min(1).optional(),
+  // Deep Research (M2)
+  SERPAPI_API_KEY: z.string().min(1).optional(),
+  REDDIT_CLIENT_ID: z.string().min(1).optional(),
+  REDDIT_CLIENT_SECRET: z.string().min(1).optional(),
+  // YouTube Intelligence
+  YOUTUBE_API_KEY: z.string().min(1).optional(),
+  GEMINI_API_KEY: z.string().min(1).optional(),
+  // Document Processing (M3)
+  AZURE_AI_FOUNDRY_KEY: z.string().min(1).optional(),
+  AZURE_AI_FOUNDRY_ENDPOINT: z.string().url().optional(),
+  // Image Generation (M4)
+  STABILITY_AI_KEY: z.string().min(1).optional(),
+  REPLICATE_TOKEN: z.string().min(1).optional(),
+  LEONARDO_API_KEY: z.string().min(1).optional(),
+  PEXELS_API_KEY: z.string().min(1).optional(),
+  PIXABAY_API_KEY: z.string().min(1).optional(),
+  UNSPLASH_ACCESS_KEY: z.string().min(1).optional(),
+  CLOUDINARY_URL: z.string().min(1).optional(),
+  // Voice Engine (M5)
+  ELEVENLABS_CURRICULUM_KEY: z.string().min(1).optional(),
+  ELEVENLABS_GENERAL_KEY: z.string().min(1).optional(),
+  AZURE_SPEECH_KEY: z.string().min(1).optional(),
+  AZURE_SPEECH_REGION: z.string().min(1).optional(),
+  // Sound Browser (M7)
+  FREESOUND_API_KEY: z.string().min(1).optional(),
+  // Translation (M8)
+  AZURE_TRANSLATOR_KEY: z.string().min(1).optional(),
+  AZURE_TRANSLATOR_REGION: z.string().min(1).optional(),
+  // Video Generation (M9)
+  HEYGEN_API_KEY: z.string().min(1).optional(),
 });
 
 const envSource = {
@@ -47,6 +77,36 @@ const envSource = {
   N8N_API_KEY: process.env.N8N_API_KEY,
   // Research
   TAVILY_API_KEY: process.env.TAVILY_API_KEY,
+  // Deep Research (M2)
+  SERPAPI_API_KEY: process.env.SERPAPI_API_KEY,
+  REDDIT_CLIENT_ID: process.env.REDDIT_CLIENT_ID,
+  REDDIT_CLIENT_SECRET: process.env.REDDIT_CLIENT_SECRET,
+  // YouTube Intelligence
+  YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY,
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+  // Document Processing (M3)
+  AZURE_AI_FOUNDRY_KEY: process.env.AZURE_AI_FOUNDRY_KEY,
+  AZURE_AI_FOUNDRY_ENDPOINT: process.env.AZURE_AI_FOUNDRY_ENDPOINT,
+  // Image Generation (M4)
+  STABILITY_AI_KEY: process.env.STABILITY_AI_KEY,
+  REPLICATE_TOKEN: process.env.REPLICATE_TOKEN,
+  LEONARDO_API_KEY: process.env.LEONARDO_API_KEY,
+  PEXELS_API_KEY: process.env.PEXELS_API_KEY,
+  PIXABAY_API_KEY: process.env.PIXABAY_API_KEY,
+  UNSPLASH_ACCESS_KEY: process.env.UNSPLASH_ACCESS_KEY,
+  CLOUDINARY_URL: process.env.CLOUDINARY_URL,
+  // Voice Engine (M5)
+  ELEVENLABS_CURRICULUM_KEY: process.env.ELEVENLABS_CURRICULUM_KEY,
+  ELEVENLABS_GENERAL_KEY: process.env.ELEVENLABS_GENERAL_KEY,
+  AZURE_SPEECH_KEY: process.env.AZURE_SPEECH_KEY,
+  AZURE_SPEECH_REGION: process.env.AZURE_SPEECH_REGION,
+  // Sound Browser (M7)
+  FREESOUND_API_KEY: process.env.FREESOUND_API_KEY,
+  // Translation (M8)
+  AZURE_TRANSLATOR_KEY: process.env.AZURE_TRANSLATOR_KEY,
+  AZURE_TRANSLATOR_REGION: process.env.AZURE_TRANSLATOR_REGION,
+  // Video Generation (M9)
+  HEYGEN_API_KEY: process.env.HEYGEN_API_KEY,
 };
 
 export function getEnvironmentStatus() {
@@ -65,8 +125,22 @@ export function getEnvironmentStatus() {
         ? "email"
         : key === "N8N_BASE_URL" || key === "N8N_API_KEY"
         ? "n8n"
-        : key === "TAVILY_API_KEY"
+        : key === "TAVILY_API_KEY" || key === "SERPAPI_API_KEY" || key === "REDDIT_CLIENT_ID" || key === "REDDIT_CLIENT_SECRET"
         ? "research"
+        : key === "YOUTUBE_API_KEY" || key === "GEMINI_API_KEY"
+        ? "youtube"
+        : key === "AZURE_AI_FOUNDRY_KEY" || key === "AZURE_AI_FOUNDRY_ENDPOINT"
+        ? "documents"
+        : key === "STABILITY_AI_KEY" || key === "REPLICATE_TOKEN" || key === "LEONARDO_API_KEY" || key === "PEXELS_API_KEY" || key === "PIXABAY_API_KEY" || key === "UNSPLASH_ACCESS_KEY" || key === "CLOUDINARY_URL"
+        ? "images"
+        : key === "ELEVENLABS_CURRICULUM_KEY" || key === "ELEVENLABS_GENERAL_KEY" || key === "AZURE_SPEECH_KEY" || key === "AZURE_SPEECH_REGION"
+        ? "voice"
+        : key === "FREESOUND_API_KEY"
+        ? "sounds"
+        : key === "AZURE_TRANSLATOR_KEY" || key === "AZURE_TRANSLATOR_REGION"
+        ? "translation"
+        : key === "HEYGEN_API_KEY"
+        ? "video"
         : "ai",
     })),
   };

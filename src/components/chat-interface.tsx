@@ -20,6 +20,7 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { log, mountConsoleHelpers, type SystemStatus } from "@/lib/debug-logger";
+import { personas, type Persona } from "@/lib/personas";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -107,6 +108,10 @@ export function ChatInterface() {
   const [councilMode, setCouncilMode] = useState(false);
   const [activeCouncilMembers, setActiveCouncilMembers] = useState<CouncilMemberInfo[]>([]);
   const [currentSpeaker, setCurrentSpeaker] = useState<string | null>(null);
+
+  // Persona mode
+  const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null);
+  const [personaPickerOpen, setPersonaPickerOpen] = useState(false);
 
   // Rename state
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -608,7 +613,11 @@ export function ChatInterface() {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: newMessages.filter((m) => !isCouncilMessage(m)), model: selectedModel.id }),
+        body: JSON.stringify({
+          messages: newMessages.filter((m) => !isCouncilMessage(m)),
+          model: selectedModel.id,
+          ...(selectedPersona ? { personaId: selectedPersona.id } : {}),
+        }),
       });
 
       log.data("HTTP status", `${response.status} ${response.statusText}`);
@@ -999,7 +1008,12 @@ export function ChatInterface() {
           <div className="mx-auto max-w-3xl">
             <div className="flex items-end gap-3 rounded-3xl border border-border bg-card/80 px-4 py-3 focus-within:border-accent/40">
               <button
-                onClick={() => setCouncilMode((c) => !c)}
+                onClick={() => {
+                  setCouncilMode((c) => {
+                    if (!c) setSelectedPersona(null); // Council and persona are mutually exclusive
+                    return !c;
+                  });
+                }}
                 className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
                   councilMode
                     ? "border-amber-500/50 bg-amber-500/10 text-amber-400"
@@ -1061,6 +1075,53 @@ export function ChatInterface() {
                       >
                         <span className={`h-1.5 w-1.5 rounded-full ${m.provider === "openai" ? "bg-green-400" : "bg-orange-400"}`} />
                         {m.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {/* Persona picker */}
+              <div className="relative">
+                <button
+                  onClick={() => setPersonaPickerOpen((o) => !o)}
+                  className={`inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-card/60 px-3 py-1 text-xs text-muted transition hover:border-accent/40 hover:text-foreground ${councilMode ? "opacity-50 pointer-events-none" : ""}`}
+                >
+                  {selectedPersona ? (
+                    <>
+                      <span>{selectedPersona.icon}</span>
+                      <span style={{ color: selectedPersona.color }}>{selectedPersona.name.split(" ").slice(-1)[0]}</span>
+                    </>
+                  ) : (
+                    "No Persona"
+                  )}
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+                {personaPickerOpen && (
+                  <div className="absolute bottom-full left-0 mb-2 max-h-80 min-w-64 overflow-y-auto overflow-x-hidden rounded-2xl border border-border bg-card shadow-xl shadow-black/20">
+                    <button
+                      onClick={() => {
+                        setSelectedPersona(null);
+                        setPersonaPickerOpen(false);
+                      }}
+                      className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition hover:bg-muted-surface ${!selectedPersona ? "text-accent" : "text-foreground"}`}
+                    >
+                      No Persona
+                    </button>
+                    {personas.map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => {
+                          setSelectedPersona(p);
+                          setPersonaPickerOpen(false);
+                          setCouncilMode(false);
+                        }}
+                        className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition hover:bg-muted-surface ${selectedPersona?.id === p.id ? "text-accent" : "text-foreground"}`}
+                      >
+                        <span className="text-base">{p.icon}</span>
+                        <div className="min-w-0">
+                          <div className="font-medium truncate">{p.name}</div>
+                          <div className="text-xs text-muted truncate">{p.specialty}</div>
+                        </div>
                       </button>
                     ))}
                   </div>
