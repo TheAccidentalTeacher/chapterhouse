@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useJobsRealtime, type Job } from "@/hooks/use-jobs-realtime";
 import { JobDetailDrawer } from "./job-detail-drawer";
 import { formatDistanceToNow } from "date-fns";
+import { logEvent } from "@/lib/debug-log";
 
 const STATUS_STYLES: Record<Job["status"], string> = {
   queued: "bg-zinc-800 text-zinc-400",
@@ -75,6 +76,34 @@ export function JobsDashboard() {
   const { jobs, loading } = useJobsRealtime();
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
 
+  // Auto-open job from URL highlight param
+  useEffect(() => {
+    if (jobs.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const highlightId = params.get("highlight");
+    if (highlightId && !selectedJob) {
+      const job = jobs.find((j) => j.id === highlightId);
+      if (job) {
+        setSelectedJob(job);
+        logEvent("info", `Auto-opened job: ${job.label}`);
+      }
+    }
+  }, [jobs, selectedJob]);
+
+  // Keep selected job synced with realtime updates
+  useEffect(() => {
+    if (!selectedJob) return;
+    const updated = jobs.find((j) => j.id === selectedJob.id);
+    if (updated && updated.updated_at !== selectedJob.updated_at) {
+      setSelectedJob(updated);
+    }
+  }, [jobs, selectedJob]);
+
+  const handleSelectJob = (job: Job) => {
+    logEvent("click", `Opened job: ${job.label}`, { id: job.id.slice(0, 8), status: job.status });
+    setSelectedJob(job);
+  };
+
   const running = jobs.filter((j) => j.status === "running");
   const queued = jobs.filter((j) => j.status === "queued");
   const done = jobs.filter((j) => j.status === "completed" || j.status === "failed" || j.status === "cancelled");
@@ -104,7 +133,7 @@ export function JobsDashboard() {
         </h3>
         <div className="border border-zinc-800 rounded-lg overflow-hidden">
           {items.map((job) => (
-            <JobRow key={job.id} job={job} onClick={setSelectedJob} />
+            <JobRow key={job.id} job={job} onClick={handleSelectJob} />
           ))}
         </div>
       </div>

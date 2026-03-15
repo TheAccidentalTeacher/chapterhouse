@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
+import { logEvent } from "@/lib/debug-log";
 
 export type Job = {
   id: string;
@@ -29,7 +30,15 @@ export function useJobsRealtime() {
     const res = await fetch("/api/jobs");
     if (res.ok) {
       const data = await res.json();
-      setJobs(data.jobs ?? []);
+      const jobList = data.jobs ?? [];
+      setJobs(jobList);
+      logEvent("api", `Jobs loaded: ${jobList.length} jobs`, {
+        running: jobList.filter((j: Job) => j.status === "running").length,
+        queued: jobList.filter((j: Job) => j.status === "queued").length,
+        completed: jobList.filter((j: Job) => j.status === "completed").length,
+      });
+    } else {
+      logEvent("error", `Failed to load jobs: HTTP ${res.status}`);
     }
     setLoading(false);
   }, []);
@@ -48,26 +57,42 @@ export function useJobsRealtime() {
         (payload) => {
           if (payload.eventType === "INSERT") {
             const newJob = payload.new as Job;
+            logEvent("realtime", `Job created: ${newJob.label}`, {
+              id: newJob.id.slice(0, 8),
+              type: newJob.type,
+              status: newJob.status,
+            });
             // Only show top-level jobs in main list
             if (!newJob.parent_job_id) {
               setJobs((prev) => [newJob, ...prev]);
             }
           } else if (payload.eventType === "UPDATE") {
+            const updated = payload.new as Job;
+            logEvent("realtime", `Job ${updated.status}: ${updated.label} [${updated.progress}%]`, {
+              id: updated.id.slice(0, 8),
+              status: updated.status,
+              progress: updated.progress,
+              message: updated.progress_message,
+            });
             setJobs((prev) =>
               prev.map((j) =>
-                j.id === (payload.new as Job).id ? (payload.new as Job) : j
+                j.id === updated.id ? updated : j
               )
             );
           } else if (payload.eventType === "DELETE") {
+            logEvent("realtime", "Job deleted", { id: (payload.old as Job).id?.slice(0, 8) });
             setJobs((prev) =>
               prev.filter((j) => j.id !== (payload.old as Job).id)
             );
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        logEvent("realtime", `Jobs channel: ${status}`);
+      });
 
     return () => {
+      logEvent("realtime", "Jobs channel disconnected");
       supabase?.removeChannel(channel);
     };
   }, [fetchJobs]);

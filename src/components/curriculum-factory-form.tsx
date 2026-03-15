@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Zap } from "lucide-react";
+import { loggedFetch, logEvent } from "@/lib/debug-log";
 
 const SUBJECTS = [
   "English Language Arts",
@@ -87,16 +88,20 @@ export function CurriculumFactoryForm() {
     label: string,
     type: string = "curriculum_factory"
   ) {
-    const res = await fetch("/api/jobs/create", {
+    logEvent("info", `Creating job: ${label}`, { type, payload });
+    const res = await loggedFetch("/api/jobs/create", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type, label, payload }),
-    });
+    }, `Create job: ${label}`);
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
+      logEvent("error", `Job creation failed: ${label}`, data);
       throw new Error(data.error ?? `HTTP ${res.status}`);
     }
-    return res.json() as Promise<{ jobId: string }>;
+    const result = await res.json() as { jobId: string };
+    logEvent("success", `Job queued: ${result.jobId}`, { label, jobId: result.jobId });
+    return result;
   }
 
   async function handleSingleSubmit(e: React.FormEvent) {
