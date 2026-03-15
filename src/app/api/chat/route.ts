@@ -230,7 +230,7 @@ async function fetchUrlContent(url: string): Promise<string | null> {
 
     const res = await fetch(url, {
       headers: { "User-Agent": "Chapterhouse/1.0 (link preview)" },
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(12000),
       redirect: "follow",
     });
     if (!res.ok) return null;
@@ -238,24 +238,70 @@ async function fetchUrlContent(url: string): Promise<string | null> {
     if (!contentType.includes("text/html") && !contentType.includes("text/plain")) return null;
 
     const html = await res.text();
-    // Extract title
+
+    // Extract metadata
     const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
     const title = titleMatch ? titleMatch[1].replace(/\s+/g, " ").trim() : "";
-    // Strip tags and get text
-    const text = html
+    const descMatch = html.match(/<meta[^>]+(?:name|property)=["'](?:description|og:description)["'][^>]+content=["']([^"']+)["']/i)
+      ?? html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+(?:name|property)=["'](?:description|og:description)["']/i);
+    const description = descMatch ? descMatch[1].trim() : "";
+    const authorMatch = html.match(/<meta[^>]+name=["']author["'][^>]+content=["']([^"']+)["']/i);
+    const author = authorMatch ? authorMatch[1].trim() : "";
+
+    // Try to extract article/main content first (much richer than full-page strip)
+    let articleHtml = "";
+    const articleMatch = html.match(/<article[^>]*>([\s\S]*?)<\/article>/i);
+    if (articleMatch) {
+      articleHtml = articleMatch[1];
+    } else {
+      const mainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/i);
+      if (mainMatch) {
+        articleHtml = mainMatch[1];
+      } else {
+        // Try content divs common in blogs/CMSes
+        const contentMatch = html.match(/<div[^>]+class=["'][^"']*(?:post-content|entry-content|article-content|blog-content|prose)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
+        if (contentMatch) {
+          articleHtml = contentMatch[1];
+        }
+      }
+    }
+
+    // Strip HTML from the best source we found
+    const sourceHtml = articleHtml || html;
+    const text = sourceHtml
       .replace(/<script[\s\S]*?<\/script>/gi, "")
       .replace(/<style[\s\S]*?<\/style>/gi, "")
+      .replace(/<nav[\s\S]*?<\/nav>/gi, "")
+      .replace(/<header[\s\S]*?<\/header>/gi, "")
+      .replace(/<footer[\s\S]*?<\/footer>/gi, "")
+      .replace(/<aside[\s\S]*?<\/aside>/gi, "")
+      .replace(/<form[\s\S]*?<\/form>/gi, "")
+      .replace(/<h([1-6])[^>]*>([\s\S]*?)<\/h\1>/gi, "\n## $2\n") // preserve headings
+      .replace(/<li[^>]*>/gi, "\n- ")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/p>/gi, "\n\n")
       .replace(/<[^>]+>/g, " ")
       .replace(/&nbsp;/g, " ")
       .replace(/&amp;/g, "&")
       .replace(/&lt;/g, "<")
       .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
       .replace(/&#\d+;/g, "")
-      .replace(/\s+/g, " ")
+      .replace(/\n{3,}/g, "\n\n")
+      .replace(/[ \t]+/g, " ")
       .trim()
-      .slice(0, 4000);
+      .slice(0, 12000);
 
-    return `[URL: ${url}]${title ? ` Title: ${title}` : ""}\n${text}`;
+    const header = [
+      `[URL: ${url}]`,
+      title && `Title: ${title}`,
+      author && `Author: ${author}`,
+      description && `Description: ${description}`,
+      articleHtml ? `(Article content extracted — ${text.length} chars)` : `(Full page stripped — ${text.length} chars)`,
+    ].filter(Boolean).join("\n");
+
+    return `${header}\n\n${text}`;
   } catch {
     return null;
   }

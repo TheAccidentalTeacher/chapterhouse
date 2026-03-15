@@ -8,6 +8,7 @@ import {
   Check,
   ChevronDown,
   Edit3,
+  LinkIcon,
   Loader2,
   MessageSquarePlus,
   Pin,
@@ -100,6 +101,7 @@ export function ChatInterface() {
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [learnedCount, setLearnedCount] = useState(0);
   const [isLearning, setIsLearning] = useState(false);
+  const [fetchingUrls, setFetchingUrls] = useState<string[]>([]);
 
   // Council mode
   const [councilMode, setCouncilMode] = useState(false);
@@ -426,6 +428,13 @@ export function ChatInterface() {
     setMessages(newMessages);
     setInput("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
+
+    // Detect URLs in the message and show fetching indicator
+    const urlMatches = trimmed.match(/https?:\/\/[^\s<>"')\]]+/gi);
+    if (urlMatches && urlMatches.length > 0) {
+      setFetchingUrls([...new Set(urlMatches)].slice(0, 3));
+    }
+
     setIsStreaming(true);
 
     // Auto-title on first user message
@@ -493,6 +502,7 @@ export function ChatInterface() {
                 const data = JSON.parse(line.slice(6));
 
                 if (eventType === "council_start") {
+                  setFetchingUrls([]);
                   setActiveCouncilMembers(data.members);
                   log.info(`Council convened: ${data.members.map((m: CouncilMemberInfo) => m.name).join(", ")}`);
                 } else if (eventType === "member_start") {
@@ -626,6 +636,7 @@ export function ChatInterface() {
 
         if (firstChunkTime === null) {
           firstChunkTime = performance.now();
+          setFetchingUrls([]);
           log.timing("Time to first token", Math.round(firstChunkTime - t0));
         }
 
@@ -959,6 +970,25 @@ export function ChatInterface() {
                 </div>
               );
               })}
+              {/* URL fetch indicator */}
+              {fetchingUrls.length > 0 && (
+                <div className="flex items-start gap-3">
+                  <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-accent/15 text-accent shadow">
+                    <LinkIcon className="h-4 w-4" />
+                  </div>
+                  <div className="rounded-3xl border border-accent/20 bg-card/60 px-5 py-3 text-sm">
+                    <div className="flex items-center gap-2 text-accent">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <span className="font-medium">Fetching {fetchingUrls.length === 1 ? "URL" : `${fetchingUrls.length} URLs`}…</span>
+                    </div>
+                    <div className="mt-1.5 space-y-0.5">
+                      {fetchingUrls.map((u) => (
+                        <div key={u} className="truncate text-xs text-muted">{u}</div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
               <div ref={bottomRef} />
             </div>
           )}
