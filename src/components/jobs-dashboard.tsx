@@ -76,19 +76,23 @@ export function JobsDashboard() {
   const { jobs, loading } = useJobsRealtime();
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
 
-  // Auto-open job from URL highlight param
+  // Auto-open job from URL highlight param (once only)
+  const [highlightHandled, setHighlightHandled] = useState(false);
   useEffect(() => {
-    if (jobs.length === 0) return;
+    if (highlightHandled || jobs.length === 0) return;
     const params = new URLSearchParams(window.location.search);
     const highlightId = params.get("highlight");
-    if (highlightId && !selectedJob) {
+    if (highlightId) {
       const job = jobs.find((j) => j.id === highlightId);
       if (job) {
         setSelectedJob(job);
         logEvent("info", `Auto-opened job: ${job.label}`);
       }
+      // Clear the URL param so it doesn't re-trigger
+      window.history.replaceState({}, "", window.location.pathname);
+      setHighlightHandled(true);
     }
-  }, [jobs, selectedJob]);
+  }, [jobs, highlightHandled]);
 
   // Keep selected job synced with realtime updates
   useEffect(() => {
