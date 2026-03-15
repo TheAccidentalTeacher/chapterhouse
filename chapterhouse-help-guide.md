@@ -22,7 +22,7 @@ Chapterhouse has fifteen screens organized in five sidebar groups. Here's what e
 
 ### 1. Home (Chat)
 
-**What it is:** A chat window — like texting an assistant who knows your brand, your research, your daily brief, and your goals. Supports two modes: **Solo** (one AI responds) and **Council** (multiple Fellowship members respond).
+**What it is:** A chat window — like texting an assistant who knows your brand, your research, your daily brief, and your goals. Supports two modes: **Solo** (one AI responds) and **Council** (multiple Council of the Unserious members respond).
 
 **How to use it:**
 - Type a question or request in the box at the bottom and press Enter
@@ -33,9 +33,13 @@ Chapterhouse has fifteen screens organized in five sidebar groups. Here's what e
 
 **Council Mode:** Click the amber **Council** pill button next to the text input to toggle Council Mode on/off:
 - **Solo mode** (default) — one AI model responds, like a normal chat
-- **Council mode** — your question goes to multiple Fellowship members (Gandalf, Legolas, Aragorn, and on complex questions Gimli and Merry & Pippin). Each responds in character, with colored avatar bubbles. After the initial round, a **rebuttal round** follows where members respond to each other.
+- **Council mode** — your question goes to the Council of the Unserious (Gandalf, Lt. Commander Data, Polgara, Earl Harbinger, and Beavis & Butthead). Each responds in character, with colored avatar bubbles. After the initial round, a **rebuttal round** follows where members respond to each other.
 
 **Special trick:** Type `/remember [any fact]` and the system will memorize it permanently. Example: `/remember We decided to launch the first curriculum guide by September`. That fact then gets included in every future chat automatically.
+
+**URL fetching:** Paste a URL in your message and the chat will automatically fetch the page content, extract the article text (up to 12K chars), and include it as context for the AI. A "Fetching URL…" indicator appears while loading.
+
+**Auto-learning:** After every message you send, the system silently extracts new facts worth remembering from the conversation and saves them to your Founder Memory. You’ll see a small brain icon flash when it learns something.
 
 **What happens behind the scenes:** Every time you send a message, the AI also reads your daily brief, your saved research, your open opportunities, and your founder memory — so its answers are always relevant to where you actually are.
 
@@ -53,7 +57,7 @@ Chapterhouse has fifteen screens organized in five sidebar groups. Here's what e
 - Click **Send to review** to put it in the Review Queue for later decision-making
 - You can also write a brief manually using the **Write manually** toggle
 
-**Automatic mode:** A brief generates itself every morning at 7:00 AM Alaska time via a scheduled job. You don't have to click anything — just open the page and read.
+**Automatic mode:** A brief generates itself every morning at 7:00 AM Alaska time via a scheduled job. When it completes, an email copy is sent to scott@nextchapterhomeschool.com automatically.
 
 **Where the data comes from:** 9 RSS news feeds (education, homeschool, edtech) + 11 GitHub repos you follow. The AI reads all of it and writes the summary.
 
@@ -73,6 +77,7 @@ Chapterhouse has fifteen screens organized in five sidebar groups. Here's what e
 | **Paste text** | Copy-paste any text (email, article excerpt, Slack message). AI analyzes it. |
 | **Quick note** | Jot down a thought or observation. AI adds context. |
 | **Screenshot** | Drag and drop an image (competitor site, social post, ad). AI vision reads and analyzes it. |
+| **Auto-research** | Type a topic and click Research. The system searches the web via Tavily, analyzes each result with GPT-5.4, checks for duplicates, and auto-saves relevant items. |
 
 **After saving:** Each research item shows a title, summary, verdict, and tags. You can re-analyze or delete items. Everything you save here automatically feeds into your chat context and opportunity analysis.
 
@@ -201,18 +206,21 @@ Each task shows where it came from (brief, opportunity, or manual) so you always
 
 ### 11. Curriculum Factory
 
-**What it is:** A 4-pass AI pipeline that generates curriculum scope & sequences using the Council's critique loop.
+**What it is:** A 5-pass AI pipeline that generates curriculum scope & sequences using the Council of the Unserious critique loop.
 
 **How to use it:**
 - Select a subject, grade level, and duration
 - Optionally add standards alignment or additional context
 - Click **Generate** for a single curriculum, or use **Batch** mode to generate many at once
-- The 4-pass process:
+- The 5-pass process:
   1. **Gandalf** drafts the initial scope & sequence
-  2. **Legolas** critiques it for gaps, errors, and missequencing
-  3. **Aragorn** synthesizes the best of both into a final version
-  4. **Gimli** stress-tests it for real classroom viability
-- View the final output as rendered Markdown, download it, or copy to clipboard
+  2. **Lt. Commander Data** audits it against national standards (CCSS-ELA, CCSS-M, NGSS, or C3)
+  3. **Polgara** synthesizes Gandalf + Data into a production-ready, child-first final version
+  4. **Earl Harbinger** assesses operational viability — build order, revenue, minimum viable version
+  5. **Beavis & Butthead** stress-test engagement — COOL/SUCKS/MEH per unit
+- View the final output as rendered Markdown, download as HTML/PDF/DOCX, or copy to clipboard
+
+**National standards auto-alignment:** Standards are auto-detected from the subject field. ELA → CCSS-ELA, Math → CCSS-M, Science → NGSS, Social Studies → C3 Framework. No manual input needed.
 
 **Batch mode:** Generate up to 70 curricula overnight (10 subjects × 7 grade levels). Jobs are staggered to avoid API rate limits.
 
@@ -220,7 +228,7 @@ Each task shows where it came from (brief, opportunity, or manual) so you always
 
 ### 12. Council Chamber
 
-**What it is:** A purpose-built 5-agent system for generating curriculum scope & sequences as a background job. Similar to Curriculum Factory but runs all 5 Council members as a longer, more thorough process.
+**What it is:** A purpose-built 5-agent system for generating curriculum scope & sequences as a background job. Uses the full Council of the Unserious (Gandalf → Data → Polgara → Earl → Beavis & Butthead) as a longer, more thorough process.
 
 **How to use it:**
 - Select subject, grade, and duration
@@ -272,6 +280,8 @@ The sidebar on the left organizes all 15 screens into five collapsible groups:
 
 Click a group header to expand/collapse it. The group containing the current page opens automatically.
 
+**Global search:** The search bar at the top of the sidebar searches across tasks, research, opportunities, chat threads, and briefs simultaneously. Results are color-coded by type. Click any result to navigate directly to that item.
+
 **Tooltips:** Hover over any nav item to see a tooltip card explaining what that screen does.
 
 **Status badges:** Some items show a badge — "beta" (amber) means partially working, "soon" (blue) means planned but not built yet.
@@ -314,7 +324,7 @@ Here's how a typical day might look:
 | **Who can access this?** | Only scott@somers.com and anna@somers.com |
 | **Where does it live?** | chapterhouse.vercel.app |
 | **Is my data private?** | Yes — stored in your private Supabase database. No one else has access. |
-| **What AI models are used?** | GPT-5.4 (chat, research, opportunities), Claude Sonnet 4.6 (daily brief, content studio, curriculum factory). Council Mode uses both: Gandalf + Legolas on Claude, Aragorn + Gimli on GPT-5.4, Merry & Pippin on GPT-5-mini. |
+| **What AI models are used?** | GPT-5.4 (chat, research, opportunities), Claude Sonnet 4.6 (daily brief, content studio, curriculum factory). Council Mode uses both: Gandalf + Data + Polgara on Claude, Earl on GPT-5.4, Beavis & Butthead on GPT-5-mini. |
 | **Does it cost money to run?** | Vercel Pro hosting + AI API usage. No per-user fees. |
 | **How do I sign out?** | Click the door icon in the top right corner |
 | **How do I teach it something?** | Type `/remember [fact]` in chat, or add facts in Settings → Founder Memory |

@@ -59,6 +59,8 @@ This document is your complete technical brief. Read all of it before touching a
 - `n8n/workflows/`, `n8n/executions/` — n8n proxy routes
 - `opportunities/` — Opportunity list + `analyze/` + `[id]/` (PATCH)
 - `research/` — Full CRUD (GET, POST, PATCH, DELETE)
+- `research/auto/` — Agentic research via Tavily (web search → GPT-5.4 analysis → dedup → auto-ingest)
+- `search/` — Global cross-table search (tasks, research, opportunities, threads, briefs via `ilike`)
 - `summarize/` — AI summarization
 - `tasks/` — Task list + create, `[id]/` (PATCH, DELETE)
 - `threads/` — Chat thread list + create, `[id]/` (PATCH)
@@ -66,11 +68,11 @@ This document is your complete technical brief. Read all of it before touching a
 **Supabase tables:**
 - `briefs`, `research_items`, `opportunities`, `tasks`, `chat_threads`, `knowledge_summaries`, `founder_notes`, `jobs`
 
-**Key env vars:** `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `TAVILY_API_KEY`, `NEWSAPI_API_KEY`, `N8N_BASE_URL`, `N8N_API_KEY`, `RAILWAY_WORKER_URL`, `ALERT_EMAIL_TO`
+**Key env vars:** `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `TAVILY_API_KEY`, `NEWSAPI_API_KEY`, `N8N_BASE_URL`, `N8N_API_KEY`, `RAILWAY_WORKER_URL`, `GITHUB_TOKEN`, `CRON_SECRET`, `NEXT_PUBLIC_APP_URL`, `ALLOWED_EMAILS`
 
-**Installed and active:** `@upstash/qstash`, `@upstash/redis`, `@anthropic-ai/sdk`, `openai`, `@supabase/supabase-js`, `@supabase/ssr`, `zod`, `react-markdown`, `remark-gfm`
+**Installed and active:** `@upstash/qstash`, `@upstash/redis`, `@anthropic-ai/sdk`, `openai`, `@supabase/supabase-js`, `@supabase/ssr`, `zod`, `react-markdown`, `remark-gfm`, `resend`, `rss-parser`, `date-fns`, `html-to-docx`, `marked`, `lucide-react`
 
-**UI features built in this session (March 14, 2026):**
+**UI features built across Sessions 6-7 (March 14, 2026):**
 - Council Mode toggle (Solo/Council) inside chat input bar
 - SSE-based multi-member streaming with colored avatar bubbles per member
 - Council members bar with active speaker indicator
@@ -80,6 +82,14 @@ This document is your complete technical brief. Read all of it before touching a
 - Hover tooltips on all nav items showing purpose/context
 - Dynamic system status rail (replaces hardcoded build status)
 - Status badges (live/beta/soon) on each nav item
+- Global cross-table search bar in shell header (searches 5 tables, color-coded type badges)
+- Inline URL detection in chat — fetches page content (article/main extraction, 12K chars, SSRF protection) with visual "Fetching URL…" spinner
+- Auto-learning: Claude silently extracts facts from last 6 messages after every user message → `founder_notes`
+- Live context injection: `buildLiveContext()` injects founder memory, daily brief, research, opportunities into every chat
+- Agentic research tab: topic → Tavily search → GPT-5.4 analysis → dedup → auto-ingest
+- Research metadata extraction: OG tags (site_name, author, published_at, og_image) on URL ingest
+- Daily brief email delivery: Resend sends formatted HTML brief to scott@nextchapterhomeschool.com on cron
+- Thread persistence: debounced 1.5s auto-save to Supabase `chat_threads`
 
 ---
 
@@ -679,5 +689,5 @@ Do this before the Railway worker exists. Validate the UI layer independently.
 
 ---
 
-*Document version: March 14, 2026*
-*All four phases built and deployed. Session 6 updates: Council of the Unserious (5-pass pipeline), national standards auto-alignment (CCSS-ELA/CCSS-M/NGSS/C3), HTML/PDF/DOCX export, accordion nav, tooltips, status badges, Council Mode in chat.*
+*Document version: March 14, 2026 (Session 7)*
+*All four phases built and deployed. Session 7 additions: global cross-table search, inline URL fetching with article extraction (12K chars + SSRF protection + visual indicator), auto-learning (Claude extracts facts from chat → founder_notes), agentic research (Tavily → GPT-5.4 → auto-ingest), research metadata extraction (OG tags), daily brief email delivery (Resend → scott@nextchapterhomeschool.com), thread persistence with debounced auto-save. Session 6: Council of the Unserious 5-pass pipeline, national standards auto-alignment (CCSS-ELA/CCSS-M/NGSS/C3), HTML/PDF/DOCX export, accordion nav, tooltips, status badges, Council Mode in chat.*
