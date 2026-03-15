@@ -1,5 +1,7 @@
 """Council of the Unserious — CrewAI curriculum session task definitions."""
 import io
+import json
+import os
 import sys
 from crewai import Crew, Task, Process
 from agents.gandalf import create_gandalf
@@ -46,6 +48,170 @@ def get_standards_framework(subject: str) -> str:
     return "National content standards for the subject area"
 
 
+# ── Subject code & grade band mappings (match scope-sequence-handoff.md) ──────
+
+SUBJECT_CODES = {
+    "science": "sci", "biology": "sci", "chemistry": "sci", "physics": "sci", "earth science": "sci",
+    "math": "mth", "mathematics": "mth", "algebra": "mth", "geometry": "mth",
+    "language arts": "ela", "ela": "ela", "english": "ela", "reading": "ela", "writing": "ela",
+    "history": "hst", "social studies": "hst", "geography": "hst", "civics": "hst",
+    "economics": "hst", "us history": "hst", "world history": "hst",
+    "bible": "bib", "art": "art", "music": "mus", "pe": "pe",
+}
+
+STANDARDS_FRAMEWORK_SHORT = {
+    "science": "NGSS", "biology": "NGSS", "chemistry": "NGSS", "physics": "NGSS", "earth science": "NGSS",
+    "math": "CCSS-Math", "mathematics": "CCSS-Math", "algebra": "CCSS-Math", "geometry": "CCSS-Math",
+    "language arts": "CCSS-ELA", "ela": "CCSS-ELA", "english": "CCSS-ELA", "reading": "CCSS-ELA", "writing": "CCSS-ELA",
+    "history": "C3", "social studies": "C3", "geography": "C3", "civics": "C3",
+    "economics": "C3", "us history": "C3", "world history": "C3",
+    "bible": "internal", "art": "internal", "music": "internal", "pe": "internal",
+}
+
+
+def get_subject_code(subject: str) -> str:
+    lower = subject.lower().strip()
+    if lower in SUBJECT_CODES:
+        return SUBJECT_CODES[lower]
+    for key, code in SUBJECT_CODES.items():
+        if key in lower:
+            return code
+    return lower[:3]
+
+
+def get_standards_fw_short(subject: str) -> str:
+    lower = subject.lower().strip()
+    if lower in STANDARDS_FRAMEWORK_SHORT:
+        return STANDARDS_FRAMEWORK_SHORT[lower]
+    for key, fw in STANDARDS_FRAMEWORK_SHORT.items():
+        if key in lower:
+            return fw
+    return "internal"
+
+
+def get_grade_band(grade: int) -> str:
+    if grade <= 2:
+        return "early_elementary"
+    if grade <= 5:
+        return "upper_elementary"
+    if grade <= 8:
+        return "middle"
+    return "high"
+
+
+def extract_structured_output(
+    polgara_markdown: str,
+    subject: str,
+    grade_level: int,
+) -> dict | None:
+    """Convert Polgara's finalized markdown to handoff JSON via Claude."""
+    import anthropic
+
+    subject_code = get_subject_code(subject)
+    grade_band = get_grade_band(grade_level)
+    framework_short = get_standards_fw_short(subject)
+    course_id = f"{subject_code}-g{grade_level}"
+
+    extraction_prompt = f"""You are a precise data extraction engine. Convert the following curriculum scope & sequence document into a structured JSON object.
+
+DESIGN PRINCIPLE: NO COOKIE CUTTERS. Every unit can have a different number of lessons, different styles, and different energy levels. Structure serves learning — learning does not serve structure.
+
+REQUIRED OUTPUT FORMAT (respond with ONLY valid JSON — no markdown fences, no commentary):
+
+{{
+  "id": "{course_id}",
+  "schema_version": "1.0",
+  "subject": "{subject}",
+  "subject_code": "{subject_code}",
+  "grade": {grade_level},
+  "grade_band": "{grade_band}",
+  "title": "Grade {grade_level} {subject}",
+  "subtitle": "<descriptive subtitle extracted from the document>",
+  "faith_integration": false,
+  "theology_profile": "none",
+  "standards_framework": "{framework_short}",
+  "units": [
+    {{
+      "unit_number": 1,
+      "title": "<unit title>",
+      "description": "<1-3 sentence description>",
+      "pacing": "<N+1 pattern, e.g. 5+1, 4+1, 3+1, 6+1, 7+1>",
+      "lessons": [
+        {{
+          "lesson_number": 1,
+          "title": "<lesson title>",
+          "big_idea": "<one sentence core takeaway>",
+          "standards": ["<real standard codes from {framework_short}>"],
+          "key_concepts": ["<2-5 short phrases>"],
+          "style": "<exploration|deep_dive|hands_on|story_driven|challenge|creative|review_game|field_journal|debate|lab>",
+          "energy": "<high|medium|low>"
+        }},
+        {{
+          "lesson_number": "<last>",
+          "title": "<Unit N Review: ...>",
+          "big_idea": "<cumulative review sentence>",
+          "standards": ["<all major standards from this unit>"],
+          "key_concepts": ["<cumulative takeaways>"],
+          "is_review": true,
+          "style": "review_game",
+          "energy": "high"
+        }}
+      ]
+    }}
+  ],
+  "meta": {{
+    "generated_at": "<ISO 8601 timestamp>",
+    "generated_by": "chapterhouse-curriculum-factory",
+    "total_units": "<number>",
+    "total_lessons": "<actual sum of all lessons across all units>"
+  }}
+}}
+
+STRUCTURAL RULES:
+- Each unit has 3-8 lessons. Different units CAN have different lesson counts.
+- The pacing field = "N+1" where N = teaching lessons, 1 = review. E.g. 5 teaching + 1 review = "5+1" (6 total lessons).
+- The LAST lesson in every unit is ALWAYS a review with "is_review": true.
+- total_lessons in meta = the actual SUM of all lessons across all units (not a formula).
+
+LESSON VARIETY RULES:
+- Every lesson MUST have a "style" hint from: exploration, deep_dive, hands_on, story_driven, challenge, creative, review_game, field_journal, debate, lab.
+- Every lesson MUST have an "energy" level: high, medium, or low.
+- Vary styles and energy levels WITHIN each unit — do not repeat the same style or energy consecutively.
+- Review lessons should use style "review_game" and energy "high".
+- A well-designed unit alternates energy: high → medium → low → high → medium → review.
+
+CONTENT RULES:
+- Standards codes must be real codes from {framework_short} appropriate for grade {grade_level}.
+- key_concepts: 2-5 short phrases per lesson.
+- big_idea: one clear sentence per lesson, written at the target grade's reading level.
+- All content secular (Alaska Statute 14.03.320).
+- Output ONLY the JSON object. No explanation, no markdown fences.
+
+SOURCE DOCUMENT:
+{polgara_markdown}"""
+
+    try:
+        client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        msg = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=8192,
+            system="You output only valid JSON. No markdown fences, no commentary, no explanation.",
+            messages=[{"role": "user", "content": extraction_prompt}],
+        )
+        raw = msg.content[0].text if msg.content else ""
+        try:
+            return json.loads(raw)
+        except json.JSONDecodeError:
+            import re
+            match = re.search(r"```(?:json)?\s*([\s\S]+?)```", raw)
+            if match:
+                return json.loads(match.group(1))
+            return None
+    except Exception as exc:
+        print(f"[curriculum_session] Structured extraction failed: {exc}")
+        return None
+
+
 def run_council_session(job_id: str, payload: dict) -> None:
     """
     Run a full 5-agent Council of the Unserious curriculum session.
@@ -79,11 +245,22 @@ def run_council_session(job_id: str, payload: dict) -> None:
 
     # Pass 1: Gandalf drafts from zero
     draft_task = Task(
-        description=f"Draft a comprehensive scope and sequence for:\n\n{context_str}\n\nAlign to the national standards framework specified above. Every unit should clearly connect to relevant standards from that framework.",
+        description=(
+            f"Draft a comprehensive scope and sequence for:\n\n{context_str}\n\n"
+            "STRUCTURAL REQUIREMENTS:\n"
+            "- Design units with 3-8 lessons each. Different units SHOULD have different lesson counts.\n"
+            "- Express pacing as 'N+1' (e.g., '5+1' = 5 teaching + 1 review = 6 total).\n"
+            "- Last lesson in every unit = review/assessment.\n"
+            "- Every lesson needs: title, big idea, standards codes, key concepts (2-5), style hint, energy level.\n"
+            "- Style options: exploration, deep_dive, hands_on, story_driven, challenge, creative, field_journal, debate, lab, review_game.\n"
+            "- Energy options: high, medium, low. Alternate within each unit \u2014 no 3 consecutive same-energy lessons.\n"
+            "- Vary styles within each unit \u2014 no consecutive repeats."
+        ),
         expected_output=(
-            "A complete scope and sequence with unit titles, learning objectives, "
-            "standards alignment, pacing guide, prerequisite skills, and suggested "
-            "materials for each unit. Secular, teacher-ready."
+            "A complete scope and sequence with unit titles, descriptions (1-3 sentences), "
+            "pacing patterns ('N+1'), and all lessons. Each lesson has: number, title, big idea, "
+            "standards codes, key concepts (2-5), style hint, and energy level. "
+            "Variable unit sizes. Secular, teacher-ready."
         ),
         agent=gandalf,
     )
@@ -95,16 +272,21 @@ def run_council_session(job_id: str, payload: dict) -> None:
         description=(
             f"Review Gandalf's scope and sequence draft. "
             f"Audit alignment to {framework}. "
-            "Identify grade-level standards that should be covered but are missing, "
-            "and flag content that does not map to a real standard. "
-            "Also check logical sequencing, prerequisite alignment, "
-            "age-appropriateness, internal consistency, and pacing math. "
-            "Every finding must be numbered, specific, and reference exact items."
+            "Check BOTH content quality AND structural integrity:\n"
+            "- Standards: Are codes real? Is every lesson mapped to at least 1 standard? Any missing grade-level standards?\n"
+            f"- Pacing math: Does each unit's lesson count match its stated pacing ('N+1' = N+1 lessons)?\n"
+            "- Unit variety: Do units have DIFFERENT lesson counts? Flag if all units are identical size.\n"
+            "- Style variety: Does each unit use 3+ different styles? No consecutive repeats?\n"
+            "- Energy alternation: Do energy levels vary? No 3+ consecutive same-energy lessons?\n"
+            "- Review lessons: Does every unit end with review? Is review the ONLY lesson marked is_review?\n"
+            "- Key concepts: 2-5 per lesson? Specific enough to be useful?\n"
+            f"- Pedagogical sequencing: Do prerequisites flow correctly for grade {grade_level}?"
         ),
         expected_output=(
-            "A numbered analysis — each item identifies the exact location, "
-            "the nature of the structural issue, and a specific recommended fix. "
-            "Not opinion — data."
+            "A numbered analysis organized by category: Content issues, Structural issues, "
+            "Standards issues, Variety issues. Each item identifies the exact location, "
+            "the nature of the issue, and a specific fix. Not opinion \u2014 data. "
+            "Include a revised version with corrections applied."
         ),
         agent=data,
         context=[draft_task],
@@ -120,11 +302,20 @@ def run_council_session(job_id: str, payload: dict) -> None:
             "Your lens: does this serve the child? Not the standards document — the actual child. "
             "Address every Data finding with a decision. Do not hedge. "
             "'Consider adding' is not in your vocabulary. "
-            "Format as a clean markdown document ready to hand to a course builder."
+            "Format as a clean markdown document ready to hand to a course builder.\n\n"
+            "PRESERVE these structural elements in your output (the pipeline needs them):\n"
+            "- Unit pacing pattern ('N+1' format)\n"
+            "- Lesson style hint per lesson (exploration, deep_dive, hands_on, etc.)\n"
+            "- Lesson energy level per lesson (high, medium, low)\n"
+            "- Standards codes per lesson\n"
+            "- Key concepts (2-5) per lesson\n"
+            "- is_review flag on the last lesson of each unit\n\n"
+            "You may CHANGE any of these values if they don't serve the child \u2014 but you must INCLUDE them all. "
+            "If Data flagged monotone styles or flat energy, fix those sequences."
         ),
         expected_output=(
             "A clean, final scope and sequence in markdown. "
-            "Every unit: title, learning objectives, pacing, prerequisites, materials. "
+            "Every unit: title, description, pacing, and all lessons with style/energy/standards. "
             "No placeholders. No hedging. This is the document that ships."
         ),
         agent=polgara,
@@ -166,12 +357,18 @@ def run_council_session(job_id: str, payload: dict) -> None:
             "Be brutally honest about what would bore a real kid. "
             "Also call out what is actually cool. "
             "Remember: you are competing against TikTok, YouTube Shorts, and Roblox "
-            "for the same minutes."
+            "for the same minutes.\n\n"
+            "ALSO CHECK:\n"
+            "- Does the energy flow feel like a roller coaster (good) or a flatline (bad)?\n"
+            "- Is there enough variety in lesson types or does it all feel the same?\n"
+            "- Is there at least one 'wait, that's actually cool' lesson per unit?\n"
+            "- Does the review lesson feel like a game or a boring test?"
         ),
         expected_output=(
             "Each unit gets: unit name, COOL/SUCKS/MEH verdict, "
-            "and a short Beavis-and-Butthead-style commentary. "
-            "End with an overall verdict."
+            "which specific lessons are cool vs boring, energy flow assessment, "
+            "variety assessment, and Beavis-and-Butthead-style commentary. "
+            "End with an overall verdict and one accidentally profound insight."
         ),
         agent=beavis,
         context=[finalize_task],
@@ -208,12 +405,63 @@ def run_council_session(job_id: str, payload: dict) -> None:
     earl_ops = task_results[3] if len(task_results) > 3 else ""
     beavis_report = task_results[4] if len(task_results) > 4 else ""
 
+    # Pass 6: Structured extraction — convert to handoff JSON
+    update_progress(job_id, 92, "Extracting structured handoff JSON…")
+    structured_output = extract_structured_output(final_scope, subject, grade_level)
+
+    # Post-extraction validation — pacing math, total_lessons, is_review
+    if structured_output and isinstance(structured_output, dict):
+        units = structured_output.get("units", [])
+        running_total = 0
+        for unit in units:
+            if not isinstance(unit, dict):
+                continue
+            lessons = unit.get("lessons", [])
+            lesson_count = len(lessons)
+            running_total += lesson_count
+
+            # Validate pacing: "N+1" must equal actual lesson count
+            pacing = unit.get("pacing", "")
+            if isinstance(pacing, str) and "+" in pacing:
+                parts = pacing.split("+")
+                try:
+                    expected = int(parts[0]) + int(parts[1])
+                    if expected != lesson_count:
+                        unit["pacing"] = f"{lesson_count - 1}+1"
+                except (ValueError, IndexError):
+                    unit["pacing"] = f"{lesson_count - 1}+1"
+            elif lesson_count > 0:
+                unit["pacing"] = f"{lesson_count - 1}+1"
+
+            # Ensure last lesson has is_review = True
+            if lessons:
+                for lesson in lessons:
+                    if isinstance(lesson, dict):
+                        lesson["is_review"] = False
+                lessons[-1]["is_review"] = True
+
+            # Renumber lessons sequentially
+            for i, lesson in enumerate(lessons):
+                if isinstance(lesson, dict):
+                    lesson["lesson_number"] = i + 1
+
+        # Compute accurate total_lessons
+        meta = structured_output.get("meta", {})
+        if not isinstance(meta, dict):
+            meta = {}
+            structured_output["meta"] = meta
+        meta["total_lessons"] = running_total
+
+        # Remove legacy field
+        meta.pop("lessons_per_unit", None)
+
     from datetime import datetime, timezone
     output_payload = {
         "subject": subject,
         "gradeLevel": grade_level,
         "duration": duration,
         "finalScopeAndSequence": final_scope,
+        "structuredOutput": structured_output,
         "operationalAssessment": earl_ops,
         "engagementReport": beavis_report,
         "councilLog": council_log[:10000],  # cap at 10K chars

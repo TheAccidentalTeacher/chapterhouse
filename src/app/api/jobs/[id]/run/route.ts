@@ -140,33 +140,133 @@ async function runResearchBatch(
 }
 
 // ── curriculum_factory ────────────────────────────────────────────────────────
-// input_payload: { subject: string, grade: string, topic: string, lessons: number }
+// input_payload: { subject: string, gradeLevel: number, duration: string }
+
+const SUBJECT_CODES: Record<string, string> = {
+  science: "sci", biology: "sci", chemistry: "sci", physics: "sci",
+  math: "mth", mathematics: "mth", algebra: "mth", geometry: "mth",
+  "language arts": "ela", ela: "ela", english: "ela", reading: "ela",
+  history: "hst", "social studies": "hst", geography: "hst", civics: "hst",
+  bible: "bib", art: "art", music: "mus", pe: "pe",
+};
+
+const FW_SHORT: Record<string, string> = {
+  science: "NGSS", biology: "NGSS", chemistry: "NGSS", physics: "NGSS",
+  math: "CCSS-Math", mathematics: "CCSS-Math", algebra: "CCSS-Math",
+  "language arts": "CCSS-ELA", ela: "CCSS-ELA", english: "CCSS-ELA",
+  history: "C3", "social studies": "C3", geography: "C3", civics: "C3",
+  bible: "internal", art: "internal", music: "internal", pe: "internal",
+};
+
+function lookupCode(map: Record<string, string>, subject: string): string {
+  const lower = subject.toLowerCase().trim();
+  if (map[lower]) return map[lower];
+  for (const [key, val] of Object.entries(map)) {
+    if (lower.includes(key)) return val;
+  }
+  return lower.slice(0, 3);
+}
+
+function gradeBand(g: number): string {
+  if (g <= 2) return "early_elementary";
+  if (g <= 5) return "upper_elementary";
+  if (g <= 8) return "middle";
+  return "high";
+}
 
 async function runCurriculumFactory(
-  payload: { subject?: string; grade?: string; topic?: string; lessons?: number },
+  payload: { subject?: string; gradeLevel?: number; grade?: string; duration?: string },
   helpers: WorkerHelpers
 ) {
-  const { subject = "Science", grade = "3", topic = "Water cycle", lessons = 5 } = payload;
+  const subject = payload.subject ?? "Science";
+  const gradeLevel = payload.gradeLevel ?? (Number(payload.grade) || 3);
+  const duration = payload.duration ?? "full year";
+  const subjectCode = lookupCode(SUBJECT_CODES, subject);
+  const framework = lookupCode(FW_SHORT, subject);
+  const band = gradeBand(gradeLevel);
+  const courseId = `${subjectCode}-g${gradeLevel}`;
 
-  await setProgress(helpers, 10, `Generating ${lessons} ${subject} lessons for Grade ${grade}…`);
+  await setProgress(helpers, 10, `Generating ${subject} scope & sequence for Grade ${gradeLevel}…`);
 
   const aiResponse = await openai.responses.create({
     model: "gpt-5.4",
-    instructions: "You output only valid JSON. No markdown fences.",
-    input: `You are a K-12 curriculum designer. Create ${lessons} lesson outlines for a ${grade}th-grade ${subject} unit on "${topic}".
+    instructions: "You output only valid JSON. No markdown fences, no commentary.",
+    input: `You are a K-12 curriculum designer. Create a complete scope & sequence for Grade ${gradeLevel} ${subject} (${duration}).
 
-For each lesson return:
-- title: string
-- objective: string (one sentence)
-- key_concepts: string[] (3-5 items)
-- activities: string[] (2-3 activities)
-- assessment: string (one sentence)
+DESIGN PRINCIPLE: NO COOKIE CUTTERS. Every unit can have a different number of lessons. Every lesson gets a different style and energy level. Structure serves learning — learning does not serve structure.
 
-Respond with ONLY valid JSON: { "unit_title": "string", "lessons": [...] }`,
-    max_output_tokens: 2000,
+Output this EXACT JSON structure:
+{
+  "id": "${courseId}",
+  "schema_version": "1.0",
+  "subject": "${subject}",
+  "subject_code": "${subjectCode}",
+  "grade": ${gradeLevel},
+  "grade_band": "${band}",
+  "title": "Grade ${gradeLevel} ${subject}",
+  "subtitle": "<descriptive subtitle>",
+  "faith_integration": false,
+  "theology_profile": "none",
+  "standards_framework": "${framework}",
+  "units": [
+    {
+      "unit_number": 1,
+      "title": "<unit title>",
+      "description": "<1-3 sentence description>",
+      "pacing": "<N+1 pattern, e.g. 5+1, 4+1, 3+1, 6+1>",
+      "lessons": [
+        {
+          "lesson_number": 1,
+          "title": "<lesson title>",
+          "big_idea": "<one sentence>",
+          "standards": ["<real ${framework} standard codes for grade ${gradeLevel}>"],
+          "key_concepts": ["<2-5 short phrases>"],
+          "style": "<exploration|deep_dive|hands_on|story_driven|challenge|creative|review_game|field_journal|debate|lab>",
+          "energy": "<high|medium|low>"
+        },
+        {
+          "lesson_number": "<last in unit>",
+          "title": "Unit N Review: ...",
+          "big_idea": "<cumulative review>",
+          "standards": ["<all major standards from unit>"],
+          "key_concepts": ["<takeaways from teaching lessons>"],
+          "is_review": true,
+          "style": "review_game",
+          "energy": "high"
+        }
+      ]
+    }
+  ],
+  "meta": {
+    "generated_at": "${new Date().toISOString()}",
+    "generated_by": "chapterhouse-inline-runner",
+    "total_units": "<number>",
+    "total_lessons": "<actual sum of all lessons across all units>"
+  }
+}
+
+STRUCTURAL RULES:
+- Create 4 units. Each unit has 3-8 lessons (pick the right count for the content).
+- Different units SHOULD have different lesson counts. Mix it up: e.g. one unit 5+1, another 4+1, another 6+1.
+- Pacing = "N+1" where N = teaching lessons, 1 = review. E.g. "5+1" = 6 total lessons.
+- The LAST lesson in every unit is ALWAYS a review with "is_review": true.
+- total_lessons = actual sum (not a formula).
+
+LESSON VARIETY RULES:
+- Every lesson MUST have "style" and "energy" fields.
+- Style options: exploration, deep_dive, hands_on, story_driven, challenge, creative, review_game, field_journal, debate, lab.
+- Energy options: high, medium, low.
+- Vary styles and energy within each unit — never repeat the same style or energy consecutively.
+- Review lessons: style = "review_game", energy = "high".
+
+CONTENT RULES:
+- Use REAL ${framework} standard codes appropriate for grade ${gradeLevel}.
+- All content must be secular (Alaska Statute 14.03.320).
+- Output ONLY the JSON object.`,
+    max_output_tokens: 6000,
   });
 
-  await setProgress(helpers, 80, "Parsing lesson outlines…");
+  await setProgress(helpers, 80, "Parsing structured output…");
 
   const rawText = aiResponse.output
     .filter((b) => b.type === "message")
@@ -175,13 +275,29 @@ Respond with ONLY valid JSON: { "unit_title": "string", "lessons": [...] }`,
     .map((p) => p.text)
     .join("");
 
+  let structured: Record<string, unknown>;
   try {
-    return JSON.parse(rawText);
+    structured = JSON.parse(rawText);
   } catch {
     const match = rawText.match(/```(?:json)?\s*([\s\S]+?)```/);
-    if (match) return JSON.parse(match[1]);
-    return { raw: rawText };
+    if (match) {
+      structured = JSON.parse(match[1]);
+    } else {
+      structured = { raw: rawText };
+    }
   }
+
+  return {
+    subject,
+    gradeLevel,
+    duration,
+    finalScopeAndSequence: `# ${subject} — Grade ${gradeLevel}\n\nGenerated via inline runner. See structured output for pipeline-ready JSON.`,
+    structuredOutput: structured,
+    operationalAssessment: null,
+    engagementReport: null,
+    draftsRetained: null,
+    generatedAt: new Date().toISOString(),
+  };
 }
 
 // ── council_session ────────────────────────────────────────────────────────────

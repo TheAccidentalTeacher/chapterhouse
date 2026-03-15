@@ -19,6 +19,16 @@ function downloadMarkdown(filename: string, content: string) {
   URL.revokeObjectURL(url);
 }
 
+function downloadJson(filename: string, data: unknown) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   return (
@@ -41,11 +51,16 @@ function OutputViewer({ job }: { job: Job }) {
   if (!output) return null;
 
   const finalDoc = (output.finalScopeAndSequence as string) ?? null;
+  const structuredOutput = (output.structuredOutput as Record<string, unknown>) ?? null;
   const earlReport = (output.operationalAssessment as string) ?? null;
   const beavisReport = (output.engagementReport as string) ?? null;
   const [showDrafts, setShowDrafts] = useState(false);
+  const [showStructured, setShowStructured] = useState(false);
 
   const filename = `${job.label.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.md`;
+  const jsonFilename = structuredOutput
+    ? `${(structuredOutput.id as string) ?? job.label.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.json`
+    : "";
   const docTitle = job.label;
 
   const exportOptions = earlReport
@@ -102,6 +117,38 @@ function OutputViewer({ job }: { job: Job }) {
           <div className="bg-zinc-900 rounded-lg p-4 text-sm text-zinc-300 whitespace-pre-wrap font-mono max-h-96 overflow-y-auto border border-zinc-800">
             {finalDoc}
           </div>
+        </div>
+      )}
+
+      {structuredOutput && (
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-sm font-semibold text-emerald-400">Pipeline Handoff JSON</h4>
+            <div className="flex items-center gap-3">
+              <CopyButton text={JSON.stringify(structuredOutput, null, 2)} />
+              <button
+                onClick={() => downloadJson(jsonFilename, structuredOutput)}
+                className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+              >
+                <Download size={12} />
+                Download .json
+              </button>
+              <button
+                onClick={() => setShowStructured((v) => !v)}
+                className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+              >
+                {showStructured ? "▲ Hide" : "▼ Preview"}
+              </button>
+            </div>
+          </div>
+          <p className="text-xs text-zinc-500 mb-2">
+            Ready for the SomersSchool pipeline — drop this file into <code className="text-zinc-400">scope-sequence/</code>
+          </p>
+          {showStructured && (
+            <div className="bg-zinc-900 rounded-lg p-4 text-xs text-emerald-300/80 whitespace-pre-wrap font-mono max-h-64 overflow-y-auto border border-emerald-900/30">
+              {JSON.stringify(structuredOutput, null, 2)}
+            </div>
+          )}
         </div>
       )}
 
