@@ -62,28 +62,28 @@ function CouncilContent() {
                 desc: "Drafts a full scope & sequence with curriculum_context tool, Alaska GLEs, and your existing briefs.",
               },
               {
-                agent: "Legolas",
+                agent: "Data",
                 color: "bg-green-100 text-green-700",
                 time: "~2 min",
-                desc: "Line-by-line audit. Finds every gap, missequence, and missing scaffold. No softening.",
+                desc: "Systematic structural audit. No ego, no opinion — just data. Finds every gap, missequence, and pacing error.",
               },
               {
-                agent: "Aragorn",
-                color: "bg-blue-100 text-blue-700",
+                agent: "Polgara",
+                color: "bg-fuchsia-100 text-fuchsia-700",
                 time: "~2 min",
-                desc: "Makes every call Legolas raised. Produces the final, production-ready markdown document.",
+                desc: "Does this serve the child? Finalizes with editorial precision. The document that ships.",
               },
               {
-                agent: "Gimli",
-                color: "bg-orange-100 text-orange-700",
-                time: "~2 min",
-                desc: "10-criteria classroom stress test. Glennallen reality check. PASS/FAIL/CONCERN per criterion.",
+                agent: "Earl",
+                color: "bg-amber-100 text-amber-700",
+                time: "~1 min",
+                desc: "Operational assessment. What ships first? What's the revenue path? Go/no-go.",
               },
               {
-                agent: "Frodo",
-                color: "bg-yellow-100 text-yellow-700",
-                time: "~30 sec",
-                desc: "APPROVED or SEND BACK with exactly one request. The document that passes goes straight to course builders.",
+                agent: "Beavis & Butthead",
+                color: "bg-purple-100 text-purple-700",
+                time: "~1 min",
+                desc: "Engagement stress test. Would a real kid give a crap about this? COOL/SUCKS/MEH per unit.",
               },
             ].map((step) => (
               <div key={step.agent} className="flex gap-3">
@@ -140,8 +140,8 @@ export default function CouncilPage() {
           <h1 className="text-xl font-semibold text-[var(--foreground)]">Council Chamber</h1>
         </div>
         <p className="text-sm text-[var(--muted)]">
-          Five agents. One curriculum. Gandalf drafts, Legolas critiques, Aragorn finalizes,
-          Gimli stress-tests, Frodo signs off. Runs autonomously while you do something else.
+          Five agents. One curriculum. Gandalf drafts, Data audits, Polgara finalizes,
+          Earl assesses operations, Beavis &amp; Butthead stress-test engagement. The Council of the Unserious.
         </p>
       </div>
 

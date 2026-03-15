@@ -1,18 +1,19 @@
-"""Council curriculum session — CrewAI task definitions."""
+"""Council of the Unserious — CrewAI curriculum session task definitions."""
 import io
 import sys
 from crewai import Crew, Task, Process
 from agents.gandalf import create_gandalf
-from agents.legolas import create_legolas
-from agents.aragorn import create_aragorn
-from agents.gimli import create_gimli
-from agents.frodo import create_frodo
+from agents.data_officer import create_data_officer
+from agents.polgara import create_polgara
+from agents.earl import create_earl
+from agents.beavis import create_beavis
 from lib.progress import update_progress
 
 
 def run_council_session(job_id: str, payload: dict) -> None:
     """
-    Run a full 5-agent Council curriculum session.
+    Run a full 5-agent Council of the Unserious curriculum session.
+    Pass flow: Gandalf → Data → Polgara → Earl → Beavis & Butthead.
     Writes progress to Supabase in real time.
     """
     subject = payload.get("subject", "Unknown Subject")
@@ -29,14 +30,15 @@ def run_council_session(job_id: str, payload: dict) -> None:
         f"Additional Context: {additional_context}" if additional_context else None,
     ]))
 
-    update_progress(job_id, 5, "Convening the Council…")
+    update_progress(job_id, 5, "Convening the Council of the Unserious…")
 
     gandalf = create_gandalf()
-    legolas = create_legolas()
-    aragorn = create_aragorn()
-    gimli = create_gimli()
-    frodo = create_frodo()
+    data = create_data_officer()
+    polgara = create_polgara()
+    earl = create_earl()
+    beavis = create_beavis()
 
+    # Pass 1: Gandalf drafts from zero
     draft_task = Task(
         description=f"Draft a comprehensive scope and sequence for:\n\n{context_str}",
         expected_output=(
@@ -49,28 +51,33 @@ def run_council_session(job_id: str, payload: dict) -> None:
 
     update_progress(job_id, 10, "Gandalf is drafting the scope and sequence…")
 
-    critique_task = Task(
+    # Pass 2: Data audits with systematic, ego-free critique
+    audit_task = Task(
         description=(
-            "Review Gandalf's scope and sequence draft below. "
-            "Identify every gap, missequence, missing scaffold, and weakness. "
-            "Be specific — cite which unit, which objective, what is wrong and why.\n\n"
-            "Gandalf's draft:\n{draft_task_output}"
+            "Review Gandalf's scope and sequence draft. "
+            "Check logical sequencing, prerequisite alignment, standards coverage, "
+            "age-appropriateness, internal consistency, and pacing math. "
+            "Every finding must be numbered, specific, and reference exact items."
         ),
         expected_output=(
-            "A numbered critique — each item identifies the exact problem location, "
-            "the nature of the flaw, and a specific recommended fix."
+            "A numbered analysis — each item identifies the exact location, "
+            "the nature of the structural issue, and a specific recommended fix. "
+            "Not opinion — data."
         ),
-        agent=legolas,
+        agent=data,
         context=[draft_task],
     )
 
-    update_progress(job_id, 40, "Legolas is reviewing for gaps and errors…")
+    update_progress(job_id, 30, "Data is auditing for structural issues…")
 
+    # Pass 3: Polgara finalizes — does this serve the child?
     finalize_task = Task(
         description=(
-            "You have Gandalf's draft and Legolas's numbered critique. "
-            "Produce the final, clean, production-ready scope and sequence. "
-            "Address every Legolas critique with a decision. Do not hedge. "
+            "You have Gandalf's draft and Data's numbered analysis. "
+            "Produce the final, production-ready scope and sequence. "
+            "Your lens: does this serve the child? Not the standards document — the actual child. "
+            "Address every Data finding with a decision. Do not hedge. "
+            "'Consider adding' is not in your vocabulary. "
             "Format as a clean markdown document ready to hand to a course builder."
         ),
         expected_output=(
@@ -78,53 +85,57 @@ def run_council_session(job_id: str, payload: dict) -> None:
             "Every unit: title, learning objectives, pacing, prerequisites, materials. "
             "No placeholders. No hedging. This is the document that ships."
         ),
-        agent=aragorn,
-        context=[draft_task, critique_task],
+        agent=polgara,
+        context=[draft_task, audit_task],
     )
 
-    update_progress(job_id, 65, "Aragorn is finalizing the curriculum…")
+    update_progress(job_id, 50, "Polgara is finalizing the curriculum…")
 
-    stress_test_task = Task(
+    # Pass 4: Earl — operational assessment
+    ops_task = Task(
         description=(
-            "Stress test Aragorn's final scope and sequence against real classroom conditions "
-            f"in Glennallen, Alaska. Subject: {subject}. Grade: {grade_level}.\n\n"
-            "Produce a 10-criteria PASS/FAIL/CONCERN report covering:\n"
-            "1. Pacing feasibility\n"
-            "2. Materials accessibility in rural Alaska\n"
-            "3. Reading level appropriateness\n"
-            "4. IEP accommodation potential\n"
-            "5. Self-directed learner fit\n"
-            "6. Alaska cultural relevance\n"
-            "7. Secular compliance (Alaska Statute 14.03.320 — no religious content)\n"
-            "8. Prerequisite realism\n"
-            "9. Assessment feasibility\n"
-            "10. Teacher prep load"
+            "Review Polgara's finalized scope and sequence. "
+            f"Subject: {subject}. Grade: {grade_level}.\n\n"
+            "Produce a concrete operational assessment:\n"
+            "1. Build order — what gets built first?\n"
+            "2. Resource requirements — what does Scott actually need?\n"
+            "3. Revenue timeline — when can this generate income?\n"
+            "4. Minimum viable version — what ships next week?\n"
+            "5. Go/no-go recommendation\n\n"
+            "Remember: teaching contract ends May 24, 2026. Revenue by August 2026. "
+            "Be terse. Two sentences where Gandalf needs a paragraph."
         ),
         expected_output=(
-            "A 10-item report. Each item: criterion name, verdict (PASS / FAIL / CONCERN), "
-            "one sentence of justification. No padding."
+            "A 5-section operational assessment. Each section: heading, 1-3 sentences, "
+            "concrete recommendation. End with GO or NO-GO verdict and one sentence why."
         ),
-        agent=gimli,
+        agent=earl,
         context=[finalize_task],
     )
 
-    update_progress(job_id, 82, "Gimli is stress testing against classroom reality…")
+    update_progress(job_id, 70, "Earl is running the operational assessment…")
 
-    sign_off_task = Task(
+    # Pass 5: Beavis & Butthead — engagement stress test
+    engagement_task = Task(
         description=(
-            "You have seen the final scope and sequence and Gimli's classroom reality report. "
-            "Render your verdict: APPROVED or SEND BACK (with exactly one specific request).\n\n"
-            "State your verdict. State the reason in one sentence. That is all."
+            "You have the final scope and sequence. "
+            "Go through each unit and give a verdict: COOL, SUCKS, or MEH.\n\n"
+            "Talk to each other, not to the Council. "
+            "Be brutally honest about what would bore a real kid. "
+            "Also call out what is actually cool. "
+            "Remember: you are competing against TikTok, YouTube Shorts, and Roblox "
+            "for the same minutes."
         ),
         expected_output=(
-            "Verdict: APPROVED or SEND BACK.\n"
-            "Reason: [one sentence]."
+            "Each unit gets: unit name, COOL/SUCKS/MEH verdict, "
+            "and a short Beavis-and-Butthead-style commentary. "
+            "End with an overall verdict."
         ),
-        agent=frodo,
-        context=[finalize_task, stress_test_task],
+        agent=beavis,
+        context=[finalize_task],
     )
 
-    update_progress(job_id, 92, "Frodo is making the final call…")
+    update_progress(job_id, 88, "Beavis & Butthead are stress-testing engagement…")
 
     # Capture CrewAI verbose output to include in the job record
     captured = io.StringIO()
@@ -132,8 +143,8 @@ def run_council_session(job_id: str, payload: dict) -> None:
     sys.stdout = captured
 
     crew = Crew(
-        agents=[gandalf, legolas, aragorn, gimli, frodo],
-        tasks=[draft_task, critique_task, finalize_task, stress_test_task, sign_off_task],
+        agents=[gandalf, data, polgara, earl, beavis],
+        tasks=[draft_task, audit_task, finalize_task, ops_task, engagement_task],
         process=Process.sequential,
         verbose=True,
     )
@@ -149,9 +160,11 @@ def run_council_session(job_id: str, payload: dict) -> None:
     outputs = crew.tasks if hasattr(crew, "tasks") else []
     task_results = [t.output.raw if hasattr(t, "output") and t.output else "" for t in outputs]
 
+    gandalf_draft = task_results[0] if task_results else ""
+    data_critique = task_results[1] if len(task_results) > 1 else ""
     final_scope = task_results[2] if len(task_results) > 2 else str(result)
-    gimli_report = task_results[3] if len(task_results) > 3 else ""
-    frodo_verdict = task_results[4] if len(task_results) > 4 else ""
+    earl_ops = task_results[3] if len(task_results) > 3 else ""
+    beavis_report = task_results[4] if len(task_results) > 4 else ""
 
     from datetime import datetime, timezone
     output_payload = {
@@ -159,12 +172,12 @@ def run_council_session(job_id: str, payload: dict) -> None:
         "gradeLevel": grade_level,
         "duration": duration,
         "finalScopeAndSequence": final_scope,
-        "classroomViabilityReport": gimli_report,
-        "frodoVerdict": frodo_verdict,
+        "operationalAssessment": earl_ops,
+        "engagementReport": beavis_report,
         "councilLog": council_log[:10000],  # cap at 10K chars
         "draftsRetained": {
-            "gandalfInitialDraft": task_results[0] if task_results else "",
-            "legolasCritique": task_results[1] if len(task_results) > 1 else "",
+            "gandalfInitialDraft": gandalf_draft,
+            "dataCritique": data_critique,
         },
         "generatedAt": datetime.now(timezone.utc).isoformat(),
     }
@@ -172,7 +185,7 @@ def run_council_session(job_id: str, payload: dict) -> None:
     update_progress(
         job_id,
         100,
-        f"Council complete — Frodo's verdict: {frodo_verdict[:120]}",
+        "Council of the Unserious — session complete.",
         status="completed",
         output=output_payload,
     )

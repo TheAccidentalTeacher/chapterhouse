@@ -46,31 +46,38 @@ export async function runCurriculumFactory(
 
   try {
     // Pass 1: Gandalf drafts
-    await updateProgress(jobId, 5, "Pass 1/4: Gandalf drafting scope and sequence...");
+    await updateProgress(jobId, 5, "Pass 1/5: Gandalf drafting scope and sequence...");
     const gandalfDraft = await callCouncilMember(
       "gandalf",
       `Create a comprehensive scope and sequence for:\n\n${context}`
     );
 
-    // Pass 2: Legolas critiques
-    await updateProgress(jobId, 30, "Pass 2/4: Legolas reviewing for gaps and errors...");
-    const legolasCritique = await callCouncilMember(
-      "legolas",
+    // Pass 2: Data audits
+    await updateProgress(jobId, 22, "Pass 2/5: Data auditing for structural flaws...");
+    const dataCritique = await callCouncilMember(
+      "data",
       `Review and critique this scope and sequence:\n\n${gandalfDraft}`
     );
 
-    // Pass 3: Aragorn finalizes
-    await updateProgress(jobId, 60, "Pass 3/4: Aragorn finalizing...");
-    const aragonFinal = await callCouncilMember(
-      "aragorn",
-      `Gandalf's original draft:\n\n${gandalfDraft}\n\n---\n\nLegolas's critique:\n\n${legolasCritique}\n\n---\n\nFinalize this scope and sequence. This ships after you.`
+    // Pass 3: Polgara finalizes
+    await updateProgress(jobId, 45, "Pass 3/5: Polgara finalizing for the child...");
+    const polgaraFinal = await callCouncilMember(
+      "polgara",
+      `Gandalf's original draft:\n\n${gandalfDraft}\n\n---\n\nData's critique:\n\n${dataCritique}\n\n---\n\nFinalize this scope and sequence. This ships after you.`
     );
 
-    // Pass 4: Gimli stress tests
-    await updateProgress(jobId, 82, "Pass 4/4: Gimli stress-testing for classroom viability...");
-    const gimliReport = await callCouncilMember(
-      "gimli",
-      `Stress test this finalized scope and sequence:\n\n${aragonFinal}`
+    // Pass 4: Earl operational assessment
+    await updateProgress(jobId, 65, "Pass 4/5: Earl assessing operational viability...");
+    const earlReport = await callCouncilMember(
+      "earl",
+      `Review this finalized scope and sequence from an operational standpoint:\n\n${polgaraFinal}`
+    );
+
+    // Pass 5: Beavis & Butthead engagement test
+    await updateProgress(jobId, 82, "Pass 5/5: Beavis & Butthead engagement stress test...");
+    const beavisReport = await callCouncilMember(
+      "beavis",
+      `Stress test this finalized scope and sequence for student engagement:\n\n${polgaraFinal}`
     );
 
     const finalOutput = {
@@ -78,16 +85,17 @@ export async function runCurriculumFactory(
       gradeLevel,
       duration,
       standards: standards ?? null,
-      finalScopeAndSequence: aragonFinal,
-      classroomViabilityReport: gimliReport,
+      finalScopeAndSequence: polgaraFinal,
+      operationalAssessment: earlReport,
+      engagementReport: beavisReport,
       draftsRetained: {
         gandalfInitialDraft: gandalfDraft,
-        legolasCritique: legolasCritique,
+        dataCritique: dataCritique,
       },
       generatedAt: new Date().toISOString(),
     };
 
-    await updateProgress(jobId, 100, "Complete — all 4 passes done.", "completed", finalOutput);
+    await updateProgress(jobId, 100, "Complete — all 5 passes done.", "completed", finalOutput);
     await notifyJobComplete(jobId, `${subject} Grade ${gradeLevel}`, "completed");
 
     console.log(`[curriculum-factory] Job ${jobId} completed — ${subject} Grade ${gradeLevel}`);

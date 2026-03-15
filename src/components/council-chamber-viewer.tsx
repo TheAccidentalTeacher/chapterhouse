@@ -6,20 +6,20 @@ import { Download, Copy } from "lucide-react";
 
 // Council member color scheme
 const AGENT_STYLES: Record<string, { border: string; label: string; dot: string }> = {
-  Gandalf: { border: "border-l-zinc-400", label: "text-zinc-500", dot: "bg-zinc-400" },
-  Legolas: { border: "border-l-green-500", label: "text-green-600", dot: "bg-green-500" },
-  Aragorn: { border: "border-l-blue-500", label: "text-blue-600", dot: "bg-blue-500" },
-  Gimli:   { border: "border-l-orange-500", label: "text-orange-600", dot: "bg-orange-500" },
-  Frodo:   { border: "border-l-yellow-500", label: "text-yellow-600", dot: "bg-yellow-500" },
+  Gandalf:  { border: "border-l-zinc-400",    label: "text-zinc-500",    dot: "bg-zinc-400" },
+  Data:     { border: "border-l-green-500",   label: "text-green-600",   dot: "bg-green-500" },
+  Polgara:  { border: "border-l-fuchsia-500", label: "text-fuchsia-600", dot: "bg-fuchsia-500" },
+  Earl:     { border: "border-l-amber-500",   label: "text-amber-600",   dot: "bg-amber-500" },
+  "Beavis & Butthead": { border: "border-l-purple-500",  label: "text-purple-600",  dot: "bg-purple-500" },
 };
 
 function detectAgent(message: string): string {
   const lower = message.toLowerCase();
   if (lower.includes("gandalf")) return "Gandalf";
-  if (lower.includes("legolas")) return "Legolas";
-  if (lower.includes("aragorn")) return "Aragorn";
-  if (lower.includes("gimli")) return "Gimli";
-  if (lower.includes("frodo")) return "Frodo";
+  if (lower.includes("data") || lower.includes("lt. commander")) return "Data";
+  if (lower.includes("polgara")) return "Polgara";
+  if (lower.includes("earl") || lower.includes("harbinger")) return "Earl";
+  if (lower.includes("beavis") || lower.includes("butthead") || lower.includes("butt-head")) return "Beavis & Butthead";
   return "Council";
 }
 
@@ -67,12 +67,12 @@ interface CouncilOutput {
   gradeLevel?: number;
   duration?: string;
   finalScopeAndSequence?: string;
-  classroomViabilityReport?: string;
-  frodoVerdict?: string;
+  operationalAssessment?: string;
+  engagementReport?: string;
   councilLog?: string;
   draftsRetained?: {
     gandalfInitialDraft?: string;
-    legolasCritique?: string;
+    dataCritique?: string;
   };
   generatedAt?: string;
 }
@@ -162,19 +162,15 @@ export function CouncilChamberViewer({ job }: Props) {
       {/* Final output — only when complete */}
       {isComplete && output && (
         <div className="space-y-4">
-          {/* Frodo's verdict */}
-          {output.frodoVerdict && (
+          {/* Earl's operational assessment */}
+          {output.operationalAssessment && (
             <div
-              className={`rounded-xl p-4 border ${
-                output.frodoVerdict.includes("APPROVED")
-                  ? "bg-green-50 border-green-200"
-                  : "bg-yellow-50 border-yellow-200"
-              }`}
+              className={`rounded-xl p-4 border bg-amber-50 border-amber-200`}
             >
               <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wide mb-1">
-                Frodo&apos;s Verdict
+                Earl&apos;s Operational Assessment
               </p>
-              <p className="text-sm font-medium text-[var(--foreground)]">{output.frodoVerdict}</p>
+              <p className="text-sm font-medium text-[var(--foreground)]">{output.operationalAssessment}</p>
             </div>
           )}
 
@@ -211,15 +207,28 @@ export function CouncilChamberViewer({ job }: Props) {
             </div>
           )}
 
-          {/* Gimli's classroom report */}
-          {output.classroomViabilityReport && (
+          {/* Earl's operational assessment (detail) */}
+          {output.operationalAssessment && (
             <details className="group">
               <summary className="cursor-pointer text-xs font-semibold text-[var(--muted)] uppercase tracking-wide list-none flex items-center gap-1.5 hover:text-[var(--foreground)] transition-colors">
                 <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
-                Gimli&apos;s Classroom Viability Report
+                Earl&apos;s Operational Assessment
               </summary>
-              <pre className="mt-2 bg-orange-50 border border-orange-100 rounded-xl p-4 text-xs leading-relaxed overflow-auto max-h-64 whitespace-pre-wrap">
-                {output.classroomViabilityReport}
+              <pre className="mt-2 bg-amber-50 border border-amber-100 rounded-xl p-4 text-xs leading-relaxed overflow-auto max-h-64 whitespace-pre-wrap">
+                {output.operationalAssessment}
+              </pre>
+            </details>
+          )}
+
+          {/* Beavis & Butthead's engagement report */}
+          {output.engagementReport && (
+            <details className="group">
+              <summary className="cursor-pointer text-xs font-semibold text-[var(--muted)] uppercase tracking-wide list-none flex items-center gap-1.5 hover:text-[var(--foreground)] transition-colors">
+                <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
+                Beavis &amp; Butthead&apos;s Engagement Report
+              </summary>
+              <pre className="mt-2 bg-purple-50 border border-purple-100 rounded-xl p-4 text-xs leading-relaxed overflow-auto max-h-64 whitespace-pre-wrap">
+                {output.engagementReport}
               </pre>
             </details>
           )}
@@ -230,11 +239,11 @@ export function CouncilChamberViewer({ job }: Props) {
               const full = [
                 `# Council Session: ${output.subject} — Grade ${output.gradeLevel}`,
                 `Generated: ${output.generatedAt ?? ""}`,
-                `\n## Frodo's Verdict\n${output.frodoVerdict ?? ""}`,
                 `\n## Final Scope & Sequence\n${output.finalScopeAndSequence ?? ""}`,
-                `\n## Classroom Viability Report\n${output.classroomViabilityReport ?? ""}`,
+                `\n## Earl's Operational Assessment\n${output.operationalAssessment ?? ""}`,
+                `\n## Beavis & Butthead's Engagement Report\n${output.engagementReport ?? ""}`,
                 `\n## Gandalf's Initial Draft\n${output.draftsRetained?.gandalfInitialDraft ?? ""}`,
-                `\n## Legolas's Critique\n${output.draftsRetained?.legolasCritique ?? ""}`,
+                `\n## Data's Critique\n${output.draftsRetained?.dataCritique ?? ""}`,
               ].join("\n\n");
               downloadText(
                 `council-session-${output.subject?.toLowerCase().replace(/\s+/g, "-")}-grade${output.gradeLevel}.md`,

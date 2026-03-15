@@ -15,19 +15,20 @@ export default function CurriculumFactoryPage() {
           <h1 className="text-xl font-semibold text-[var(--foreground)]">Curriculum Factory</h1>
         </div>
         <p className="text-sm text-[var(--muted)]">
-          Four-pass Council review — Gandalf drafts, Legolas critiques, Aragorn finalizes, Gimli checks
-          classroom viability. Each job produces a full scope &amp; sequence ready to hand off to lesson
-          builders.
+          Five-pass Council of the Unserious — Gandalf drafts, Data audits, Polgara finalizes,
+          Earl assesses operations, Beavis &amp; Butthead stress-test engagement. Each job produces a
+          full scope &amp; sequence ready to hand off to lesson builders.
         </p>
       </div>
 
       {/* How it works — quick legend */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {[
           { step: "Pass 1", name: "Gandalf", role: "Drafts scope & sequence" },
-          { step: "Pass 2", name: "Legolas", role: "Finds gaps & errors" },
-          { step: "Pass 3", name: "Aragorn", role: "Final sequence" },
-          { step: "Pass 4", name: "Gimli", role: "Classroom viability" },
+          { step: "Pass 2", name: "Data", role: "Structural audit" },
+          { step: "Pass 3", name: "Polgara", role: "Final for the child" },
+          { step: "Pass 4", name: "Earl", role: "Operational assessment" },
+          { step: "Pass 5", name: "Beavis & Butthead", role: "Engagement test" },
         ].map((p) => (
           <div
             key={p.step}

@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { type Job } from "@/hooks/use-jobs-realtime";
-import { X, Download, Copy, Check } from "lucide-react";
+import { X, Download, Copy, Check, FileText, Printer, FileDown } from "lucide-react";
+import {
+  downloadAsHtml,
+  exportAsPdf,
+  downloadAsDocx,
+} from "@/lib/export-document";
 
 function downloadMarkdown(filename: string, content: string) {
   const blob = new Blob([content], { type: "text/markdown" });
@@ -36,10 +41,16 @@ function OutputViewer({ job }: { job: Job }) {
   if (!output) return null;
 
   const finalDoc = (output.finalScopeAndSequence as string) ?? null;
-  const gimliReport = (output.classroomViabilityReport as string) ?? null;
+  const earlReport = (output.operationalAssessment as string) ?? null;
+  const beavisReport = (output.engagementReport as string) ?? null;
   const [showDrafts, setShowDrafts] = useState(false);
 
   const filename = `${job.label.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.md`;
+  const docTitle = job.label;
+
+  const exportOptions = earlReport
+    ? { includeCouncilReport: true, councilReportMarkdown: earlReport }
+    : undefined;
 
   return (
     <div className="space-y-4">
@@ -58,19 +69,60 @@ function OutputViewer({ job }: { job: Job }) {
               </button>
             </div>
           </div>
+
+          {/* Export toolbar */}
+          <div className="flex items-center gap-2 mb-3 p-2.5 bg-zinc-900/60 rounded-lg border border-zinc-800">
+            <span className="text-xs text-zinc-500 mr-1">Export:</span>
+            <button
+              onClick={() => downloadAsHtml(filename, finalDoc, docTitle, exportOptions)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded-md transition-colors border border-zinc-700"
+              title="Download as styled HTML file"
+            >
+              <FileText size={12} />
+              HTML
+            </button>
+            <button
+              onClick={() => exportAsPdf(finalDoc, docTitle, exportOptions)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded-md transition-colors border border-zinc-700"
+              title="Open print dialog to save as PDF"
+            >
+              <Printer size={12} />
+              PDF
+            </button>
+            <button
+              onClick={() => downloadAsDocx(filename, finalDoc, docTitle, exportOptions)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded-md transition-colors border border-zinc-700"
+              title="Download as Word document"
+            >
+              <FileDown size={12} />
+              DOCX
+            </button>
+          </div>
+
           <div className="bg-zinc-900 rounded-lg p-4 text-sm text-zinc-300 whitespace-pre-wrap font-mono max-h-96 overflow-y-auto border border-zinc-800">
             {finalDoc}
           </div>
         </div>
       )}
 
-      {gimliReport && (
+      {earlReport && (
         <div>
           <h4 className="text-sm font-semibold text-zinc-200 mb-2">
-            Gimli&apos;s Classroom Viability Report
+            Earl&apos;s Operational Assessment
           </h4>
           <div className="bg-zinc-900 rounded-lg p-4 text-sm text-zinc-300 whitespace-pre-wrap font-mono max-h-64 overflow-y-auto border border-zinc-800">
-            {gimliReport}
+            {earlReport}
+          </div>
+        </div>
+      )}
+
+      {beavisReport && (
+        <div>
+          <h4 className="text-sm font-semibold text-zinc-200 mb-2">
+            Beavis &amp; Butthead&apos;s Engagement Report
+          </h4>
+          <div className="bg-zinc-900 rounded-lg p-4 text-sm text-zinc-300 whitespace-pre-wrap font-mono max-h-64 overflow-y-auto border border-zinc-800">
+            {beavisReport}
           </div>
         </div>
       )}
@@ -81,7 +133,7 @@ function OutputViewer({ job }: { job: Job }) {
             onClick={() => setShowDrafts((v) => !v)}
             className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
           >
-            {showDrafts ? "▲ Hide" : "▼ Show"} full Council session (Gandalf draft + Legolas critique)
+            {showDrafts ? "▲ Hide" : "▼ Show"} full Council session (Gandalf draft + Data critique)
           </button>
           {showDrafts && (
             <div className="mt-2 bg-zinc-900 rounded-lg p-4 text-xs text-zinc-400 whitespace-pre-wrap font-mono max-h-64 overflow-y-auto border border-zinc-800">

@@ -49,10 +49,10 @@ export const navigationGroups: NavigationGroup[] = [
         description: "Chat-first command surface and daily signal overview.",
         icon: Home,
         tooltip: {
-          summary: "Your primary chat interface and command surface. Talk to one AI model in Solo mode, or toggle Council mode to get multi-member Fellowship responses with a rebuttal round. Every conversation is enriched with your daily brief, saved research, open opportunities, and founder memory.",
+          summary: "Your primary chat interface and command surface. Talk to one AI model in Solo mode, or toggle Council mode to get multi-member Council of the Unserious responses with a rebuttal round. Every conversation is enriched with your daily brief, saved research, open opportunities, and founder memory.",
           features: [
             "Solo mode: single AI response (GPT-5.4, Claude Opus/Sonnet, GPT-5-mini)",
-            "Council mode: Gandalf, Legolas, Aragorn (+ Gimli, Merry & Pippin on complex queries) respond via SSE streaming",
+            "Council mode: Gandalf, Data, Polgara (+ Earl, Beavis & Butthead on complex queries) respond via SSE streaming",
             "Rebuttal round: members respond to each other after initial pass",
             "Persistent threads with pin, rename, and delete",
             "/remember command to save facts permanently to founder memory",
@@ -271,21 +271,21 @@ export const navigationGroups: NavigationGroup[] = [
       {
         label: "Curriculum Factory",
         href: "/curriculum-factory",
-        description: "4-pass Council critique loop. 70 scope & sequences overnight.",
+        description: "5-pass Council of the Unserious critique loop. 70 scope & sequences overnight.",
         icon: Zap,
         tooltip: {
-          summary: "Generate complete curriculum scope & sequences using a 4-pass Council critique loop. Gandalf drafts, Legolas critiques, Aragorn finalizes, Gimli stress-tests for real classroom viability. Supports single-course generation or batch mode for up to 70 courses overnight.",
+          summary: "Generate complete curriculum scope & sequences using the 5-pass Council of the Unserious. Gandalf drafts, Data audits, Polgara finalizes, Earl assesses operations, Beavis & Butthead stress-test engagement. Supports single-course generation or batch mode for up to 70 courses overnight.",
           features: [
-            "4-pass critique pipeline: Gandalf → Legolas → Aragorn → Gimli (all Claude Sonnet 4.6)",
+            "5-pass pipeline: Gandalf → Data → Polgara → Earl → Beavis & Butthead",
             "Single generation: pick subject, grade (5-12), duration, and optional standards",
             "Batch mode: select multiple subjects × grade ranges for mass generation",
             "Output viewer renders final scope & sequence as Markdown",
-            "Gimli's classroom viability report with PASS/FAIL on 10 criteria",
+            "Earl's operational assessment + Beavis & Butthead's engagement report",
             "Download as .md or copy to clipboard",
           ],
           tips: [
             "Start with a single generation (e.g., 'US History, Grade 7, Full Year') to test the pipeline",
-            "Check Gimli's viability report — it should flag unrealistic assumptions",
+            "Check Earl's ops assessment and Beavis & Butthead's engagement verdicts",
             "In batch mode, verify parent/child job tracking on the Job Runner page",
           ],
         },
@@ -320,9 +320,9 @@ export const navigationGroups: NavigationGroup[] = [
         description: "5-agent agentic system for curriculum generation.",
         icon: Users,
         tooltip: {
-          summary: "Purpose-built curriculum generator that runs all 5 Fellowship Council members as a background job. Unlike Council Mode in Chat (which is real-time and general-purpose), the Council Chamber is specifically designed for producing complete scope & sequence documents and runs asynchronously.",
+          summary: "Purpose-built curriculum generator that runs all 5 Council of the Unserious members as a background job. Unlike Council Mode in Chat (which is real-time and general-purpose), the Council Chamber is specifically designed for producing complete scope & sequence documents and runs asynchronously.",
           features: [
-            "5 Council members: Gandalf, Legolas, Aragorn, Gimli, and a synthesis step",
+            "5 Council members: Gandalf, Data, Polgara, Earl, Beavis & Butthead",
             "Runs as a background job — submit and check results later",
             "Select subject, grade level, and duration",
             "Full scope & sequence output with all 5 perspectives",

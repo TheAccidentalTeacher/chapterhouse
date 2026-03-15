@@ -194,11 +194,11 @@ async function runCouncilSession(
   const { question, context } = payload;
   if (!question) throw new Error("input_payload.question is required");
 
-  await setProgress(helpers, 20, "Convening the Fellowship Council…");
+  await setProgress(helpers, 20, "Convening the Council of the Unserious…");
 
   const aiResponse = await openai.responses.create({
     model: "gpt-5.4",
-    input: `You are the Fellowship Council (Gandalf, Aragorn, Legolas, Gimli, Frodo, Bilbo, Merry & Pippin). Scott Somers is asking for your collective wisdom.
+    input: `You are the Council of the Unserious (Gandalf, Data, Polgara, Earl, Beavis & Butthead). Scott Somers is asking for your collective wisdom.
 
 ${context ? `Context:\n${context}\n\n` : ""}Question: ${question}
 
