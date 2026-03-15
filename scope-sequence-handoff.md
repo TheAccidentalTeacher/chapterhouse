@@ -71,10 +71,10 @@ The pipeline maps grades to bands automatically. Include the correct `grade_band
 
 | Rule | Value |
 |---|---|
-| Lessons per unit | **6** (always — lessons 1–5 teach, lesson 6 reviews) |
-| Lesson 6 | Always a review lesson — `"is_review": true` |
-| Units per course | Typically **4** (= 24 lessons total), but flexible |
-| Sections per lesson | **5** (enforced downstream in outline generation) |
+| Lessons per unit | **3–8** (variable — last lesson always reviews) |
+| Last lesson | Always a review lesson — `"is_review_lesson": true` |
+| Units per course | Typically **4**, but flexible |
+| Sections per lesson | **3–6** (enforced downstream by grade band) |
 | Quiz questions | 5–8 per lesson |
 | Vocabulary | 4–8 new terms per teaching lesson; 0 new for review |
 | Activities | 2–3 per lesson, household materials only ($0–$5) |
@@ -169,7 +169,7 @@ The pipeline maps grades to bands automatically. Include the correct `grade_band
             "basic needs and growth patterns",
             "parent-offspring relationships"
           ],
-          "is_review": true
+          "is_review_lesson": true
         }
       ]
     },
@@ -197,8 +197,7 @@ The pipeline maps grades to bands automatically. Include the correct `grade_band
     "generated_at": "2026-03-14T00:00:00Z",
     "generated_by": "scope-sequence-app",
     "total_units": 4,
-    "total_lessons": 24,
-    "lessons_per_unit": 6
+    "total_lessons": 24
   }
 }
 ```
@@ -232,18 +231,21 @@ The pipeline maps grades to bands automatically. Include the correct `grade_band
 | `unit_number` | integer | ✅ | 1-indexed unit number |
 | `title` | string | ✅ | Unit title — descriptive, not generic |
 | `description` | string | ✅ | 1–3 sentence summary of what students learn in this unit |
-| `lessons` | array | ✅ | Exactly 6 lesson objects per unit |
+| `pacing` | string | ✅ | Teaching + review pattern, e.g. `"5+1"` = 5 teaching + 1 review = 6 total |
+| `lessons` | array | ✅ | 3–8 lesson objects per unit |
 
 ### Lesson Object
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `lesson_number` | integer | ✅ | 1–6 within the unit |
+| `lesson_number` | integer | ✅ | 1–N within the unit (N = total lessons in unit) |
 | `title` | string | ✅ | Lesson title — specific and descriptive |
 | `big_idea` | string | ✅ | One sentence summarizing the core takeaway |
 | `standards` | array of strings | ✅ | 1+ standard codes from the correct framework |
 | `key_concepts` | array of strings | ✅ | 2–5 key concepts covered in this lesson |
-| `is_review` | boolean | Optional | Set to `true` for lesson 6 (review). Omit or `false` for lessons 1–5. |
+| `style` | string | ✅ | Lesson style hint. Closed enum: `exploration`, `deep_dive`, `hands_on`, `story_driven`, `challenge`, `creative`, `review_game`, `field_journal`, `debate`, `lab` |
+| `energy` | string | ✅ | Energy level. Closed enum: `high`, `medium`, `low` |
+| `is_review_lesson` | boolean | Optional | Set to `true` for the last lesson (review). Omit or `false` for teaching lessons. |
 
 ### Meta Object
 
@@ -252,8 +254,7 @@ The pipeline maps grades to bands automatically. Include the correct `grade_band
 | `generated_at` | string (ISO 8601) | ✅ | Timestamp of generation |
 | `generated_by` | string | ✅ | Name of the generating tool/model |
 | `total_units` | integer | ✅ | Total number of units in the course |
-| `total_lessons` | integer | ✅ | Total lessons (should equal `total_units × 6`) |
-| `lessons_per_unit` | integer | ✅ | Always `6` |
+| `total_lessons` | integer | ✅ | Total lessons — actual sum of all lessons across all units |
 
 ---
 
@@ -307,10 +308,10 @@ The pipeline maps grades to bands automatically. Include the correct `grade_band
 - Should make clear what a student will be able to DO after the unit
 - These feed directly into the AI outline generator as context
 
-### Review Lessons (Lesson 6)
-- Always `"is_review": true`
+### Review Lessons (Always the Last Lesson)
+- Always `"is_review_lesson": true`
 - Big idea should reference the whole unit: `"Review and connect everything we learned about..."`
-- Key concepts should be cumulative — list the major takeaways from lessons 1–5
+- Key concepts should be cumulative — list the major takeaways from all teaching lessons
 - Standards should include all major standards from the unit
 
 ---
@@ -323,14 +324,14 @@ Run these checks before passing the file to the pipeline:
 - [ ] `id` matches filename (without `.json`)
 - [ ] `subject_code` matches the subject code table exactly
 - [ ] `grade_band` matches the grade-to-band mapping
-- [ ] Every unit has exactly 6 lessons
-- [ ] Lesson 6 in every unit has `"is_review": true`
+- [ ] Every unit has 3–8 lessons
+- [ ] Last lesson in every unit has `"is_review_lesson": true`
 - [ ] Every lesson has at least 1 standard code
 - [ ] Standard codes are from the correct framework (no state standards)
 - [ ] Every lesson has 2–5 key concepts
 - [ ] Big ideas are single sentences, grade-appropriate
 - [ ] No duplicate lesson titles within a unit
-- [ ] `total_lessons` equals `total_units × 6`
+- [ ] `total_lessons` equals actual sum of all lessons across all units
 - [ ] `faith_integration` and `theology_profile` are consistent (`false` + `"none"` or `true` + a profile name)
 - [ ] Valid JSON — no trailing commas, no comments
 

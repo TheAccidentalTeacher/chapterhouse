@@ -164,7 +164,7 @@ REQUIRED OUTPUT FORMAT (respond with ONLY valid JSON — no markdown fences, no 
           "big_idea": "<cumulative review sentence>",
           "standards": ["<all major standards from this unit>"],
           "key_concepts": ["<cumulative takeaways>"],
-          "is_review": true,
+          "is_review_lesson": true,
           "style": "review_game",
           "energy": "high"
         }
@@ -182,7 +182,7 @@ REQUIRED OUTPUT FORMAT (respond with ONLY valid JSON — no markdown fences, no 
 STRUCTURAL RULES:
 - Each unit has 3-8 lessons. Different units CAN have different lesson counts.
 - The pacing field = "N+1" where N = teaching lessons, 1 = review. E.g. 5 teaching + 1 review = "5+1" (6 total lessons).
-- The LAST lesson in every unit is ALWAYS a review with "is_review": true.
+- The LAST lesson in every unit is ALWAYS a review with "is_review_lesson": true.
 - total_lessons in meta = the actual SUM of all lessons across all units (not a formula).
 
 LESSON VARIETY RULES:
@@ -274,7 +274,7 @@ export async function runCurriculumFactory(
       `- Unit variety: Do units have DIFFERENT lesson counts? Flag if all units are identical size.\n` +
       `- Style variety: Does each unit use 3+ different styles? No consecutive repeats?\n` +
       `- Energy alternation: Do energy levels vary? No 3+ consecutive same-energy lessons?\n` +
-      `- Review lessons: Does every unit end with review? Is review the ONLY lesson marked is_review?\n` +
+      `- Review lessons: Does every unit end with review? Is review the ONLY lesson marked is_review_lesson?\n` +
       `- Key concepts: 2-5 per lesson? Specific enough to be useful?\n` +
       `- Pedagogical sequencing: Do prerequisites flow correctly for grade ${gradeLevel}?\n\n` +
       `${gandalfDraft}`
@@ -292,7 +292,7 @@ export async function runCurriculumFactory(
       `- Lesson energy level per lesson (high, medium, low)\n` +
       `- Standards codes per lesson\n` +
       `- Key concepts (2-5) per lesson\n` +
-      `- is_review flag on the last lesson of each unit\n\n` +
+      `- is_review_lesson flag on the last lesson of each unit\n\n` +
       `You may CHANGE any of these values if they don't serve the child — but you must INCLUDE them all.\n` +
       `If Data flagged monotone styles or flat energy, fix those sequences.`
     );
@@ -335,7 +335,7 @@ export async function runCurriculumFactory(
     if (structuredJson && Array.isArray(structuredJson.units)) {
       const units = structuredJson.units as Array<{
         pacing?: string;
-        lessons?: Array<{ is_review?: boolean; lesson_number?: number }>;
+        lessons?: Array<{ is_review_lesson?: boolean; lesson_number?: number }>;  
       }>;
 
       let totalLessons = 0;
@@ -360,10 +360,10 @@ export async function runCurriculumFactory(
           unit.pacing = `${lessonCount - 1}+1`;
         }
 
-        // Ensure last lesson has is_review = true
+        // Ensure last lesson has is_review_lesson = true
         const lastLesson = unit.lessons[unit.lessons.length - 1];
-        if (lastLesson && !lastLesson.is_review) {
-          lastLesson.is_review = true;
+        if (lastLesson && !lastLesson.is_review_lesson) {
+          lastLesson.is_review_lesson = true;
         }
 
         // Renumber lessons sequentially

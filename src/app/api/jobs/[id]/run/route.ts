@@ -230,7 +230,7 @@ Output this EXACT JSON structure:
           "big_idea": "<cumulative review>",
           "standards": ["<all major standards from unit>"],
           "key_concepts": ["<takeaways from teaching lessons>"],
-          "is_review": true,
+          "is_review_lesson": true,
           "style": "review_game",
           "energy": "high"
         }
@@ -249,7 +249,7 @@ STRUCTURAL RULES:
 - Create 4 units. Each unit has 3-8 lessons (pick the right count for the content).
 - Different units SHOULD have different lesson counts. Mix it up: e.g. one unit 5+1, another 4+1, another 6+1.
 - Pacing = "N+1" where N = teaching lessons, 1 = review. E.g. "5+1" = 6 total lessons.
-- The LAST lesson in every unit is ALWAYS a review with "is_review": true.
+- The LAST lesson in every unit is ALWAYS a review with "is_review_lesson": true.
 - total_lessons = actual sum (not a formula).
 
 LESSON VARIETY RULES:
