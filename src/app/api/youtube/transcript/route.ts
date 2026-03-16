@@ -283,7 +283,7 @@ async function fetchGeminiTranscript(
             temperature: 0.1,
           },
         }),
-        signal: AbortSignal.timeout(55_000),
+        signal: AbortSignal.timeout(90_000),
       },
     );
 
