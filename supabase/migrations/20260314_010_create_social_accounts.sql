@@ -9,7 +9,7 @@ CREATE TABLE social_accounts (
 
   brand TEXT NOT NULL CHECK (brand IN ('ncho', 'somersschool', 'alana_terry', 'scott_personal')),
   platform TEXT NOT NULL CHECK (platform IN ('facebook', 'instagram', 'linkedin', 'threads', 'tiktok', 'youtube', 'pinterest')),
-  buffer_profile_id TEXT NOT NULL,  -- returned by GET /v1/profiles.json from Buffer API
+  buffer_profile_id TEXT NOT NULL,  -- channel ID from Buffer GraphQL API (GetChannels query)
   display_name TEXT NOT NULL,       -- human-readable e.g. "NCHO Facebook Page"
   is_active BOOLEAN NOT NULL DEFAULT true,
 

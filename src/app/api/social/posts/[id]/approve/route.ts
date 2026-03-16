@@ -6,6 +6,23 @@ const approveSchema = z.object({
   buffer_profile_id: z.string(),
 });
 
+const CREATE_POST_MUTATION = `
+  mutation CreatePost($input: CreatePostInput!) {
+    createPost(input: $input) {
+      __typename
+      ... on PostActionSuccess {
+        post {
+          id
+          text
+        }
+      }
+      ... on MutationError {
+        message
+      }
+    }
+  }
+`;
+
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = getSupabaseServiceRoleClient();
@@ -37,22 +54,28 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     ? `${post.post_text}\n\n${hashtags.join(" ")}`
     : post.post_text;
 
-  // Push to Buffer
+  // Push to Buffer GraphQL API
   const bufferToken = process.env.BUFFER_ACCESS_TOKEN;
   if (!bufferToken) return Response.json({ error: "Buffer not configured" }, { status: 503 });
 
-  const form = new URLSearchParams();
-  form.append("profile_ids[]", buffer_profile_id);
-  form.append("text", fullText);
-  form.append("scheduled_at", new Date(scheduled_for).toISOString());
-
-  const bufferRes = await fetch("https://api.bufferapp.com/1/updates/create.json", {
+  const bufferRes = await fetch("https://api.buffer.com", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${bufferToken}`,
-      "Content-Type": "application/x-www-form-urlencoded",
+      "Content-Type": "application/json",
     },
-    body: form.toString(),
+    body: JSON.stringify({
+      query: CREATE_POST_MUTATION,
+      variables: {
+        input: {
+          text: fullText,
+          channelId: buffer_profile_id,
+          schedulingType: "automatic",
+          mode: "customSchedule",
+          dueAt: new Date(scheduled_for).toISOString(),
+        },
+      },
+    }),
   });
 
   if (!bufferRes.ok) {
@@ -61,8 +84,28 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return Response.json({ error: "Buffer publish failed", detail }, { status: 502 });
   }
 
-  const bufferData = await bufferRes.json() as { updates?: Array<{ id?: string }> };
-  const buffer_update_id = bufferData.updates?.[0]?.id ?? null;
+  const bufferData = await bufferRes.json() as {
+    data?: {
+      createPost?: {
+        __typename?: string;
+        message?: string;
+        post?: { id?: string; text?: string };
+      };
+    };
+    errors?: Array<{ message: string }>;
+  };
+
+  const createPost = bufferData.data?.createPost;
+  if (!createPost) {
+    const detail = bufferData.errors?.map((error) => error.message).join("; ") ?? "Unknown Buffer error";
+    return Response.json({ error: "Buffer publish failed", detail }, { status: 502 });
+  }
+
+  if (createPost.__typename === "MutationError") {
+    return Response.json({ error: "Buffer publish failed", detail: createPost.message ?? "MutationError" }, { status: 502 });
+  }
+
+  const buffer_update_id = createPost.post?.id ?? null;
 
   const { data, error } = await supabase
     .from("social_posts")
