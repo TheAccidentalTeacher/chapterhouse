@@ -18,7 +18,7 @@ export type VideoMeta = {
   duration: string;
   transcript: string;
   segments: { start: number; text: string }[];
-  source: "captions" | "innertube" | "gemini" | "whisper" | "none";
+  source: "captions" | "innertube" | "gemini" | "whisper" | "gemini-analysis" | "metadata-synthesis" | "none";
   metadata: {
     viewCount: number;
     publishedAt: string;

@@ -415,6 +415,167 @@ async function fetchWhisperTranscript(
   }
 }
 
+/** Fallback 4: Gemini Video Analysis — asks for educational content analysis, not verbatim transcript */
+async function fetchGeminiVideoAnalysis(
+  videoId: string,
+  metadata: { title: string; channelName: string; description: string; duration: string } | null,
+): Promise<{ segments: { start: number; text: string }[]; text: string } | null> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    console.warn("[transcript] GEMINI_API_KEY not set — skipping Gemini video analysis");
+    return null;
+  }
+
+  const metadataContext = metadata
+    ? `\n\nVideo context — Title: ${metadata.title} | Channel: ${metadata.channelName} | Duration: ${metadata.duration}`
+    : "";
+
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  fileData: {
+                    fileUri: `https://www.youtube.com/watch?v=${videoId}`,
+                    mimeType: "video/*",
+                  },
+                },
+                {
+                  text: `Provide a comprehensive educational analysis of this video. Include ALL of the following sections:
+
+## CONTENT SUMMARY
+A detailed summary of everything covered in the video (at least 500 words). Capture the main narrative, key arguments, and all facts presented.
+
+## KEY TOPICS
+List every major topic and subtopic discussed, in order of appearance.
+
+## KEY VOCABULARY
+Important terms, names, places, and concepts with brief definitions as used in the video.
+
+## LEARNING OBJECTIVES
+What a student would learn from watching this video. List 5-8 specific, measurable objectives.
+
+## VISUAL ELEMENTS
+Describe any maps, diagrams, charts, demonstrations, images, or visual aids shown.
+
+## SPEAKER NOTES
+Summarize the key points, arguments, and conclusions made by the speaker(s).
+
+## TIMELINE
+Break the video into logical sections with approximate timestamps.
+
+Be thorough and detailed. This analysis will be used to generate quizzes, lesson plans, vocabulary lists, and other curriculum materials.${metadataContext}`,
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            maxOutputTokens: 8192,
+            temperature: 0.2,
+          },
+        }),
+        signal: AbortSignal.timeout(90_000),
+      },
+    );
+
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => "");
+      console.warn("[transcript] Gemini video analysis failed:", res.status, errBody.slice(0, 300));
+      return null;
+    }
+
+    const data = await res.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    if (!text || text.length < 100) return null;
+
+    return {
+      segments: [{ start: 0, text }],
+      text,
+    };
+  } catch (error) {
+    console.warn("[transcript] Gemini video analysis error:", error instanceof Error ? error.message : error);
+    return null;
+  }
+}
+
+/** Fallback 5: Metadata Synthesis — Claude Haiku generates educational content from title + description */
+async function synthesizeFromMetadata(
+  metadata: { title: string; channelName: string; description: string; duration: string },
+): Promise<{ segments: { start: number; text: string }[]; text: string } | null> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    console.warn("[transcript] ANTHROPIC_API_KEY not set — skipping metadata synthesis");
+    return null;
+  }
+  if (!metadata.description || metadata.description.length < 20) {
+    console.warn("[transcript] Description too short for useful synthesis");
+    return null;
+  }
+
+  try {
+    const { default: Anthropic } = await import("@anthropic-ai/sdk");
+    const client = new Anthropic({ apiKey });
+
+    const response = await client.messages.create({
+      model: "claude-haiku-4-5-20250901",
+      max_tokens: 4096,
+      messages: [
+        {
+          role: "user",
+          content: `You are an educational content analyst. A YouTube video could not be transcribed, but we have its metadata. Generate a comprehensive educational analysis that can be used to create curriculum materials (quizzes, lesson plans, vocabulary lists, etc.).
+
+VIDEO TITLE: ${metadata.title}
+CHANNEL: ${metadata.channelName}
+DURATION: ${metadata.duration}
+
+VIDEO DESCRIPTION:
+${metadata.description.slice(0, 4000)}
+
+Generate the following sections based on available information:
+
+## CONTENT SUMMARY
+What this video covers based on the title, description, and any chapter markers. Be thorough.
+
+## KEY TOPICS
+Main subjects and subtopics likely discussed.
+
+## KEY VOCABULARY
+Important terms and concepts related to the topic.
+
+## LEARNING OBJECTIVES
+What students would learn from this video (5-8 specific objectives).
+
+## EDUCATIONAL CONTEXT
+How this content fits into standard curriculum areas (Common Core, NGSS, C3, etc.).
+
+Note: This analysis is based on video metadata, not the actual video content. It provides a strong foundation for curriculum tool generation but may not capture every detail discussed in the video.`,
+        },
+      ],
+    });
+
+    const text =
+      response.content[0]?.type === "text" ? response.content[0].text : "";
+    if (!text || text.length < 100) return null;
+
+    return {
+      segments: [{ start: 0, text }],
+      text,
+    };
+  } catch (error) {
+    console.warn(
+      "[transcript] Metadata synthesis error:",
+      error instanceof Error ? error.message : error,
+    );
+    return null;
+  }
+}
+
 // --- Route handler ---
 
 export async function POST(req: Request) {
@@ -493,6 +654,22 @@ export async function POST(req: Request) {
       const whisperResult = await fetchWhisperTranscript(videoId);
       if (whisperResult) {
         return Response.json(buildResponse(whisperResult, "whisper"));
+      }
+
+      // Fallback 4: Gemini Video Analysis (educational analysis, not verbatim transcript)
+      console.log("[transcript] Whisper failed, trying Gemini video analysis...");
+      const analysisResult = await fetchGeminiVideoAnalysis(videoId, metadata);
+      if (analysisResult) {
+        return Response.json(buildResponse(analysisResult, "gemini-analysis"));
+      }
+
+      // Fallback 5: Metadata Synthesis via Claude (uses title + description)
+      if (metadata) {
+        console.log("[transcript] Gemini analysis failed, trying metadata synthesis...");
+        const synthesisResult = await synthesizeFromMetadata(metadata);
+        if (synthesisResult) {
+          return Response.json(buildResponse(synthesisResult, "metadata-synthesis"));
+        }
       }
     }
 
