@@ -158,8 +158,8 @@
 - `creative-studio-ui.js` — `CreativeStudioUI` class: full-screen modal (98vw × 98vh) with tabbed interface. Image tab has model selector, width/height, steps, guidance, style. Generation history with Supabase persistence.
 
 **Additional providers to add (not in Hypomnemata):**
-- Stability AI (key: `sk-vmUj...`)
-- Leonardo.ai (key: `259760c1-...`, Phoenix character reference for Gimli)
+- Stability AI (key in `.env.local` → `STABILITY_AI_KEY`)
+- Leonardo.ai (key in `.env.local` → `LEONARDO_API_KEY`, Phoenix character reference for Gimli)
 - Stock image search: Pexels + Pixabay + Unsplash
 
 ### 3.5 Voice Engine (1 source function → 2 new routes + UI controls)
@@ -287,8 +287,8 @@ YouTube Intelligence is Hypomnemata's most unique and powerful feature. It trans
 
 | Service | Key | Env Var |
 |---|---|---|
-| YouTube Data API v3 | `AIzaSyDsCLOAeMylBh_uj7bfTKVf61dBLShzl1Y` | `YOUTUBE_API_KEY` |
-| Google Gemini 2.0 Flash | `AIzaSyBmoTwsRQRbxhWCJFJi0kHuJMn5PJa5fko` | `GEMINI_API_KEY` |
+| YouTube Data API v3 | See `.env.local` | `YOUTUBE_API_KEY` |
+| Google Gemini 2.0 Flash | See `.env.local` | `GEMINI_API_KEY` |
 | Anthropic Claude | Already in Chapterhouse | `ANTHROPIC_API_KEY` |
 | OpenAI (GPT-5.4 + Whisper) | Already in Chapterhouse | `OPENAI_API_KEY` |
 
@@ -522,10 +522,10 @@ Chapterhouse already has basic research (URL ingest, paste, screenshot) and agen
 
 | Service | Key | Env Var | Free Tier |
 |---|---|---|---|
-| Tavily | `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` | `TAVILY_API_KEY` | Already wired |
-| SerpAPI | `29fbeaa6bd6134ae0e2db143b59471724b1b111cda394df10d12180a19fe442c` | `SERPAPI_API_KEY` | 100 searches/month free |
-| Reddit | Client ID: `HDV7ht5bQREfFnFtXKhqKg` / Secret: `bcM2a3fap8jNtsD6F3hKcP3M1BUWxg` | `REDDIT_CLIENT_ID` / `REDDIT_CLIENT_SECRET` | Unlimited (OAuth) |
-| News API | `a594f4be04704110bfce8abdd9573ec5` | `NEWSAPI_API_KEY` | Already wired (daily brief) |
+| Tavily | See `.env.local` | `TAVILY_API_KEY` | Already wired |
+| SerpAPI | See `.env.local` | `SERPAPI_API_KEY` | 100 searches/month free |
+| Reddit | See `.env.local` | `REDDIT_CLIENT_ID` / `REDDIT_CLIENT_SECRET` | Unlimited (OAuth) |
+| News API | See `.env.local` | `NEWSAPI_API_KEY` | Already wired (daily brief) |
 | Internet Archive | No key needed for search/read | N/A | Unlimited |
 
 ### New API Routes
@@ -671,7 +671,7 @@ Scott specifically flagged document processing as critical. He wants to upload a
 
 | Service | Key | Env Var |
 |---|---|---|
-| Azure AI Document Intelligence | `8adfl4ROr5U0nQ8adNiLBQV7FHq...` (same key as Azure AI Foundry hub) | `AZURE_AI_FOUNDRY_KEY` |
+| Azure AI Document Intelligence | See `.env.local` (same key as Azure AI Foundry hub) | `AZURE_AI_FOUNDRY_KEY` |
 | Azure AI Foundry Endpoint | `https://api-collection-ai-hub.services.ai.azure.com/` | `AZURE_AI_FOUNDRY_ENDPOINT` |
 | Anthropic Claude | Already in Chapterhouse | `ANTHROPIC_API_KEY` |
 
@@ -1421,7 +1421,7 @@ Should HeyGen video generation live in Chapterhouse or CoursePlatform?
 
 | Service | Key | Env Var |
 |---|---|---|
-| HeyGen | `sk_V2_hgu_kodBIj37Jdu_3F6Siklo3UQFfFF64QAV7R8u4W5zPhgp` | `HEYGEN_API_KEY` |
+| HeyGen | See `.env.local` | `HEYGEN_API_KEY` |
 
 ### New API Route
 
@@ -1481,15 +1481,15 @@ All env vars to add to Chapterhouse's `.env.local` (and Vercel/Railway deploymen
 # ============================================
 # M1: YouTube Video Intelligence
 # ============================================
-YOUTUBE_API_KEY=AIzaSyDsCLOAeMylBh_uj7bfTKVf61dBLShzl1Y
-GEMINI_API_KEY=AIzaSyBmoTwsRQRbxhWCJFJi0kHuJMn5PJa5fko
+YOUTUBE_API_KEY=your_youtube_api_key
+GEMINI_API_KEY=your_gemini_api_key
 
 # ============================================
 # M2: Deep Research Engine
 # ============================================
-SERPAPI_API_KEY=29fbeaa6bd6134ae0e2db143b59471724b1b111cda394df10d12180a19fe442c
-REDDIT_CLIENT_ID=HDV7ht5bQREfFnFtXKhqKg
-REDDIT_CLIENT_SECRET=bcM2a3fap8jNtsD6F3hKcP3M1BUWxg
+SERPAPI_API_KEY=your_serpapi_key
+REDDIT_CLIENT_ID=your_reddit_client_id
+REDDIT_CLIENT_SECRET=your_reddit_client_secret
 
 # ============================================
 # M3: Document Processing + M5: Voice + M8: Translation
@@ -1522,12 +1522,12 @@ ELEVENLABS_GENERAL_KEY=<general-key-ending-2c2d>
 # ============================================
 # M7: Music + Sound
 # ============================================
-FREESOUND_API_KEY=mKkgqv6rxPxcjKFhC8yAutjOKZN3R01fhjS1Le56
+FREESOUND_API_KEY=your_freesound_api_key
 
 # ============================================
 # M9: Video Generation
 # ============================================
-HEYGEN_API_KEY=sk_V2_hgu_kodBIj37Jdu_3F6Siklo3UQFfFF64QAV7R8u4W5zPhgp
+HEYGEN_API_KEY=your_heygen_api_key
 ```
 
 **Already in Chapterhouse (no changes needed):**
