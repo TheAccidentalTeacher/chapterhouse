@@ -12,7 +12,8 @@ const CURRICULUM_READY_SOURCES = new Set([
   "captions",
   "innertube",
   "gemini",
-  "whisper",
+  "azure-speech",
+  "openai-audio",
   "gemini-analysis",
 ]);
 

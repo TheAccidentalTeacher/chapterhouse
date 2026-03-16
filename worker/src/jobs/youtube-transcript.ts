@@ -1,4 +1,10 @@
 import { updateProgress } from "../lib/progress";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import sdk from "microsoft-cognitiveservices-speech-sdk";
 
 export interface YoutubeTranscriptPayload {
   videoId: string;
@@ -14,6 +20,8 @@ export interface YoutubeTranscriptPayload {
 }
 
 type TranscriptResult = { segments: { start: number; text: string }[]; text: string };
+
+const execFileAsync = promisify(execFile);
 
 function buildOutput(
   videoId: string,
@@ -42,7 +50,294 @@ function buildOutput(
   };
 }
 
-/** Tier 3: Gemini 2.5 Flash — verbatim transcript via YouTube fileData */
+function getYoutubeUrl(videoId: string) {
+  return `https://www.youtube.com/watch?v=${videoId}`;
+}
+
+async function withTempDir<T>(prefix: string, work: (dir: string) => Promise<T>) {
+  const dir = await mkdtemp(path.join(os.tmpdir(), prefix));
+  try {
+    return await work(dir);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+}
+
+async function runCommand(command: string, args: string[], timeoutMs: number) {
+  return execFileAsync(command, args, {
+    timeout: timeoutMs,
+    maxBuffer: 16 * 1024 * 1024,
+  });
+}
+
+function normalizeTranscriptText(text: string) {
+  return text.replace(/\s+/g, " ").trim();
+}
+
+async function extractSubtitleFiles(videoId: string, tempDir: string) {
+  const url = getYoutubeUrl(videoId);
+  await runCommand(
+    "yt-dlp",
+    [
+      "--no-warnings",
+      "--no-playlist",
+      "--skip-download",
+      "--write-subs",
+      "--write-auto-subs",
+      "--sub-langs",
+      "en.*,en",
+      "--sub-format",
+      "json3",
+      "-P",
+      tempDir,
+      "-o",
+      "%(id)s.%(ext)s",
+      url,
+    ],
+    60_000
+  );
+
+  const files = await readdir(tempDir);
+  return files
+    .filter((file) => file.endsWith(".json3"))
+    .map((file) => path.join(tempDir, file));
+}
+
+function parseJson3Transcript(raw: string): TranscriptResult | null {
+  try {
+    const parsed = JSON.parse(raw) as {
+      events?: Array<{
+        tStartMs?: number;
+        segs?: Array<{ utf8?: string }>;
+      }>;
+    };
+
+    const segments = (parsed.events ?? [])
+      .map((event) => {
+        const text = normalizeTranscriptText(
+          (event.segs ?? []).map((seg) => seg.utf8 ?? "").join("")
+        );
+        return {
+          start: Math.round((event.tStartMs ?? 0) / 1000),
+          text,
+        };
+      })
+      .filter((segment) => Boolean(segment.text));
+
+    if (segments.length === 0) return null;
+
+    return {
+      segments,
+      text: segments.map((segment) => segment.text).join(" "),
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function fetchYtDlpTranscript(videoId: string): Promise<TranscriptResult | null> {
+  try {
+    return await withTempDir("yt-subs-", async (tempDir) => {
+      const subtitleFiles = await extractSubtitleFiles(videoId, tempDir);
+      for (const subtitleFile of subtitleFiles) {
+        const raw = await readFile(subtitleFile, "utf8");
+        const parsed = parseJson3Transcript(raw);
+        if (parsed) {
+          return parsed;
+        }
+      }
+
+      return null;
+    });
+  } catch (error) {
+    console.warn("[youtube-transcript] yt-dlp subtitle extraction failed:", error instanceof Error ? error.message : error);
+    return null;
+  }
+}
+
+async function downloadAudioAsWav(videoId: string): Promise<string | null> {
+  try {
+    return await withTempDir("yt-audio-", async (tempDir) => {
+      const url = getYoutubeUrl(videoId);
+      await runCommand(
+        "yt-dlp",
+        [
+          "--no-warnings",
+          "--no-playlist",
+          "-f",
+          "bestaudio[ext=m4a]/bestaudio",
+          "-P",
+          tempDir,
+          "-o",
+          "audio.%(ext)s",
+          url,
+        ],
+        180_000
+      );
+
+      const files = await readdir(tempDir);
+      const sourceAudio = files
+        .filter((file) => file.startsWith("audio."))
+        .map((file) => path.join(tempDir, file))[0];
+
+      if (!sourceAudio) return null;
+
+      const wavPath = path.join(tempDir, "audio.wav");
+      await runCommand(
+        "ffmpeg",
+        [
+          "-y",
+          "-i",
+          sourceAudio,
+          "-ac",
+          "1",
+          "-ar",
+          "16000",
+          "-vn",
+          wavPath,
+        ],
+        180_000
+      );
+
+      const wavBuffer = await readFile(wavPath);
+      const finalPath = path.join(os.tmpdir(), `chapterhouse-${videoId}-${Date.now()}.wav`);
+      await writeFile(finalPath, wavBuffer);
+      return finalPath;
+    });
+  } catch (error) {
+    console.warn("[youtube-transcript] audio download/conversion failed:", error instanceof Error ? error.message : error);
+    return null;
+  }
+}
+
+async function cleanupFile(filePath: string | null) {
+  if (!filePath) return;
+  await rm(filePath, { force: true }).catch(() => undefined);
+}
+
+async function transcribeWithAzureSpeech(audioPath: string): Promise<TranscriptResult | null> {
+  const key = process.env.AZURE_SPEECH_KEY;
+  const region = process.env.AZURE_SPEECH_REGION;
+  if (!key || !region) return null;
+
+  const audioBuffer = await readFile(audioPath);
+  const speechConfig = sdk.SpeechConfig.fromSubscription(key, region);
+  speechConfig.speechRecognitionLanguage = "en-US";
+  speechConfig.outputFormat = sdk.OutputFormat.Detailed;
+
+  const pushStream = sdk.AudioInputStream.createPushStream();
+  const audioArrayBuffer = audioBuffer.buffer.slice(
+    audioBuffer.byteOffset,
+    audioBuffer.byteOffset + audioBuffer.byteLength
+  );
+  pushStream.write(audioArrayBuffer);
+  pushStream.close();
+
+  const audioConfig = sdk.AudioConfig.fromStreamInput(pushStream);
+  const recognizer = new sdk.SpeechRecognizer(speechConfig, audioConfig);
+
+  return new Promise((resolve) => {
+    const segments: { start: number; text: string }[] = [];
+    let settled = false;
+
+    const finish = (result: TranscriptResult | null) => {
+      if (settled) return;
+      settled = true;
+      recognizer.close();
+      resolve(result);
+    };
+
+    recognizer.recognized = (_sender, event) => {
+      if (event.result.reason !== sdk.ResultReason.RecognizedSpeech) return;
+      const text = normalizeTranscriptText(event.result.text ?? "");
+      if (!text) return;
+      segments.push({
+        start: Math.round(event.result.offset / 10_000_000),
+        text,
+      });
+    };
+
+    recognizer.canceled = (_sender, event) => {
+      console.warn("[youtube-transcript] Azure Speech canceled:", event.errorDetails || event.reason);
+      finish(null);
+    };
+
+    recognizer.sessionStopped = () => {
+      if (segments.length === 0) {
+        finish(null);
+        return;
+      }
+
+      finish({
+        segments,
+        text: segments.map((segment) => segment.text).join(" "),
+      });
+    };
+
+    recognizer.startContinuousRecognitionAsync(
+      () => undefined,
+      (error) => {
+        console.warn("[youtube-transcript] Azure Speech start failed:", error);
+        finish(null);
+      }
+    );
+  });
+}
+
+async function transcribeWithOpenAI(audioPath: string): Promise<TranscriptResult | null> {
+  const openaiKey = process.env.OPENAI_API_KEY;
+  if (!openaiKey) return null;
+
+  try {
+    const audioBuffer = await readFile(audioPath);
+    if (audioBuffer.byteLength > 24 * 1024 * 1024) {
+      console.warn("[youtube-transcript] OpenAI transcription skipped: audio exceeds 24 MB");
+      return null;
+    }
+
+    const formData = new FormData();
+    formData.append("file", new Blob([audioBuffer], { type: "audio/wav" }), "audio.wav");
+    formData.append("model", "whisper-1");
+    formData.append("response_format", "verbose_json");
+    formData.append("timestamp_granularities[]", "segment");
+
+    const res = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${openaiKey}` },
+      body: formData,
+      signal: AbortSignal.timeout(180_000),
+    });
+
+    if (!res.ok) {
+      console.warn("[youtube-transcript] OpenAI transcription failed:", res.status, await res.text().catch(() => ""));
+      return null;
+    }
+
+    const parsed = (await res.json()) as {
+      text?: string;
+      segments?: Array<{ start: number; text: string }>;
+    };
+
+    const segments = (parsed.segments ?? [])
+      .map((segment) => ({
+        start: Math.round(segment.start),
+        text: normalizeTranscriptText(segment.text),
+      }))
+      .filter((segment) => Boolean(segment.text));
+
+    if (segments.length === 0 && !parsed.text) return null;
+
+    return {
+      segments,
+      text: parsed.text ?? segments.map((segment) => segment.text).join(" "),
+    };
+  } catch (error) {
+    console.warn("[youtube-transcript] OpenAI transcription error:", error instanceof Error ? error.message : error);
+    return null;
+  }
+}
+
+/** Tier 6: Gemini 2.5 Flash — direct video analysis as a last multimodal fallback */
 async function fetchGeminiTranscript(videoId: string): Promise<TranscriptResult | null> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
@@ -104,62 +399,6 @@ No headers, no summaries, no additional commentary. Just the raw transcript with
     return segments.length > 0
       ? { segments, text }
       : { segments: [{ start: 0, text }], text };
-  } catch {
-    return null;
-  }
-}
-
-/** Tier 4: Whisper — download audio via ytdl-core, transcribe via OpenAI */
-async function fetchWhisperTranscript(videoId: string): Promise<TranscriptResult | null> {
-  const openaiKey = process.env.OPENAI_API_KEY;
-  if (!openaiKey) return null;
-
-  try {
-    const ytdl = await import("@distube/ytdl-core");
-    const url = `https://www.youtube.com/watch?v=${videoId}`;
-
-    const info = await ytdl.default.getInfo(url);
-    const audioFormat = ytdl.default.chooseFormat(info.formats, {
-      quality: "lowestaudio",
-      filter: "audioonly",
-    });
-
-    if (!audioFormat?.url) return null;
-
-    // Validate audio URL is from Google CDN (SSRF protection)
-    const audioUrlParsed = new URL(audioFormat.url);
-    const allowedHosts = [".googlevideo.com", ".youtube.com", ".ytimg.com"];
-    if (!allowedHosts.some((h) => audioUrlParsed.hostname.endsWith(h))) return null;
-
-    const audioRes = await fetch(audioFormat.url, { signal: AbortSignal.timeout(120_000) });
-    if (!audioRes.ok) return null;
-
-    const audioBuffer = await audioRes.arrayBuffer();
-
-    const formData = new FormData();
-    formData.append("file", new Blob([audioBuffer], { type: "audio/mp4" }), "audio.mp4");
-    formData.append("model", "whisper-1");
-    formData.append("response_format", "verbose_json");
-    formData.append("timestamp_granularities[]", "segment");
-
-    const whisperRes = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${openaiKey}` },
-      body: formData,
-      signal: AbortSignal.timeout(120_000),
-    });
-
-    if (!whisperRes.ok) return null;
-
-    const whisperData = (await whisperRes.json()) as { text?: string; segments?: Array<{ start: number; text: string }> };
-    const segments = (whisperData.segments ?? []).map(
-      (s: { start: number; text: string }) => ({ start: Math.round(s.start), text: s.text.trim() })
-    );
-
-    return {
-      segments,
-      text: whisperData.text ?? segments.map((s: { text: string }) => s.text).join(" "),
-    };
   } catch {
     return null;
   }
@@ -247,48 +486,82 @@ Be thorough and detailed. This analysis will be used to generate quizzes, lesson
 export async function runYoutubeTranscript(jobId: string, payload: YoutubeTranscriptPayload) {
   const { videoId, metadata } = payload;
 
-  // Tier 3: Gemini verbatim transcript
-  await updateProgress(jobId, 15, "Tier 3 of 6 — Gemini transcript extraction...", "running");
-  const geminiResult = await fetchGeminiTranscript(videoId);
-  if (geminiResult) {
+  let wavPath: string | null = null;
+
+  try {
+    await updateProgress(jobId, 15, "Tier 3 of 6 - Extracting actual subtitles with yt-dlp...", "running");
+    const subtitleResult = await fetchYtDlpTranscript(videoId);
+    if (subtitleResult) {
+      await updateProgress(
+        jobId,
+        100,
+        "Transcript extracted from actual YouTube subtitles",
+        "completed",
+        buildOutput(videoId, subtitleResult, "captions", metadata)
+      );
+      return;
+    }
+
+    await updateProgress(jobId, 30, "Tier 4 of 6 - Downloading actual audio for transcription...", "running");
+    wavPath = await downloadAudioAsWav(videoId);
+
+    if (wavPath) {
+      await updateProgress(jobId, 50, "Tier 5 of 6 - Azure Speech transcribing actual video audio...", "running");
+      const azureResult = await transcribeWithAzureSpeech(wavPath);
+      if (azureResult) {
+        await updateProgress(
+          jobId,
+          100,
+          "Transcript extracted from actual audio via Azure Speech",
+          "completed",
+          buildOutput(videoId, azureResult, "azure-speech", metadata)
+        );
+        return;
+      }
+
+      await updateProgress(jobId, 70, "Tier 5b of 6 - OpenAI transcribing actual video audio...", "running");
+      const openAiResult = await transcribeWithOpenAI(wavPath);
+      if (openAiResult) {
+        await updateProgress(
+          jobId,
+          100,
+          "Transcript extracted from actual audio via OpenAI",
+          "completed",
+          buildOutput(videoId, openAiResult, "openai-audio", metadata)
+        );
+        return;
+      }
+    }
+
+    await updateProgress(jobId, 85, "Tier 6 of 6 - Gemini visual analysis from the actual video...", "running");
+    const analysisResult = await fetchGeminiVideoAnalysis(videoId, metadata);
+    if (analysisResult) {
+      await updateProgress(
+        jobId,
+        100,
+        "Educational analysis complete from actual video analysis",
+        "completed",
+        buildOutput(videoId, analysisResult, "gemini-analysis", metadata)
+      );
+      return;
+    }
+
+    await updateProgress(jobId, 95, "All actual-video fallbacks exhausted...", "running");
+
     await updateProgress(
-      jobId, 100, "✓ Transcript extracted via Gemini", "completed",
-      buildOutput(videoId, geminiResult, "gemini", metadata)
+      jobId,
+      100,
+      "No transcript available for this video",
+      "completed",
+      buildOutput(
+        videoId,
+        { segments: [], text: "" },
+        "none",
+        metadata,
+        "All actual-video transcript methods failed. No usable subtitles, audio transcription, or video analysis were produced."
+      )
     );
-    return;
+  } finally {
+    await cleanupFile(wavPath);
   }
-
-  // Tier 4: Whisper (audio download + STT)
-  await updateProgress(jobId, 35, "Tier 4 of 6 — Whisper audio transcription...", "running");
-  const whisperResult = await fetchWhisperTranscript(videoId);
-  if (whisperResult) {
-    await updateProgress(
-      jobId, 100, "✓ Transcript extracted via Whisper", "completed",
-      buildOutput(videoId, whisperResult, "whisper", metadata)
-    );
-    return;
-  }
-
-  // Tier 5: Gemini educational analysis
-  await updateProgress(jobId, 60, "Tier 5 of 6 — Gemini educational analysis...", "running");
-  const analysisResult = await fetchGeminiVideoAnalysis(videoId, metadata);
-  if (analysisResult) {
-    await updateProgress(
-      jobId, 100, "✓ Educational analysis complete", "completed",
-      buildOutput(videoId, analysisResult, "gemini-analysis", metadata)
-    );
-    return;
-  }
-
-  // Tier 6: final exhaustion state — do not synthesize fake content from metadata.
-  await updateProgress(jobId, 80, "Tier 6 of 6 — No usable transcript or analysis found...", "running");
-
-  // All fallbacks exhausted — still mark completed so UI can show the video
-  await updateProgress(
-    jobId, 100, "No transcript available for this video", "completed",
-    buildOutput(
-      videoId, { segments: [], text: "" }, "none", metadata,
-      "All transcript methods failed. No captions available and AI fallbacks exhausted."
-    )
-  );
 }

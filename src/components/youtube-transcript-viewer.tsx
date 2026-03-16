@@ -50,7 +50,8 @@ const SOURCE_BADGES: Record<string, { label: string; color: string }> = {
   captions: { label: "Captions", color: "bg-success/15 text-success" },
   innertube: { label: "Innertube", color: "bg-success/15 text-success" },
   gemini: { label: "Gemini AI", color: "bg-warning/15 text-warning" },
-  whisper: { label: "Whisper STT", color: "bg-accent/15 text-accent" },
+  "azure-speech": { label: "Azure Speech", color: "bg-accent/15 text-accent" },
+  "openai-audio": { label: "OpenAI Audio", color: "bg-accent/15 text-accent" },
   "gemini-analysis": { label: "Video Analysis", color: "bg-accent/15 text-accent" },
   none: { label: "No Transcript", color: "bg-danger/15 text-danger" },
 };
