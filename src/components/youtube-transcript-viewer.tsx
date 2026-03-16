@@ -58,6 +58,19 @@ const SOURCE_BADGES: Record<string, { label: string; color: string }> = {
 
 const ANALYSIS_SOURCES = new Set(["gemini-analysis"]);
 
+function getFailureMessage(video: VideoMeta) {
+  const attemptWithDetail = video.attempts?.find((attempt) => attempt.detail);
+  if (!attemptWithDetail?.detail) {
+    return video.transcriptError ?? "No transcript or analysis available for this video.";
+  }
+
+  if (attemptWithDetail.detail.includes("Sign in to confirm you're not a bot")) {
+    return "YouTube blocked audio extraction with a bot check, so the worker could not access the actual audio track for transcription.";
+  }
+
+  return attemptWithDetail.detail;
+}
+
 export default function YoutubeTranscriptViewer({
   video,
   onSaveToResearch,
@@ -72,6 +85,7 @@ export default function YoutubeTranscriptViewer({
   const wordCount = hasTranscript ? video.transcript.split(/\s+/).length : 0;
   const readTimeMin = Math.ceil(wordCount / 200);
   const badge = SOURCE_BADGES[video.source] ?? SOURCE_BADGES.captions;
+  const failureMessage = getFailureMessage(video);
 
   async function handleCopy() {
     await navigator.clipboard.writeText(video.transcript);
@@ -136,7 +150,7 @@ export default function YoutubeTranscriptViewer({
       {/* No content warning */}
       {!hasTranscript && (
         <div className="rounded-2xl border border-warning/30 bg-warning/5 px-4 py-3 text-sm text-warning">
-          No transcript or analysis available for this video. You can still watch it on YouTube and use the description for context.
+          {failureMessage} You can still watch it on YouTube and use the description for context.
         </div>
       )}
 

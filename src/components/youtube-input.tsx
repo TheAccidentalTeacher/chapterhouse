@@ -27,6 +27,11 @@ export type VideoMeta = {
     thumbnailUrl: string;
     description: string;
   } | null;
+  attempts?: Array<{
+    tier: string;
+    result: string;
+    detail?: string;
+  }>;
   transcriptError?: string;
 };
 
