@@ -89,7 +89,8 @@ export default function YoutubeInput({
       }
       // Show warning if transcript failed but video metadata is available
       if (data.transcriptError) {
-        setError(data.transcriptError);
+        // Don't show error in the search area — the transcript viewer handles this
+        // with its own warning banner
       }
       onVideoLoaded(data as VideoMeta);
     } catch {

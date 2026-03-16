@@ -8,6 +8,7 @@ import { createPortal } from "react-dom";
 import { navigationGroups } from "@/lib/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { DebugPanel } from "@/components/debug-panel";
+import { installDebugInterceptors } from "@/lib/debug-interceptor";
 
 type ChapterhouseShellProps = {
   children: React.ReactNode;
@@ -33,7 +34,10 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
   const [railTooltipRect, setRailTooltipRect] = useState<DOMRect | null>(null);
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+    installDebugInterceptors();
+  }, []);
 
   // Auto-open group containing the active route
   useEffect(() => {

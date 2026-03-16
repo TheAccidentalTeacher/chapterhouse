@@ -63,6 +63,7 @@ export function subscribe(fn: () => void): () => void {
 
 /**
  * Wraps a fetch call with automatic request/response logging + performance timing.
+ * Uses the original (non-intercepted) fetch to avoid double-logging with debug-interceptor.
  * Usage: loggedFetch("/api/summarize", { method: "POST" }, "Condense knowledge")
  */
 export async function loggedFetch(
@@ -75,9 +76,16 @@ export async function loggedFetch(
 
   logEvent("api", `→ ${tag}`, reqBody !== undefined ? { request: reqBody } : undefined);
 
+  // Use original fetch to bypass the global interceptor (avoid double-logging)
+  const fetchFn =
+    typeof window !== "undefined" &&
+    (window as unknown as Record<string, unknown>).__originalFetch
+      ? ((window as unknown as Record<string, unknown>).__originalFetch as typeof fetch)
+      : fetch;
+
   const start = Date.now();
   try {
-    const res = await fetch(url, init);
+    const res = await fetchFn(url, init);
     const elapsed = Date.now() - start;
 
     // Clone so caller can still read the body
