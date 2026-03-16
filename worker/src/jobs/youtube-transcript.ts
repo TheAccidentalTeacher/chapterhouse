@@ -1,5 +1,4 @@
 import { updateProgress } from "../lib/progress";
-import Anthropic from "@anthropic-ai/sdk";
 
 export interface YoutubeTranscriptPayload {
   videoId: string;
@@ -244,61 +243,6 @@ Be thorough and detailed. This analysis will be used to generate quizzes, lesson
   }
 }
 
-/** Tier 6: Claude Haiku — synthesize educational content from title + description */
-async function synthesizeFromMetadata(
-  metadata: NonNullable<YoutubeTranscriptPayload["metadata"]>
-): Promise<TranscriptResult | null> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey || !metadata.description || metadata.description.length < 20) return null;
-
-  try {
-    const client = new Anthropic({ apiKey });
-    const response = await client.messages.create({
-      model: "claude-haiku-4-5",
-      max_tokens: 4096,
-      messages: [
-        {
-          role: "user",
-          content: `You are an educational content analyst. A YouTube video could not be transcribed, but we have its metadata. Generate a comprehensive educational analysis that can be used to create curriculum materials (quizzes, lesson plans, vocabulary lists, etc.).
-
-VIDEO TITLE: ${metadata.title}
-CHANNEL: ${metadata.channelName}
-DURATION: ${metadata.duration}
-
-VIDEO DESCRIPTION:
-${metadata.description.slice(0, 4000)}
-
-Generate the following sections based on available information:
-
-## CONTENT SUMMARY
-What this video covers based on the title, description, and any chapter markers. Be thorough.
-
-## KEY TOPICS
-Main subjects and subtopics likely discussed.
-
-## KEY VOCABULARY
-Important terms and concepts related to the topic.
-
-## LEARNING OBJECTIVES
-What students would learn from this video (5-8 specific objectives).
-
-## EDUCATIONAL CONTEXT
-How this content fits into standard curriculum areas (Common Core, NGSS, C3, etc.).
-
-Note: This analysis is based on video metadata, not the actual video content. It provides a strong foundation for curriculum tool generation but may not capture every detail discussed in the video.`,
-        },
-      ],
-    });
-
-    const text = response.content[0]?.type === "text" ? response.content[0].text : "";
-    if (!text || text.length < 100) return null;
-
-    return { segments: [{ start: 0, text }], text };
-  } catch {
-    return null;
-  }
-}
-
 /** Main runner — receives job from QStash→Railway, runs tiers 3-6 */
 export async function runYoutubeTranscript(jobId: string, payload: YoutubeTranscriptPayload) {
   const { videoId, metadata } = payload;
@@ -336,18 +280,8 @@ export async function runYoutubeTranscript(jobId: string, payload: YoutubeTransc
     return;
   }
 
-  // Tier 6: Claude metadata synthesis
-  await updateProgress(jobId, 80, "Tier 6 of 6 — Generating from video metadata...", "running");
-  if (metadata) {
-    const synthesisResult = await synthesizeFromMetadata(metadata);
-    if (synthesisResult) {
-      await updateProgress(
-        jobId, 100, "✓ Content synthesized from metadata", "completed",
-        buildOutput(videoId, synthesisResult, "metadata-synthesis", metadata)
-      );
-      return;
-    }
-  }
+  // Tier 6: final exhaustion state — do not synthesize fake content from metadata.
+  await updateProgress(jobId, 80, "Tier 6 of 6 — No usable transcript or analysis found...", "running");
 
   // All fallbacks exhausted — still mark completed so UI can show the video
   await updateProgress(

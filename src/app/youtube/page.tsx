@@ -8,6 +8,14 @@ import YoutubeTranscriptViewer from "@/components/youtube-transcript-viewer";
 import YoutubeCurriculumTools from "@/components/youtube-curriculum-tools";
 import YoutubeBatchSidebar from "@/components/youtube-batch-sidebar";
 
+const CURRICULUM_READY_SOURCES = new Set([
+  "captions",
+  "innertube",
+  "gemini",
+  "whisper",
+  "gemini-analysis",
+]);
+
 export default function YoutubePage() {
   const [video, setVideo] = useState<VideoMeta | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -87,7 +95,7 @@ export default function YoutubePage() {
           )}
 
           {/* Curriculum tools */}
-          {video && video.transcript && (
+          {video && video.transcript && CURRICULUM_READY_SOURCES.has(video.source) && (
             <div>
               <h2 className="mb-3 text-lg font-semibold text-foreground">
                 Curriculum Tools
