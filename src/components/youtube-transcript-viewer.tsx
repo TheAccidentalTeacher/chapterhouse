@@ -49,10 +49,10 @@ function formatTimestamp(seconds: number): string {
 const SOURCE_BADGES: Record<string, { label: string; color: string }> = {
   captions: { label: "Captions", color: "bg-success/15 text-success" },
   innertube: { label: "Innertube", color: "bg-success/15 text-success" },
-  gemini: { label: "Gemini AI", color: "bg-warning/15 text-warning" },
+  gemini: { label: "Gemini Transcript", color: "bg-success/15 text-success" },
   "azure-speech": { label: "Azure Speech", color: "bg-accent/15 text-accent" },
   "openai-audio": { label: "OpenAI Audio", color: "bg-accent/15 text-accent" },
-  "gemini-analysis": { label: "Video Analysis", color: "bg-accent/15 text-accent" },
+  "gemini-analysis": { label: "Video Analysis", color: "bg-warning/15 text-warning" },
   none: { label: "No Transcript", color: "bg-danger/15 text-danger" },
 };
 

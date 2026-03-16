@@ -486,7 +486,12 @@ Be thorough and detailed. This analysis will be used to generate quizzes, lesson
   }
 }
 
-/** Main runner — receives job from QStash→Railway, runs tiers 3-6 */
+/** Main runner — receives job from QStash→Railway, runs tiers in order:
+ * 1. yt-dlp subtitles (fast, may be blocked from cloud IPs)
+ * 2. Gemini verbatim transcript (Google→Google, most reliable from servers)
+ * 3. Audio download + Azure Speech / OpenAI Whisper (often blocked by YouTube bot-check)
+ * 4. Gemini educational analysis (structured analysis, last resort)
+ */
 export async function runYoutubeTranscript(jobId: string, payload: YoutubeTranscriptPayload) {
   const { videoId, metadata } = payload;
 
@@ -494,90 +499,86 @@ export async function runYoutubeTranscript(jobId: string, payload: YoutubeTransc
   const attempts: AttemptRecord[] = [];
 
   try {
-    await updateProgress(jobId, 15, "Tier 3 of 6 - Extracting actual subtitles with yt-dlp...", "running");
+    // Tier 1: yt-dlp subtitle extraction
+    await updateProgress(jobId, 10, "Extracting subtitles from YouTube...", "running");
     const subtitleResult = await fetchYtDlpTranscript(videoId);
     if (subtitleResult) {
       attempts.push({ tier: "yt-dlp-subtitles", result: "success" });
       await updateProgress(
-        jobId,
-        100,
-        "Transcript extracted from actual YouTube subtitles",
-        "completed",
+        jobId, 100, "Transcript extracted from YouTube subtitles", "completed",
         buildOutput(videoId, subtitleResult, "captions", metadata, undefined, attempts)
       );
       return;
     }
     attempts.push({ tier: "yt-dlp-subtitles", result: "failed" });
 
-    await updateProgress(jobId, 30, "Tier 4 of 6 - Downloading actual audio for transcription...", "running");
+    // Tier 2: Gemini verbatim transcript (Google→Google, no bot check)
+    await updateProgress(jobId, 25, "Gemini is watching the video and transcribing...", "running");
+    const geminiTranscript = await fetchGeminiTranscript(videoId);
+    if (geminiTranscript) {
+      attempts.push({ tier: "gemini-transcript", result: "success" });
+      await updateProgress(
+        jobId, 100, "Transcript produced by Gemini from actual video", "completed",
+        buildOutput(videoId, geminiTranscript, "gemini", metadata, undefined, attempts)
+      );
+      return;
+    }
+    attempts.push({ tier: "gemini-transcript", result: "failed" });
+
+    // Tier 3: Download audio + transcribe with Azure Speech or OpenAI Whisper
+    await updateProgress(jobId, 45, "Downloading video audio for transcription...", "running");
     const audioDownload = await downloadAudioAsWav(videoId);
     wavPath = audioDownload.wavPath;
-    if (!wavPath) {
-      attempts.push({ tier: "audio-download", result: "failed", detail: audioDownload.error });
-    } else {
-      attempts.push({ tier: "audio-download", result: "success" });
-    }
 
     if (wavPath) {
-      await updateProgress(jobId, 50, "Tier 5 of 6 - Azure Speech transcribing actual video audio...", "running");
+      attempts.push({ tier: "audio-download", result: "success" });
+
+      await updateProgress(jobId, 60, "Azure Speech transcribing audio...", "running");
       const azureResult = await transcribeWithAzureSpeech(wavPath);
       if (azureResult) {
         attempts.push({ tier: "azure-speech", result: "success" });
         await updateProgress(
-          jobId,
-          100,
-          "Transcript extracted from actual audio via Azure Speech",
-          "completed",
+          jobId, 100, "Transcript extracted from audio via Azure Speech", "completed",
           buildOutput(videoId, azureResult, "azure-speech", metadata, undefined, attempts)
         );
         return;
       }
       attempts.push({ tier: "azure-speech", result: "failed" });
 
-      await updateProgress(jobId, 70, "Tier 5b of 6 - OpenAI transcribing actual video audio...", "running");
+      await updateProgress(jobId, 75, "OpenAI Whisper transcribing audio...", "running");
       const openAiResult = await transcribeWithOpenAI(wavPath);
       if (openAiResult) {
         attempts.push({ tier: "openai-audio", result: "success" });
         await updateProgress(
-          jobId,
-          100,
-          "Transcript extracted from actual audio via OpenAI",
-          "completed",
+          jobId, 100, "Transcript extracted from audio via OpenAI Whisper", "completed",
           buildOutput(videoId, openAiResult, "openai-audio", metadata, undefined, attempts)
         );
         return;
       }
       attempts.push({ tier: "openai-audio", result: "failed" });
+    } else {
+      attempts.push({ tier: "audio-download", result: "failed", detail: audioDownload.error });
     }
 
-    await updateProgress(jobId, 85, "Tier 6 of 6 - Gemini visual analysis from the actual video...", "running");
+    // Tier 4: Gemini educational analysis (structured, not verbatim)
+    await updateProgress(jobId, 90, "Gemini analyzing video content...", "running");
     const analysisResult = await fetchGeminiVideoAnalysis(videoId, metadata);
     if (analysisResult) {
       attempts.push({ tier: "gemini-analysis", result: "success" });
       await updateProgress(
-        jobId,
-        100,
-        "Educational analysis complete from actual video analysis",
-        "completed",
+        jobId, 100, "Educational analysis produced from video", "completed",
         buildOutput(videoId, analysisResult, "gemini-analysis", metadata, undefined, attempts)
       );
       return;
     }
     attempts.push({ tier: "gemini-analysis", result: "failed" });
 
-    await updateProgress(jobId, 95, "All actual-video fallbacks exhausted...", "running");
-
+    // All tiers exhausted
     await updateProgress(
-      jobId,
-      100,
-      "No transcript available for this video",
-      "completed",
+      jobId, 100, "No transcript available for this video", "completed",
       buildOutput(
-        videoId,
-        { segments: [], text: "" },
-        "none",
-        metadata,
-        "All actual-video transcript methods failed. No usable subtitles, audio transcription, or video analysis were produced.",
+        videoId, { segments: [], text: "" }, "none", metadata,
+        "All transcript methods failed. No subtitles, Gemini transcript, audio transcription, or video analysis succeeded.",
         attempts
       )
     );
