@@ -14,7 +14,7 @@ This document is your complete technical brief. Read all of it before touching a
 
 ---
 
-## What Chapterhouse Already Is (Current State — Updated March 14, 2026)
+## What Chapterhouse Already Is (Current State — Updated March 15, 2026)
 
 **Stack:** Next.js 16.1.6 (App Router), React 19, TypeScript, Tailwind 4, Supabase (auth + DB + realtime), Anthropic SDK, OpenAI SDK, Zod
 
@@ -39,6 +39,7 @@ This document is your complete technical brief. Read all of it before touching a
 - `/curriculum-factory` — 5-pass Council of the Unserious curriculum generation form (Gandalf → Data → Polgara → Earl → Beavis & Butthead). National standards auto-aligned (CCSS-ELA, CCSS-M, NGSS, C3).
 - `/pipelines` — n8n workflow control panel. Status, execution history, manual triggers.
 - `/council` — 5-agent Council of the Unserious Chamber for curriculum scope & sequence generation. Background job.
+- `/social` — Social media automation. 3-tab UI: Review Queue (approve/edit/reject AI-generated posts with live Realtime updates), Generate (Claude-powered multi-brand × multi-platform batch generation), Accounts (Buffer channel sync + brand mapping).
 
 ### System
 - `/settings` — Environment status, provider configuration, founder memory panel.
@@ -61,14 +62,23 @@ This document is your complete technical brief. Read all of it before touching a
 - `research/` — Full CRUD (GET, POST, PATCH, DELETE)
 - `research/auto/` — Agentic research via Tavily (web search → GPT-5.4 analysis → dedup → auto-ingest)
 - `search/` — Global cross-table search (tasks, research, opportunities, threads, briefs via `ilike`)
+- `social/accounts/` — Social account CRUD (GET active, POST upsert)
+- `social/accounts/sync/` — Buffer GraphQL channel sync (GetOrganizations → GetChannels)
+- `social/analytics/` — Pull post engagement stats from Buffer GraphQL API → `social_posts.buffer_stats`
+- `social/generate/` — Claude Sonnet 4.6 multi-brand × multi-platform post generation with brand voice system prompt
+- `social/posts/` — Social post list with status/brand filters
+- `social/posts/[id]/` — PATCH (edit with history tracking) + DELETE (soft reject)
+- `social/posts/[id]/approve/` — Approve + schedule via Buffer GraphQL `createPost` mutation
+- `cron/social-weekly/` — Monday 05:00 UTC batch generation cron via QStash → Railway worker
+- `webhooks/shopify-product/` — HMAC-verified Shopify webhook → auto-generate NCHO product launch posts
 - `summarize/` — AI summarization
 - `tasks/` — Task list + create, `[id]/` (PATCH, DELETE)
 - `threads/` — Chat thread list + create, `[id]/` (PATCH)
 
 **Supabase tables:**
-- `briefs`, `research_items`, `opportunities`, `tasks`, `chat_threads`, `knowledge_summaries`, `founder_notes`, `jobs`
+- `briefs`, `research_items`, `opportunities`, `tasks`, `chat_threads`, `knowledge_summaries`, `founder_notes`, `jobs`, `social_accounts`, `social_posts`
 
-**Key env vars:** `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `TAVILY_API_KEY`, `NEWSAPI_API_KEY`, `N8N_BASE_URL`, `N8N_API_KEY`, `RAILWAY_WORKER_URL`, `GITHUB_TOKEN`, `CRON_SECRET`, `NEXT_PUBLIC_APP_URL`, `ALLOWED_EMAILS`
+**Key env vars:** `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `TAVILY_API_KEY`, `NEWSAPI_API_KEY`, `N8N_BASE_URL`, `N8N_API_KEY`, `RAILWAY_WORKER_URL`, `GITHUB_TOKEN`, `CRON_SECRET`, `NEXT_PUBLIC_APP_URL`, `ALLOWED_EMAILS`, `BUFFER_ACCESS_TOKEN`, `SHOPIFY_WEBHOOK_SECRET`
 
 **Installed and active:** `@upstash/qstash`, `@upstash/redis`, `@anthropic-ai/sdk`, `openai`, `@supabase/supabase-js`, `@supabase/ssr`, `zod`, `react-markdown`, `remark-gfm`, `resend`, `rss-parser`, `date-fns`, `html-to-docx`, `marked`, `lucide-react`
 
@@ -124,6 +134,21 @@ BONUS — Sidebar & Help System                ✅ COMPLETE
   Accordion-grouped navigation (5 sections).
   Hover tooltips on every nav item. Status badges (live/beta/soon).
   Dynamic system status rail. Help guide at /help.
+
+PHASE 5 — Social Media Automation            ✅ COMPLETE
+  Replaces Sintra ($49/mo, 250-credit cap, broken images, single-brand).
+  Claude Sonnet 4.6 generates posts for 3 brands × 3 platforms.
+  Human review gate: approve/edit/reject before anything publishes.
+  Buffer GraphQL API for scheduling (createPost mutation).
+  Buffer GraphQL API for analytics (post stats → buffer_stats JSONB).
+  Shopify webhook auto-triggers NCHO product launch posts.
+  Weekly Monday 05:00 UTC cron generates a fresh batch via QStash → Railway.
+  Supabase Realtime updates review queue live as posts generate.
+  Edit history tracking on every manual edit (JSONB array of prior versions).
+  UI: 3-tab layout at /social (Review Queue, Generate, Accounts).
+  API: 8 routes under /api/social/ + 1 cron + 1 webhook.
+  DB: 2 new tables (social_accounts, social_posts).
+  Worker: social-batch.ts job type in Railway worker.
 ```
 
 ---
@@ -591,6 +616,197 @@ Simple table view:
 
 ---
 
+## Architecture Reference — Phase 5: Social Media Automation (BUILT ✅)
+
+### What It Replaces
+
+**Sintra** ($49/mo) — 250-credit cap, single-brand mode, broken image repetition, no review gate, no brand voice control. Chapterhouse replaces all of that with Claude-powered generation across three brands, human review before any post publishes, and Buffer GraphQL API for scheduling.
+
+### In Plain English
+
+Here's what this system actually does:
+
+1. **Generate:** Claude Sonnet 4.6 writes social media posts for your brands. You pick which brands (NCHO, SomersSchool, Alana Terry), which platforms (Facebook, Instagram, LinkedIn), and how many. Claude follows specific brand voice rules for each — NCHO sounds like a warm teacher, SomersSchool is confident and secular, Alana Terry is personal and faith-forward.
+
+2. **Review:** Every AI-generated post lands in a review queue. Nothing auto-publishes. Scott or Anna reads each post, edits the text right inside the card if they want, picks a date/time, picks which Buffer channel to send it to, and approves. Or rejects with one click. Every edit is tracked — you can see what the AI originally wrote vs. what you changed.
+
+3. **Schedule:** When you approve, the post gets pushed to Buffer's scheduling queue via their GraphQL API. Buffer handles the actual publishing to Facebook/Instagram/LinkedIn at the scheduled time.
+
+4. **Analytics:** After posts are published, Chapterhouse pulls engagement stats back from Buffer (reach, clicks, likes, comments, shares) and stores them per-post. Over time, this builds a data set for the autoresearch loop — "which brand/platform/topic seed gets the most engagement? Do more of that."
+
+5. **Auto-triggers:** Two triggers generate posts without Scott lifting a finger:
+   - **Weekly cron** (Monday 5:00 AM UTC) — creates a batch of 18 posts (3 brands × 3 platforms × 2 each)
+   - **Shopify webhook** — when Anna adds a new product to the NCHO store, Shopify fires a webhook, and Chapterhouse auto-generates launch posts for Facebook + Instagram
+
+### Conceptual Architecture
+
+```
+                        ┌─────────────────────────────┐
+                        │       TRIGGER LAYER          │
+                        │                              │
+                        │  Weekly Cron (Mon 05:00 UTC) │
+                        │  Shopify Product Webhook     │
+                        │  Manual "Generate" button    │
+                        └────────────┬────────────────┘
+                                     │
+                    ┌────────────────▼────────────────┐
+                    │        JOB SYSTEM (QStash)       │
+                    │                                  │
+                    │  POST /api/cron/social-weekly     │
+                    │  POST /api/webhooks/shopify-prod  │
+                    │  → Insert job (type: social_batch)│
+                    │  → QStash → Railway worker        │
+                    └────────────┬────────────────────┘
+                                 │
+                    ┌────────────▼────────────────────┐
+                    │     RAILWAY WORKER               │
+                    │     social-batch.ts               │
+                    │                                  │
+                    │  Calls /api/social/generate      │
+                    │  (with job_id for tracking)       │
+                    │  Updates progress in Supabase     │
+                    └────────────┬────────────────────┘
+                                 │
+                    ┌────────────▼────────────────────┐
+                    │     GENERATION ENGINE             │
+                    │     /api/social/generate          │
+                    │                                  │
+                    │  Claude Sonnet 4.6                │
+                    │  Brand voice system prompt        │
+                    │  → Inserts rows to social_posts   │
+                    │    (status: pending_review)        │
+                    └────────────┬────────────────────┘
+                                 │
+                    ┌────────────▼────────────────────┐
+                    │     SUPABASE REALTIME             │
+                    │                                  │
+                    │  social_posts table has Realtime  │
+                    │  → Review Queue UI updates live   │
+                    └────────────┬────────────────────┘
+                                 │
+                    ┌────────────▼────────────────────┐
+                    │     HUMAN REVIEW GATE             │
+                    │     /social → Review Queue tab    │
+                    │                                  │
+                    │  Edit post text (inline)          │
+                    │  Pick schedule date/time          │
+                    │  Pick Buffer channel              │
+                    │  → Approve or Reject              │
+                    └────────────┬────────────────────┘
+                                 │ (on approve)
+                    ┌────────────▼────────────────────┐
+                    │     BUFFER GRAPHQL API            │
+                    │     POST https://api.buffer.com   │
+                    │                                  │
+                    │  createPost mutation               │
+                    │  { text, channelId, dueAt,         │
+                    │    schedulingType: automatic,       │
+                    │    mode: customSchedule }           │
+                    │  → Returns post ID                 │
+                    │  → Stored as buffer_update_id      │
+                    └────────────┬────────────────────┘
+                                 │ (post publishes)
+                    ┌────────────▼────────────────────┐
+                    │     ANALYTICS PULL-BACK           │
+                    │     /api/social/analytics         │
+                    │                                  │
+                    │  Queries Buffer for published      │
+                    │  post stats (reach, clicks, etc)   │
+                    │  → Stores in buffer_stats JSONB    │
+                    └──────────────────────────────────┘
+```
+
+### Database Schema
+
+#### `social_accounts` (Migration 010)
+Maps Buffer channels to brand+platform combinations. Populated via the Accounts tab after syncing from Buffer.
+
+| Column | Type | Purpose |
+|---|---|---|
+| `id` | UUID PK | Row identifier |
+| `brand` | TEXT CHECK | `ncho`, `somersschool`, `alana_terry`, `scott_personal` |
+| `platform` | TEXT CHECK | `facebook`, `instagram`, `linkedin`, `threads`, `tiktok`, `youtube`, `pinterest` |
+| `buffer_profile_id` | TEXT NOT NULL | Channel ID from Buffer GraphQL API |
+| `display_name` | TEXT NOT NULL | Human-readable name, e.g. "NCHO Facebook Page" |
+| `is_active` | BOOLEAN | Whether to show in dropdowns |
+| **UNIQUE** | `(brand, platform)` | One Buffer channel per brand+platform combo |
+
+#### `social_posts` (Migration 011)
+Every AI-generated post, with full lifecycle tracking from generation through publication and analytics.
+
+| Column | Type | Purpose |
+|---|---|---|
+| `id` | UUID PK | Row identifier |
+| `job_id` | UUID FK → jobs | Which batch generation job created this |
+| `brand` | TEXT CHECK | Same 4 values as social_accounts |
+| `platform` | TEXT CHECK | Same 7 values as social_accounts |
+| `post_text` | TEXT NOT NULL | The actual post content (editable by reviewer) |
+| `image_brief` | TEXT | Description of what the image should show |
+| `hashtags` | TEXT[] | Array of hashtags (shown separately in UI) |
+| `generation_prompt` | TEXT | Full prompt sent to Claude (for autoresearch loop analysis) |
+| `edit_history` | JSONB[] | Array of `{saved_at, post_text, hashtags}` — every manual edit |
+| `status` | TEXT CHECK | `pending_review` → `approved` \| `rejected` → `scheduled` → `published` \| `failed` |
+| `scheduled_for` | TIMESTAMPTZ | When to publish (set on approval) |
+| `buffer_profile_id` | TEXT | Which Buffer channel (set on approval) |
+| `buffer_update_id` | TEXT | Post ID returned by Buffer after scheduling |
+| `published_at` | TIMESTAMPTZ | When Buffer confirmed publication |
+| `buffer_stats` | JSONB | `{reach, clicks, likes, comments, shares}` pulled from Buffer |
+
+Realtime enabled. RLS: authenticated users only. 4 indexes: status, brand, job_id, scheduled_for.
+
+### API Routes — Complete Reference
+
+| Route | Method | What It Does |
+|---|---|---|
+| `/api/social/accounts` | GET | List active accounts (sorted brand → platform) |
+| `/api/social/accounts` | POST | Upsert account (Zod-validated, conflict on brand+platform) |
+| `/api/social/accounts/sync` | POST | Two-step Buffer GraphQL: GetOrganizations → GetChannels. Returns simplified channel list. |
+| `/api/social/posts` | GET | List posts with optional `?status=` and `?brand=` filters |
+| `/api/social/posts/[id]` | PATCH | Edit post text, hashtags, image_brief, scheduled_for. Pushes previous version to `edit_history`. |
+| `/api/social/posts/[id]` | DELETE | Soft reject — sets status to `rejected` (no row delete) |
+| `/api/social/posts/[id]/approve` | POST | Approve + schedule. Builds full text with hashtags → `createPost` mutation to Buffer GraphQL → stores `buffer_update_id` → status = `scheduled`. |
+| `/api/social/generate` | POST | Claude Sonnet 4.6 generation. Takes `{brands[], platforms[], count_per_combo, topic_seed?, job_id?}`. Brand voice system prompt enforces voice per brand. Returns inserted rows. |
+| `/api/social/analytics` | POST | Iterates published posts, queries Buffer GraphQL for stats, updates `buffer_stats` JSONB. |
+| `/api/cron/social-weekly` | GET | Monday 05:00 UTC Vercel cron. Creates `social_batch` job → QStash → Railway. Generates 2 posts per brand×platform combo (18 total). |
+| `/api/webhooks/shopify-product` | POST | HMAC-verified Shopify webhook. On new product → creates `social_batch` job for NCHO, Facebook+Instagram, 3 posts each. |
+
+### Worker
+
+`worker/src/jobs/social-batch.ts` — Receives job from QStash, calls `/api/social/generate` on Chapterhouse with the job payload, updates progress (10% → 100%). Simple delegator — all AI work happens in the Vercel route.
+
+### UI Components
+
+| Component | File | Purpose |
+|---|---|---|
+| `SocialReviewQueue` | `src/components/social-review-queue.tsx` | Posts grouped by brand w/ color badges. Inline text editing. Datetime picker + Buffer channel selector per post. Approve/Reject buttons. Supabase Realtime subscription for live updates. |
+| `SocialGeneratePanel` | `src/components/social-generate-panel.tsx` | Brand toggles (NCHO, SomersSchool, Alana Terry). Platform toggles (Facebook, Instagram, LinkedIn). Count slider. Topic seed input. Fires to `/api/social/generate`. |
+| `SocialAccountsPanel` | `src/components/social-accounts-panel.tsx` | "Sync from Buffer" button. Shows synced channels. Manual "Add Account" form for brand+platform→channel mapping. Active accounts table. |
+
+### Buffer Integration — Technical Details
+
+**API:** Buffer GraphQL API at `https://api.buffer.com`
+**Auth:** Bearer token via `BUFFER_ACCESS_TOKEN` env var
+**Account:** `accidentalakteacher` (free tier, 3 channel slots)
+**Buffer Organization ID:** `695b16d7995b518a94ef5f6a`
+
+Three GraphQL operations used:
+
+1. **GetOrganizations** — `query { account { organizations { id name ownerEmail } } }` — gets org ID for channel queries
+2. **GetChannels** — `query($organizationId: OrganizationId!) { channels(input: { organizationId }) { id name displayName service avatar isQueuePaused } }` — lists all connected channels
+3. **CreatePost** — `mutation($input: CreatePostInput!) { createPost(input: $input) { ... on PostActionSuccess { post { id text } } ... on MutationError { message } } }` — schedules a post. Input: `{text, channelId, schedulingType: "automatic", mode: "customSchedule", dueAt: ISO8601}`
+
+The old Buffer REST API (`api.bufferapp.com/1/`) is **dead and deprecated**. All routes use the GraphQL endpoint exclusively.
+
+### Brand Voice Rules (Enforced in System Prompt)
+
+| Brand | Voice | Rules |
+|---|---|---|
+| NCHO | Warm, teacher-curated, convicted | "Your child" not "your student." Lead with child, convert with practical. No: explore, journey, leverage, synergy. |
+| SomersSchool | Confident, secular, progress-visible | Zero faith language. Lead with visible progress. Alaska Statute 14.03.320. |
+| Alana Terry | Personal, vulnerable, story-forward | Written as Anna (woman's voice). Faith assumed, never preachy. Community, not audience. |
+
+---
+
 ## Navigation (BUILT ✅)
 
 Navigation uses a grouped accordion system defined in `src/lib/navigation.ts`:
@@ -615,7 +831,9 @@ Sidebar component in `src/components/chapterhouse-shell.tsx` renders accordion g
 
 ## Build History (ALL COMPLETE ✅)
 
-All 10 build steps completed across March 13-14 sessions. Deployed on Vercel.
+All build steps completed across March 13-15 sessions. Deployed on Vercel.
+
+**Phases 1-4 + Bonus (Sessions 6-7, March 13-14):**
 
 1. Database — `20260313_008_create_jobs.sql` migration applied, Realtime enabled
 2. Dependencies — `@upstash/qstash`, `@upstash/redis` installed
@@ -627,6 +845,16 @@ All 10 build steps completed across March 13-14 sessions. Deployed on Vercel.
 8. Batch job system — parent/child tracking, Resend email on completion
 9. n8n control panel — `/pipelines` + proxy routes
 10. Navigation + polish — accordion sidebar, tooltips, status badges, dynamic right rail
+
+**Phase 5: Social Media Automation (Session 8, March 15):**
+
+11. Database — 3 migrations (`010_social_accounts`, `011_social_posts`, `012_social_batch_job_type`) applied
+12. Social API routes — 8 routes: accounts (GET/POST), accounts/sync, posts (GET), posts/[id] (PATCH/DELETE), posts/[id]/approve, generate, analytics
+13. Social UI — 3-tab layout at `/social`: SocialReviewQueue, SocialGeneratePanel, SocialAccountsPanel
+14. Weekly cron — `/api/cron/social-weekly` (Monday 05:00 UTC), Vercel cron configured
+15. Shopify webhook — `/api/webhooks/shopify-product` with HMAC signature verification
+16. Railway worker — `social-batch.ts` job type added to worker dispatcher
+17. Buffer GraphQL migration — all 3 Buffer-calling routes rewritten from dead REST API to GraphQL. Commits: `66c20fa` (initial build, 1,370 lines) + `93c2ffd` (GraphQL migration, 252 lines)
 
 ---
 
@@ -689,5 +917,5 @@ Do this before the Railway worker exists. Validate the UI layer independently.
 
 ---
 
-*Document version: March 14, 2026 (Session 7)*
-*All four phases built and deployed. Session 7 additions: global cross-table search, inline URL fetching with article extraction (12K chars + SSRF protection + visual indicator), auto-learning (Claude extracts facts from chat → founder_notes), agentic research (Tavily → GPT-5.4 → auto-ingest), research metadata extraction (OG tags), daily brief email delivery (Resend → scott@nextchapterhomeschool.com), thread persistence with debounced auto-save. Session 6: Council of the Unserious 5-pass pipeline, national standards auto-alignment (CCSS-ELA/CCSS-M/NGSS/C3), HTML/PDF/DOCX export, accordion nav, tooltips, status badges, Council Mode in chat.*
+*Document version: March 15, 2026 (Session 8)*
+*All five phases built and deployed. Session 8 additions: Phase 5 Social Media Automation — replaces Sintra ($49/mo). Claude Sonnet 4.6 generates posts for 3 brands × 3 platforms with enforced brand voice. Human review gate (approve/edit/reject). Buffer GraphQL API integration (createPost mutation, GetChannels/GetOrganizations queries, analytics pull-back). Shopify webhook auto-generates NCHO product launch posts. Weekly Monday 05:00 UTC cron batch generation. Supabase Realtime updates review queue live. Edit history tracking on manual edits. 2 new tables (social_accounts, social_posts), 8 API routes + 1 cron + 1 webhook, 3 UI components, 1 Railway worker job type, 3 migrations. All Buffer routes migrated from dead REST API (api.bufferapp.com/1/) to GraphQL (api.buffer.com). Full system audit and documentation. Session 7: global cross-table search, inline URL fetching, auto-learning, agentic research, research metadata extraction, daily brief email delivery, thread persistence. Session 6: Council of the Unserious 5-pass pipeline, national standards auto-alignment, HTML/PDF/DOCX export, accordion nav, tooltips, status badges, Council Mode in chat.*
