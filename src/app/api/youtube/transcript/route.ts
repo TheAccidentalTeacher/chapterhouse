@@ -1,4 +1,6 @@
 import { YoutubeTranscript } from "youtube-transcript";
+import { Client as QStashClient } from "@upstash/qstash";
+import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
 import { z } from "zod";
 
 // --- Zod schema ---
@@ -649,54 +651,61 @@ export async function POST(req: Request) {
     }
     attempts.push({ tier: "innertube", result: "failed", ms: Date.now() - t });
 
-    // Fallback chain (only if enabled)
-    if (fallbackToAI) {
-      // Fallback 2: Gemini (YouTube URL via fileData)
-      console.log("[transcript] Innertube failed, trying Gemini...");
-      t = Date.now();
-      const geminiResult = await fetchGeminiTranscript(videoId);
-      if (geminiResult) {
-        attempts.push({ tier: "gemini-transcript", result: "success", ms: Date.now() - t });
-        return Response.json({ ...buildResponse(geminiResult, "gemini"), attempts });
-      }
-      attempts.push({ tier: "gemini-transcript", result: process.env.GEMINI_API_KEY ? "api-call-failed" : "no-api-key", ms: Date.now() - t });
+    // Both fast tiers failed — hand off to Railway worker via QStash
+    // The worker runs tiers 3-6 (Gemini transcript, Whisper, Gemini analysis, Claude synthesis)
+    // with no serverless timeout limit.
+    if (fallbackToAI && process.env.QSTASH_TOKEN && process.env.RAILWAY_WORKER_URL) {
+      try {
+        const supabase = getSupabaseServiceRoleClient();
+        if (!supabase) throw new Error("Supabase service client unavailable");
+        const { data: job, error: jobError } = await supabase
+          .from("jobs")
+          .insert({
+            type: "youtube_transcript",
+            label: metadata?.title ? `YouTube: ${metadata.title.slice(0, 80)}` : `YouTube: ${videoId}`,
+            input_payload: { videoId, metadata },
+            status: "queued",
+          })
+          .select()
+          .single();
 
-      // Fallback 3: Whisper (download + STT — fragile on serverless)
-      console.log("[transcript] Gemini failed, trying Whisper...");
-      t = Date.now();
-      const whisperResult = await fetchWhisperTranscript(videoId);
-      if (whisperResult) {
-        attempts.push({ tier: "whisper", result: "success", ms: Date.now() - t });
-        return Response.json({ ...buildResponse(whisperResult, "whisper"), attempts });
-      }
-      attempts.push({ tier: "whisper", result: process.env.OPENAI_API_KEY ? "api-call-failed" : "no-api-key", ms: Date.now() - t });
+        if (!jobError && job) {
+          const qstash = new QStashClient({ token: process.env.QSTASH_TOKEN });
+          await qstash.publishJSON({
+            url: `${process.env.RAILWAY_WORKER_URL}/process-job`,
+            body: { jobId: job.id, type: "youtube_transcript", payload: { videoId, metadata } },
+            retries: 3,
+          });
 
-      // Fallback 4: Gemini Video Analysis (educational analysis, not verbatim transcript)
-      console.log("[transcript] Whisper failed, trying Gemini video analysis...");
-      t = Date.now();
-      const analysisResult = await fetchGeminiVideoAnalysis(videoId, metadata);
-      if (analysisResult) {
-        attempts.push({ tier: "gemini-analysis", result: "success", ms: Date.now() - t });
-        return Response.json({ ...buildResponse(analysisResult, "gemini-analysis"), attempts });
-      }
-      attempts.push({ tier: "gemini-analysis", result: process.env.GEMINI_API_KEY ? "api-call-failed" : "no-api-key", ms: Date.now() - t });
-
-      // Fallback 5: Metadata Synthesis via Claude (uses title + description)
-      if (metadata) {
-        console.log("[transcript] Gemini analysis failed, trying metadata synthesis...");
-        t = Date.now();
-        const synthesisResult = await synthesizeFromMetadata(metadata);
-        if (synthesisResult) {
-          attempts.push({ tier: "metadata-synthesis", result: "success", ms: Date.now() - t });
-          return Response.json({ ...buildResponse(synthesisResult, "metadata-synthesis"), attempts });
+          return Response.json({
+            jobId: job.id,
+            pending: true,
+            videoId,
+            title: metadata?.title ?? "",
+            channelName: metadata?.channelName ?? "",
+            duration: metadata?.duration ?? "",
+            transcript: "",
+            segments: [],
+            source: "none" as const,
+            metadata: metadata
+              ? {
+                  viewCount: metadata.viewCount,
+                  publishedAt: metadata.publishedAt,
+                  thumbnailUrl: metadata.thumbnailUrl,
+                  description: metadata.description,
+                }
+              : null,
+            attempts,
+          });
         }
-        attempts.push({ tier: "metadata-synthesis", result: process.env.ANTHROPIC_API_KEY ? "api-call-failed" : "no-api-key", ms: Date.now() - t });
-      } else {
-        attempts.push({ tier: "metadata-synthesis", result: "no-metadata-available" });
+      } catch (jobErr) {
+        console.warn("[transcript] Failed to create background job:", jobErr);
+        // Fall through to the empty-transcript response below
       }
-    } else {
-      attempts.push({ tier: "ai-fallbacks", result: "disabled" });
     }
+
+    // QStash not configured or job creation failed — return empty transcript with metadata
+    attempts.push({ tier: "ai-fallbacks", result: fallbackToAI ? "qstash-unavailable" : "disabled" });
 
     // ALL transcript methods failed — still return metadata so the UI can show the video
     console.warn("[transcript] All methods failed for video:", videoId, JSON.stringify(attempts));

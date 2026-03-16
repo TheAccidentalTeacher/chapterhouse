@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Search,
   Link,
@@ -10,6 +10,8 @@ import {
   Clock,
   Calendar,
 } from "lucide-react";
+import { getSupabaseBrowserClient } from "@/lib/supabase";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 
 export type VideoMeta = {
   videoId: string;
@@ -72,10 +74,77 @@ export default function YoutubeInput({
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState("");
+  const [pendingMessage, setPendingMessage] = useState("");
+  const channelRef = useRef<RealtimeChannel | null>(null);
+
+  // Clean up Realtime subscription when component unmounts
+  useEffect(() => {
+    return () => {
+      if (channelRef.current) {
+        const supabase = getSupabaseBrowserClient();
+        if (supabase) supabase.removeChannel(channelRef.current);
+      }
+    };
+  }, []);
+
+  function watchJob(jobId: string, partialVideo: VideoMeta) {
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) {
+      // No Supabase client — fall back to polling
+      setPendingMessage("Processing transcript in background...");
+      return;
+    }
+    setPendingMessage("Starting background processing...");
+
+    // Poll once in case job completed before subscription is ready
+    supabase
+      .from("jobs")
+      .select("status, progress_message, output")
+      .eq("id", jobId)
+      .single()
+      .then(({ data }: { data: { status: string; progress_message: string; output: Record<string, unknown> | null } | null }) => {
+        if (data?.status === "completed" && data.output) {
+          setPendingMessage("");
+          setIsLoading(false);
+          onVideoLoaded({ ...partialVideo, ...(data.output as Partial<VideoMeta>) } as VideoMeta);
+        }
+      });
+
+    const channel = supabase
+      .channel(`yt-job-${jobId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "jobs", filter: `id=eq.${jobId}` },
+        (payload: { new: { status: string; progress_message: string; output: Record<string, unknown> | null } }) => {
+          const row = payload.new;
+          if (row.progress_message) setPendingMessage(row.progress_message);
+
+          if (row.status === "completed") {
+            supabase.removeChannel(channel);
+            channelRef.current = null;
+            setPendingMessage("");
+            setIsLoading(false);
+            const out = row.output ?? {};
+            onVideoLoaded({ ...partialVideo, ...(out as Partial<VideoMeta>) } as VideoMeta);
+          } else if (row.status === "failed") {
+            supabase.removeChannel(channel);
+            channelRef.current = null;
+            setPendingMessage("");
+            setIsLoading(false);
+            setError("Transcript processing failed. The video is still available without a transcript.");
+            onVideoLoaded(partialVideo);
+          }
+        }
+      )
+      .subscribe();
+
+    channelRef.current = channel;
+  }
 
   async function handleFetchTranscript(videoUrl: string) {
     setError("");
     setIsLoading(true);
+    setPendingMessage("");
     try {
       const res = await fetch("/api/youtube/transcript", {
         method: "POST",
@@ -85,17 +154,25 @@ export default function YoutubeInput({
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? "Failed to fetch transcript");
+        setIsLoading(false);
         return;
       }
-      // Show warning if transcript failed but video metadata is available
-      if (data.transcriptError) {
-        // Don't show error in the search area — the transcript viewer handles this
-        // with its own warning banner
+
+      // Background job path: fast tiers missed, worker handling tiers 3-6
+      if (data.pending && data.jobId) {
+        const partialVideo = data as VideoMeta;
+        // Show the video card immediately with what we have (title, thumbnail, etc.)
+        onVideoLoaded(partialVideo);
+        // Keep isLoading=true and watch the job for transcript completion
+        watchJob(data.jobId, partialVideo);
+        return;
       }
+
+      // Fast path: captions or innertube succeeded
+      setIsLoading(false);
       onVideoLoaded(data as VideoMeta);
     } catch {
       setError("Network error fetching transcript");
-    } finally {
       setIsLoading(false);
     }
   }
@@ -265,6 +342,14 @@ export default function YoutubeInput({
       {/* Error */}
       {error && (
         <p className="mt-3 text-sm text-danger">{error}</p>
+      )}
+
+      {/* Background job progress */}
+      {pendingMessage && (
+        <div className="mt-3 flex items-center gap-2 rounded-xl bg-accent/10 px-4 py-2.5 text-sm text-accent">
+          <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin" />
+          <span>{pendingMessage}</span>
+        </div>
       )}
     </div>
   );

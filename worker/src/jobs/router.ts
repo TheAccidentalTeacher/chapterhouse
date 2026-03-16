@@ -1,5 +1,6 @@
 import { runCurriculumFactory, type CurriculumJobPayload } from "./curriculum-factory";
 import { runSocialBatch, type SocialBatchPayload } from "./social-batch";
+import { runYoutubeTranscript, type YoutubeTranscriptPayload } from "./youtube-transcript";
 import { updateProgress } from "../lib/progress";
 
 export async function processJob(
@@ -30,6 +31,10 @@ export async function processJob(
 
     case "social_batch":
       await runSocialBatch(jobId, payload as unknown as SocialBatchPayload);
+      break;
+
+    case "youtube_transcript":
+      await runYoutubeTranscript(jobId, payload as unknown as YoutubeTranscriptPayload);
       break;
 
     default:
