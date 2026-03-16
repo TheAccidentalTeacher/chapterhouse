@@ -20,6 +20,7 @@ export interface YoutubeTranscriptPayload {
 }
 
 type TranscriptResult = { segments: { start: number; text: string }[]; text: string };
+type AttemptRecord = { tier: string; result: string; detail?: string };
 
 const execFileAsync = promisify(execFile);
 
@@ -28,7 +29,8 @@ function buildOutput(
   result: TranscriptResult,
   source: string,
   metadata: YoutubeTranscriptPayload["metadata"],
-  transcriptError?: string
+  transcriptError?: string,
+  attempts?: AttemptRecord[]
 ) {
   return {
     videoId,
@@ -46,6 +48,7 @@ function buildOutput(
           description: metadata.description,
         }
       : null,
+    ...(attempts ? { attempts } : {}),
     ...(transcriptError && { transcriptError }),
   };
 }
@@ -155,7 +158,7 @@ async function fetchYtDlpTranscript(videoId: string): Promise<TranscriptResult |
   }
 }
 
-async function downloadAudioAsWav(videoId: string): Promise<string | null> {
+async function downloadAudioAsWav(videoId: string): Promise<{ wavPath: string | null; error?: string }> {
   try {
     return await withTempDir("yt-audio-", async (tempDir) => {
       const url = getYoutubeUrl(videoId);
@@ -180,7 +183,7 @@ async function downloadAudioAsWav(videoId: string): Promise<string | null> {
         .filter((file) => file.startsWith("audio."))
         .map((file) => path.join(tempDir, file))[0];
 
-      if (!sourceAudio) return null;
+      if (!sourceAudio) return { wavPath: null, error: "yt-dlp did not produce an audio file" };
 
       const wavPath = path.join(tempDir, "audio.wav");
       await runCommand(
@@ -202,11 +205,12 @@ async function downloadAudioAsWav(videoId: string): Promise<string | null> {
       const wavBuffer = await readFile(wavPath);
       const finalPath = path.join(os.tmpdir(), `chapterhouse-${videoId}-${Date.now()}.wav`);
       await writeFile(finalPath, wavBuffer);
-      return finalPath;
+      return { wavPath: finalPath };
     });
   } catch (error) {
-    console.warn("[youtube-transcript] audio download/conversion failed:", error instanceof Error ? error.message : error);
-    return null;
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn("[youtube-transcript] audio download/conversion failed:", message);
+    return { wavPath: null, error: message };
   }
 }
 
@@ -487,64 +491,79 @@ export async function runYoutubeTranscript(jobId: string, payload: YoutubeTransc
   const { videoId, metadata } = payload;
 
   let wavPath: string | null = null;
+  const attempts: AttemptRecord[] = [];
 
   try {
     await updateProgress(jobId, 15, "Tier 3 of 6 - Extracting actual subtitles with yt-dlp...", "running");
     const subtitleResult = await fetchYtDlpTranscript(videoId);
     if (subtitleResult) {
+      attempts.push({ tier: "yt-dlp-subtitles", result: "success" });
       await updateProgress(
         jobId,
         100,
         "Transcript extracted from actual YouTube subtitles",
         "completed",
-        buildOutput(videoId, subtitleResult, "captions", metadata)
+        buildOutput(videoId, subtitleResult, "captions", metadata, undefined, attempts)
       );
       return;
     }
+    attempts.push({ tier: "yt-dlp-subtitles", result: "failed" });
 
     await updateProgress(jobId, 30, "Tier 4 of 6 - Downloading actual audio for transcription...", "running");
-    wavPath = await downloadAudioAsWav(videoId);
+    const audioDownload = await downloadAudioAsWav(videoId);
+    wavPath = audioDownload.wavPath;
+    if (!wavPath) {
+      attempts.push({ tier: "audio-download", result: "failed", detail: audioDownload.error });
+    } else {
+      attempts.push({ tier: "audio-download", result: "success" });
+    }
 
     if (wavPath) {
       await updateProgress(jobId, 50, "Tier 5 of 6 - Azure Speech transcribing actual video audio...", "running");
       const azureResult = await transcribeWithAzureSpeech(wavPath);
       if (azureResult) {
+        attempts.push({ tier: "azure-speech", result: "success" });
         await updateProgress(
           jobId,
           100,
           "Transcript extracted from actual audio via Azure Speech",
           "completed",
-          buildOutput(videoId, azureResult, "azure-speech", metadata)
+          buildOutput(videoId, azureResult, "azure-speech", metadata, undefined, attempts)
         );
         return;
       }
+      attempts.push({ tier: "azure-speech", result: "failed" });
 
       await updateProgress(jobId, 70, "Tier 5b of 6 - OpenAI transcribing actual video audio...", "running");
       const openAiResult = await transcribeWithOpenAI(wavPath);
       if (openAiResult) {
+        attempts.push({ tier: "openai-audio", result: "success" });
         await updateProgress(
           jobId,
           100,
           "Transcript extracted from actual audio via OpenAI",
           "completed",
-          buildOutput(videoId, openAiResult, "openai-audio", metadata)
+          buildOutput(videoId, openAiResult, "openai-audio", metadata, undefined, attempts)
         );
         return;
       }
+      attempts.push({ tier: "openai-audio", result: "failed" });
     }
 
     await updateProgress(jobId, 85, "Tier 6 of 6 - Gemini visual analysis from the actual video...", "running");
     const analysisResult = await fetchGeminiVideoAnalysis(videoId, metadata);
     if (analysisResult) {
+      attempts.push({ tier: "gemini-analysis", result: "success" });
       await updateProgress(
         jobId,
         100,
         "Educational analysis complete from actual video analysis",
         "completed",
-        buildOutput(videoId, analysisResult, "gemini-analysis", metadata)
+        buildOutput(videoId, analysisResult, "gemini-analysis", metadata, undefined, attempts)
       );
       return;
     }
+    attempts.push({ tier: "gemini-analysis", result: "failed" });
 
     await updateProgress(jobId, 95, "All actual-video fallbacks exhausted...", "running");
 
@@ -558,7 +577,8 @@ export async function runYoutubeTranscript(jobId: string, payload: YoutubeTransc
         { segments: [], text: "" },
         "none",
         metadata,
-        "All actual-video transcript methods failed. No usable subtitles, audio transcription, or video analysis were produced."
+        "All actual-video transcript methods failed. No usable subtitles, audio transcription, or video analysis were produced.",
+        attempts
       )
     );
   } finally {
