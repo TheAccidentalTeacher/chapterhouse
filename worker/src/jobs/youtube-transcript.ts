@@ -87,8 +87,8 @@ No headers, no summaries, no additional commentary. Just the raw transcript with
 
     if (!res.ok) return null;
 
-    const data = await res.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    const data = (await res.json()) as Record<string, unknown>;
+    const text = (data.candidates as Array<{content:{parts:Array<{text:string}>}}>)?.[0]?.content?.parts?.[0]?.text ?? "";
     if (!text || text.length < 50) return null;
 
     // Parse [MM:SS] timestamps into segments
@@ -152,7 +152,7 @@ async function fetchWhisperTranscript(videoId: string): Promise<TranscriptResult
 
     if (!whisperRes.ok) return null;
 
-    const whisperData = await whisperRes.json();
+    const whisperData = (await whisperRes.json()) as { text?: string; segments?: Array<{ start: number; text: string }> };
     const segments = (whisperData.segments ?? []).map(
       (s: { start: number; text: string }) => ({ start: Math.round(s.start), text: s.text.trim() })
     );
@@ -234,8 +234,8 @@ Be thorough and detailed. This analysis will be used to generate quizzes, lesson
 
     if (!res.ok) return null;
 
-    const data = await res.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    const data = (await res.json()) as Record<string, unknown>;
+    const text = (data.candidates as Array<{content:{parts:Array<{text:string}>}}>)?.[0]?.content?.parts?.[0]?.text ?? "";
     if (!text || text.length < 100) return null;
 
     return { segments: [{ start: 0, text }], text };
