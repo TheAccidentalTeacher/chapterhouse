@@ -87,7 +87,7 @@ export default function YoutubePage() {
           )}
 
           {/* Curriculum tools */}
-          {video && (
+          {video && video.transcript && (
             <div>
               <h2 className="mb-3 text-lg font-semibold text-foreground">
                 Curriculum Tools

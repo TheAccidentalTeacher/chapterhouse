@@ -48,8 +48,10 @@ function formatTimestamp(seconds: number): string {
 
 const SOURCE_BADGES: Record<string, { label: string; color: string }> = {
   captions: { label: "Captions", color: "bg-success/15 text-success" },
+  innertube: { label: "Innertube", color: "bg-success/15 text-success" },
   gemini: { label: "Gemini AI", color: "bg-warning/15 text-warning" },
   whisper: { label: "Whisper STT", color: "bg-accent/15 text-accent" },
+  none: { label: "No Transcript", color: "bg-danger/15 text-danger" },
 };
 
 export default function YoutubeTranscriptViewer({
@@ -60,7 +62,8 @@ export default function YoutubeTranscriptViewer({
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const wordCount = video.transcript.split(/\s+/).length;
+  const hasTranscript = video.transcript && video.transcript.length > 0;
+  const wordCount = hasTranscript ? video.transcript.split(/\s+/).length : 0;
   const readTimeMin = Math.ceil(wordCount / 200);
   const badge = SOURCE_BADGES[video.source] ?? SOURCE_BADGES.captions;
 
@@ -115,22 +118,33 @@ export default function YoutubeTranscriptViewer({
             <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${badge.color}`}>
               {badge.label}
             </span>
-            <span className="text-muted">
-              {wordCount.toLocaleString()} words · ~{readTimeMin} min read
-            </span>
+            {hasTranscript && (
+              <span className="text-muted">
+                {wordCount.toLocaleString()} words · ~{readTimeMin} min read
+              </span>
+            )}
           </div>
         </div>
       </div>
 
+      {/* No transcript warning */}
+      {!hasTranscript && (
+        <div className="rounded-2xl border border-warning/30 bg-warning/5 px-4 py-3 text-sm text-warning">
+          Transcript unavailable for this video. You can still watch it on YouTube and use the description for context.
+        </div>
+      )}
+
       {/* Action bar */}
       <div className="flex items-center gap-2">
-        <button
-          onClick={handleCopy}
-          className="flex items-center gap-1.5 rounded-xl border border-border/70 px-3 py-1.5 text-xs font-medium text-muted transition hover:text-foreground"
-        >
-          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-          {copied ? "Copied" : "Copy Transcript"}
-        </button>
+        {hasTranscript && (
+          <button
+            onClick={handleCopy}
+            className="flex items-center gap-1.5 rounded-xl border border-border/70 px-3 py-1.5 text-xs font-medium text-muted transition hover:text-foreground"
+          >
+            {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            {copied ? "Copied" : "Copy Transcript"}
+          </button>
+        )}
         <a
           href={`https://www.youtube.com/watch?v=${video.videoId}`}
           target="_blank"
@@ -153,6 +167,7 @@ export default function YoutubeTranscriptViewer({
       </div>
 
       {/* Transcript body */}
+      {hasTranscript && (
       <div>
         <button
           onClick={() => setExpanded(!expanded)}
@@ -195,6 +210,7 @@ export default function YoutubeTranscriptViewer({
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

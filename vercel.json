@@ -27,6 +27,15 @@
     },
     "src/app/api/cron/social-weekly/route.ts": {
       "maxDuration": 30
+    },
+    "src/app/api/youtube/transcript/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/youtube/analyze/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/youtube/batch/route.ts": {
+      "maxDuration": 60
     }
   }
 }

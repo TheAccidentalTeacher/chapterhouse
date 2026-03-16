@@ -103,19 +103,158 @@ async function fetchCaptions(
     const text = mapped.map((s) => s.text).join(" ");
     return { segments: mapped, text };
   } catch (error) {
-    console.warn("Caption fetch failed:", error);
+    console.warn("[transcript] Caption fetch failed:", error instanceof Error ? error.message : error);
     return null;
   }
 }
 
-/** Fallback 1: Google Gemini 2.0 Flash — send video URL for AI transcript */
+/** Fallback 1: YouTube's innertube API directly — more reliable from cloud IPs */
+async function fetchInnertubeTranscript(
+  videoId: string,
+): Promise<{ segments: { start: number; text: string }[]; text: string } | null> {
+  try {
+    // Hit YouTube's innertube player endpoint directly with WEB client
+    const playerRes = await fetch(
+      "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        },
+        body: JSON.stringify({
+          context: {
+            client: {
+              clientName: "WEB",
+              clientVersion: "2.20260301.00.00",
+            },
+          },
+          videoId,
+        }),
+        signal: AbortSignal.timeout(15_000),
+      },
+    );
+
+    if (!playerRes.ok) {
+      console.warn("[transcript] Innertube player failed:", playerRes.status);
+      return null;
+    }
+
+    const playerData = await playerRes.json();
+    const captionTracks =
+      playerData?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+
+    if (!Array.isArray(captionTracks) || captionTracks.length === 0) {
+      console.warn("[transcript] No caption tracks found in innertube response");
+      return null;
+    }
+
+    // Pick the best track: prefer English, then first available
+    const track =
+      captionTracks.find(
+        (t: { languageCode: string }) => t.languageCode === "en",
+      ) ??
+      captionTracks.find(
+        (t: { languageCode: string }) => t.languageCode?.startsWith("en"),
+      ) ??
+      captionTracks[0];
+
+    const trackUrl = track.baseUrl;
+    if (!trackUrl) return null;
+
+    // Validate URL is from YouTube
+    try {
+      const parsed = new URL(trackUrl);
+      if (!parsed.hostname.endsWith(".youtube.com")) {
+        console.warn("[transcript] Caption track URL not from YouTube");
+        return null;
+      }
+    } catch {
+      return null;
+    }
+
+    const captionRes = await fetch(trackUrl, {
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!captionRes.ok) return null;
+
+    const xml = await captionRes.text();
+
+    // Parse XML transcript — handles both <text> and <p> formats
+    const segments: { start: number; text: string }[] = [];
+
+    // Try <p t="offset" d="duration"> format first (newer)
+    const pRegex = /<p\s+t="(\d+)"\s+d="(\d+)"[^>]*>([\s\S]*?)<\/p>/g;
+    let match;
+    while ((match = pRegex.exec(xml)) !== null) {
+      const offset = parseInt(match[1], 10);
+      let segText = match[3];
+      // Extract text from <s> tags if present
+      const sRegex = /<s[^>]*>([^<]*)<\/s>/g;
+      let sMatch;
+      let combined = "";
+      while ((sMatch = sRegex.exec(segText)) !== null) {
+        combined += sMatch[1];
+      }
+      if (combined) segText = combined;
+      else segText = segText.replace(/<[^>]+>/g, "");
+      segText = decodeXmlEntities(segText).trim();
+      if (segText) {
+        segments.push({ start: offset / 1000, text: segText });
+      }
+    }
+
+    // Fallback to <text start="X" dur="Y"> format (older)
+    if (segments.length === 0) {
+      const textRegex = /<text start="([^"]*)" dur="([^"]*)">([^<]*)<\/text>/g;
+      while ((match = textRegex.exec(xml)) !== null) {
+        const start = parseFloat(match[1]);
+        const text = decodeXmlEntities(match[3]).trim();
+        if (text) segments.push({ start, text });
+      }
+    }
+
+    if (segments.length === 0) return null;
+
+    return {
+      segments,
+      text: segments.map((s) => s.text).join(" "),
+    };
+  } catch (error) {
+    console.warn("[transcript] Innertube fallback failed:", error instanceof Error ? error.message : error);
+    return null;
+  }
+}
+
+function decodeXmlEntities(text: string): string {
+  return text
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) =>
+      String.fromCodePoint(parseInt(hex, 16)),
+    )
+    .replace(/&#(\d+);/g, (_, dec) =>
+      String.fromCodePoint(parseInt(dec, 10)),
+    );
+}
+
+/** Fallback 2: Google Gemini 2.0 Flash — process YouTube video via fileData */
 async function fetchGeminiTranscript(
   videoId: string,
 ): Promise<{ segments: { start: number; text: string }[]; text: string } | null> {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) {
+    console.warn("[transcript] GEMINI_API_KEY not set — skipping Gemini fallback");
+    return null;
+  }
 
   try {
+    // Gemini 2.0 Flash supports YouTube URLs as fileData content parts
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
       {
@@ -126,7 +265,13 @@ async function fetchGeminiTranscript(
             {
               parts: [
                 {
-                  text: `Watch this YouTube video and produce a complete, accurate transcript of everything said. Include timestamps in [MM:SS] format at the start of each paragraph. Be thorough — capture every word spoken. Video URL: https://www.youtube.com/watch?v=${videoId}`,
+                  fileData: {
+                    fileUri: `https://www.youtube.com/watch?v=${videoId}`,
+                    mimeType: "video/*",
+                  },
+                },
+                {
+                  text: "Produce a complete, accurate transcript of everything said in this video. Include timestamps in [MM:SS] format at the start of each paragraph. Be thorough — capture every word spoken.",
                 },
               ],
             },
@@ -141,7 +286,8 @@ async function fetchGeminiTranscript(
     );
 
     if (!res.ok) {
-      console.warn("Gemini transcript failed:", res.status);
+      const errBody = await res.text().catch(() => "");
+      console.warn("[transcript] Gemini failed:", res.status, errBody.slice(0, 200));
       return null;
     }
 
@@ -172,17 +318,20 @@ async function fetchGeminiTranscript(
 
     return { segments, text: segments.map((s) => s.text).join(" ") };
   } catch (error) {
-    console.warn("Gemini transcript error:", error);
+    console.warn("[transcript] Gemini error:", error instanceof Error ? error.message : error);
     return null;
   }
 }
 
-/** Fallback 2: OpenAI Whisper — download audio, transcribe via STT */
+/** Fallback 3: OpenAI Whisper — download audio, transcribe via STT */
 async function fetchWhisperTranscript(
   videoId: string,
 ): Promise<{ segments: { start: number; text: string }[]; text: string } | null> {
   const openaiKey = process.env.OPENAI_API_KEY;
-  if (!openaiKey) return null;
+  if (!openaiKey) {
+    console.warn("[transcript] OPENAI_API_KEY not set — skipping Whisper fallback");
+    return null;
+  }
 
   try {
     // Dynamic import to avoid bundling ytdl-core on every request
@@ -198,7 +347,19 @@ async function fetchWhisperTranscript(
     });
 
     if (!audioFormat?.url) {
-      console.warn("No audio format found for Whisper fallback");
+      console.warn("[transcript] No audio format found for Whisper fallback");
+      return null;
+    }
+
+    // Validate the audio URL is from a known Google/YouTube CDN
+    try {
+      const audioUrlParsed = new URL(audioFormat.url);
+      const allowedHosts = [".googlevideo.com", ".youtube.com", ".ytimg.com"];
+      if (!allowedHosts.some((h) => audioUrlParsed.hostname.endsWith(h))) {
+        console.warn("[transcript] Audio URL not from Google CDN");
+        return null;
+      }
+    } catch {
       return null;
     }
 
@@ -232,7 +393,7 @@ async function fetchWhisperTranscript(
     );
 
     if (!whisperRes.ok) {
-      console.warn("Whisper API error:", whisperRes.status);
+      console.warn("[transcript] Whisper API error:", whisperRes.status);
       return null;
     }
 
@@ -249,7 +410,7 @@ async function fetchWhisperTranscript(
       text: whisperData.text ?? segments.map((s: { text: string }) => s.text).join(" "),
     };
   } catch (error) {
-    console.warn("Whisper transcript error:", error);
+    console.warn("[transcript] Whisper error:", error instanceof Error ? error.message : error);
     return null;
   }
 }
@@ -284,80 +445,78 @@ export async function POST(req: Request) {
       fetchCaptions(videoId, language),
     ]);
 
-    // Try primary captions
+    // Helper to build the response shape
+    const buildResponse = (
+      transcript: { segments: { start: number; text: string }[]; text: string },
+      source: string,
+    ) => ({
+      videoId,
+      title: metadata?.title ?? "",
+      channelName: metadata?.channelName ?? "",
+      duration: metadata?.duration ?? "",
+      transcript: transcript.text,
+      segments: transcript.segments,
+      source,
+      metadata: metadata
+        ? {
+            viewCount: metadata.viewCount,
+            publishedAt: metadata.publishedAt,
+            thumbnailUrl: metadata.thumbnailUrl,
+            description: metadata.description,
+          }
+        : null,
+    });
+
+    // Try primary captions (youtube-transcript npm)
     if (captionResult) {
-      return Response.json({
-        videoId,
-        title: metadata?.title ?? "",
-        channelName: metadata?.channelName ?? "",
-        duration: metadata?.duration ?? "",
-        transcript: captionResult.text,
-        segments: captionResult.segments,
-        source: "captions" as const,
-        metadata: metadata
-          ? {
-              viewCount: metadata.viewCount,
-              publishedAt: metadata.publishedAt,
-              thumbnailUrl: metadata.thumbnailUrl,
-              description: metadata.description,
-            }
-          : null,
-      });
+      return Response.json(buildResponse(captionResult, "captions"));
+    }
+
+    // Fallback 1: Direct innertube API (more reliable from cloud IPs)
+    console.log("[transcript] Captions failed, trying innertube...");
+    const innertubeResult = await fetchInnertubeTranscript(videoId);
+    if (innertubeResult) {
+      return Response.json(buildResponse(innertubeResult, "innertube"));
     }
 
     // Fallback chain (only if enabled)
     if (fallbackToAI) {
-      // Fallback 1: Gemini
+      // Fallback 2: Gemini (YouTube URL via fileData)
+      console.log("[transcript] Innertube failed, trying Gemini...");
       const geminiResult = await fetchGeminiTranscript(videoId);
       if (geminiResult) {
-        return Response.json({
-          videoId,
-          title: metadata?.title ?? "",
-          channelName: metadata?.channelName ?? "",
-          duration: metadata?.duration ?? "",
-          transcript: geminiResult.text,
-          segments: geminiResult.segments,
-          source: "gemini" as const,
-          metadata: metadata
-            ? {
-                viewCount: metadata.viewCount,
-                publishedAt: metadata.publishedAt,
-                thumbnailUrl: metadata.thumbnailUrl,
-                description: metadata.description,
-              }
-            : null,
-        });
+        return Response.json(buildResponse(geminiResult, "gemini"));
       }
 
-      // Fallback 2: Whisper
+      // Fallback 3: Whisper (download + STT — fragile on serverless)
+      console.log("[transcript] Gemini failed, trying Whisper...");
       const whisperResult = await fetchWhisperTranscript(videoId);
       if (whisperResult) {
-        return Response.json({
-          videoId,
-          title: metadata?.title ?? "",
-          channelName: metadata?.channelName ?? "",
-          duration: metadata?.duration ?? "",
-          transcript: whisperResult.text,
-          segments: whisperResult.segments,
-          source: "whisper" as const,
-          metadata: metadata
-            ? {
-                viewCount: metadata.viewCount,
-                publishedAt: metadata.publishedAt,
-                thumbnailUrl: metadata.thumbnailUrl,
-                description: metadata.description,
-              }
-            : null,
-        });
+        return Response.json(buildResponse(whisperResult, "whisper"));
       }
     }
 
-    return Response.json(
-      {
-        error: "Could not retrieve transcript. No captions available and AI fallbacks failed or are disabled.",
-      },
-      { status: 404 },
-    );
+    // ALL transcript methods failed — still return metadata so the UI can show the video
+    console.warn("[transcript] All methods failed for video:", videoId);
+    return Response.json({
+      videoId,
+      title: metadata?.title ?? "",
+      channelName: metadata?.channelName ?? "",
+      duration: metadata?.duration ?? "",
+      transcript: "",
+      segments: [],
+      source: "none",
+      metadata: metadata
+        ? {
+            viewCount: metadata.viewCount,
+            publishedAt: metadata.publishedAt,
+            thumbnailUrl: metadata.thumbnailUrl,
+            description: metadata.description,
+          }
+        : null,
+      transcriptError:
+        "Could not retrieve transcript. No captions available and AI fallbacks failed or are disabled.",
+    });
   } catch (error) {
     console.error("YouTube transcript error:", error);
     return Response.json(

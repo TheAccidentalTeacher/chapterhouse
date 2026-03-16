@@ -18,13 +18,14 @@ export type VideoMeta = {
   duration: string;
   transcript: string;
   segments: { start: number; text: string }[];
-  source: "captions" | "gemini" | "whisper";
+  source: "captions" | "innertube" | "gemini" | "whisper" | "none";
   metadata: {
     viewCount: number;
     publishedAt: string;
     thumbnailUrl: string;
     description: string;
   } | null;
+  transcriptError?: string;
 };
 
 type SearchResult = {
@@ -85,6 +86,10 @@ export default function YoutubeInput({
       if (!res.ok) {
         setError(data.error ?? "Failed to fetch transcript");
         return;
+      }
+      // Show warning if transcript failed but video metadata is available
+      if (data.transcriptError) {
+        setError(data.transcriptError);
       }
       onVideoLoaded(data as VideoMeta);
     } catch {
