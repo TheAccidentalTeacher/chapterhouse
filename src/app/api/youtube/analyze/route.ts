@@ -254,15 +254,15 @@ function getModelForType(outputType: string): ModelConfig {
     case "quiz":
     case "vocabulary":
     case "guided-notes":
-      return { provider: "anthropic", model: "claude-haiku-4-5-20250901", maxTokens: 4096 };
+      return { provider: "anthropic", model: "claude-haiku-4-5", maxTokens: 4096 };
     case "lesson-plan":
     case "discussion":
     case "dok-project":
     case "graphic-organizer":
     case "full-analysis":
-      return { provider: "anthropic", model: "claude-sonnet-4-20250514", maxTokens: 8192 };
+      return { provider: "anthropic", model: "claude-sonnet-4-6", maxTokens: 8192 };
     default:
-      return { provider: "anthropic", model: "claude-sonnet-4-20250514", maxTokens: 8192 };
+      return { provider: "anthropic", model: "claude-sonnet-4-6", maxTokens: 8192 };
   }
 }
 
