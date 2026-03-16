@@ -606,6 +606,10 @@ export async function POST(req: Request) {
       fetchCaptions(videoId, language),
     ]);
 
+    // Track which tiers were attempted for debugging
+    const attempts: { tier: string; result: string; ms?: number }[] = [];
+    const timerStart = Date.now();
+
     // Helper to build the response shape
     const buildResponse = (
       transcript: { segments: { start: number; text: string }[]; text: string },
@@ -630,51 +634,72 @@ export async function POST(req: Request) {
 
     // Try primary captions (youtube-transcript npm)
     if (captionResult) {
-      return Response.json(buildResponse(captionResult, "captions"));
+      attempts.push({ tier: "captions", result: "success", ms: Date.now() - timerStart });
+      return Response.json({ ...buildResponse(captionResult, "captions"), attempts });
     }
+    attempts.push({ tier: "captions", result: "no captions available", ms: Date.now() - timerStart });
 
     // Fallback 1: Direct innertube API (more reliable from cloud IPs)
     console.log("[transcript] Captions failed, trying innertube...");
+    let t = Date.now();
     const innertubeResult = await fetchInnertubeTranscript(videoId);
     if (innertubeResult) {
-      return Response.json(buildResponse(innertubeResult, "innertube"));
+      attempts.push({ tier: "innertube", result: "success", ms: Date.now() - t });
+      return Response.json({ ...buildResponse(innertubeResult, "innertube"), attempts });
     }
+    attempts.push({ tier: "innertube", result: "failed", ms: Date.now() - t });
 
     // Fallback chain (only if enabled)
     if (fallbackToAI) {
       // Fallback 2: Gemini (YouTube URL via fileData)
       console.log("[transcript] Innertube failed, trying Gemini...");
+      t = Date.now();
       const geminiResult = await fetchGeminiTranscript(videoId);
       if (geminiResult) {
-        return Response.json(buildResponse(geminiResult, "gemini"));
+        attempts.push({ tier: "gemini-transcript", result: "success", ms: Date.now() - t });
+        return Response.json({ ...buildResponse(geminiResult, "gemini"), attempts });
       }
+      attempts.push({ tier: "gemini-transcript", result: process.env.GEMINI_API_KEY ? "api-call-failed" : "no-api-key", ms: Date.now() - t });
 
       // Fallback 3: Whisper (download + STT — fragile on serverless)
       console.log("[transcript] Gemini failed, trying Whisper...");
+      t = Date.now();
       const whisperResult = await fetchWhisperTranscript(videoId);
       if (whisperResult) {
-        return Response.json(buildResponse(whisperResult, "whisper"));
+        attempts.push({ tier: "whisper", result: "success", ms: Date.now() - t });
+        return Response.json({ ...buildResponse(whisperResult, "whisper"), attempts });
       }
+      attempts.push({ tier: "whisper", result: process.env.OPENAI_API_KEY ? "api-call-failed" : "no-api-key", ms: Date.now() - t });
 
       // Fallback 4: Gemini Video Analysis (educational analysis, not verbatim transcript)
       console.log("[transcript] Whisper failed, trying Gemini video analysis...");
+      t = Date.now();
       const analysisResult = await fetchGeminiVideoAnalysis(videoId, metadata);
       if (analysisResult) {
-        return Response.json(buildResponse(analysisResult, "gemini-analysis"));
+        attempts.push({ tier: "gemini-analysis", result: "success", ms: Date.now() - t });
+        return Response.json({ ...buildResponse(analysisResult, "gemini-analysis"), attempts });
       }
+      attempts.push({ tier: "gemini-analysis", result: process.env.GEMINI_API_KEY ? "api-call-failed" : "no-api-key", ms: Date.now() - t });
 
       // Fallback 5: Metadata Synthesis via Claude (uses title + description)
       if (metadata) {
         console.log("[transcript] Gemini analysis failed, trying metadata synthesis...");
+        t = Date.now();
         const synthesisResult = await synthesizeFromMetadata(metadata);
         if (synthesisResult) {
-          return Response.json(buildResponse(synthesisResult, "metadata-synthesis"));
+          attempts.push({ tier: "metadata-synthesis", result: "success", ms: Date.now() - t });
+          return Response.json({ ...buildResponse(synthesisResult, "metadata-synthesis"), attempts });
         }
+        attempts.push({ tier: "metadata-synthesis", result: process.env.ANTHROPIC_API_KEY ? "api-call-failed" : "no-api-key", ms: Date.now() - t });
+      } else {
+        attempts.push({ tier: "metadata-synthesis", result: "no-metadata-available" });
       }
+    } else {
+      attempts.push({ tier: "ai-fallbacks", result: "disabled" });
     }
 
     // ALL transcript methods failed — still return metadata so the UI can show the video
-    console.warn("[transcript] All methods failed for video:", videoId);
+    console.warn("[transcript] All methods failed for video:", videoId, JSON.stringify(attempts));
     return Response.json({
       videoId,
       title: metadata?.title ?? "",
@@ -693,6 +718,7 @@ export async function POST(req: Request) {
         : null,
       transcriptError:
         "Could not retrieve transcript. No captions available and AI fallbacks failed or are disabled.",
+      attempts,
     });
   } catch (error) {
     console.error("YouTube transcript error:", error);

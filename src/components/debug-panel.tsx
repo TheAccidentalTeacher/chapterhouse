@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { X, ChevronUp, ChevronDown, Trash2, RefreshCw, Bug, Download, MessageSquare, Search, Activity } from "lucide-react";
+import { X, ChevronUp, ChevronDown, Trash2, RefreshCw, Bug, Download, MessageSquare, Search, Activity, Clipboard, Check } from "lucide-react";
 import { getEntries, clearLog, subscribe, sessionStats, type LogEntry, type LogLevel } from "@/lib/debug-log";
 
 function exportLog(entries: LogEntry[]) {
-  const text = entries.map(e =>
-    `[${new Date(e.ts).toISOString()}] [${e.level.toUpperCase()}] ${e.label}${e.durationMs !== undefined ? ` (${e.durationMs}ms)` : ""}${e.detail !== undefined ? "\n" + JSON.stringify(e.detail, null, 2) : ""}`
-  ).join("\n\n");
+  const text = buildLogText(entries);
   const blob = new Blob([text], { type: "text/plain" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -15,6 +13,31 @@ function exportLog(entries: LogEntry[]) {
   a.download = `chapterhouse-debug-${new Date().toISOString().slice(0,19).replace(/:/g,"-")}.txt`;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+function CopyButton({ entries }: { entries: LogEntry[] }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    const text = buildLogText(entries);
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  return (
+    <button
+      onClick={handleCopy}
+      title="Copy log to clipboard"
+      className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] transition ${copied ? "border-emerald-500/60 bg-emerald-500/15 text-emerald-400" : "border-border/40 text-muted hover:text-foreground"}`}
+    >
+      {copied ? <><Check className="h-2.5 w-2.5" /> Copied!</> : <><Clipboard className="h-2.5 w-2.5" /> Copy</>}
+    </button>
+  );
+}
+
+function buildLogText(entries: LogEntry[]): string {
+  return entries.map(e =>
+    `[${new Date(e.ts).toISOString()}] [${e.level.toUpperCase()}] ${e.label}${e.durationMs !== undefined ? ` (${e.durationMs}ms)` : ""}${e.detail !== undefined ? "\n" + JSON.stringify(e.detail, null, 2) : ""}`
+  ).join("\n\n");
 }
 
 function sendToChat(entries: LogEntry[]) {
@@ -340,6 +363,7 @@ export function DebugPanel() {
                       </button>
                     ))}
                     <div className="ml-auto flex items-center gap-1">
+                      <CopyButton entries={entries} />
                       <button
                         onClick={() => exportLog(entries)}
                         title="Download log as text file"
