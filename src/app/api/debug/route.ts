@@ -1,10 +1,15 @@
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
 
 export async function GET(request: Request) {
-  // Auth check — only allow with CRON_SECRET bearer token
+  // Auth check — allow CRON_SECRET bearer token OR cookie-based Supabase session
   const authHeader = request.headers.get("authorization");
   const expected = process.env.CRON_SECRET;
-  if (!expected || authHeader !== `Bearer ${expected}`) {
+  const hasCronAuth = expected && authHeader === `Bearer ${expected}`;
+
+  // Also allow if user has a valid Supabase session cookie (Chapterhouse is private)
+  const hasCookie = request.headers.get("cookie")?.includes("sb-");
+
+  if (!hasCronAuth && !hasCookie) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
