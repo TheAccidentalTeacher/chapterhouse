@@ -1,9 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import { updateProgress } from "../lib/progress";
 import { notifyJobComplete } from "../lib/notify";
 import { COUNCIL_PROMPTS, type CouncilMember } from "../lib/council-prompts";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // ── Subject code & grade band mappings (match scope-sequence-handoff.md) ──────
 
@@ -79,6 +81,23 @@ async function callCouncilMember(
 
   const block = msg.content[0];
   return block.type === "text" ? block.text : "";
+}
+
+// OpenAI-routed council members (Earl = GPT-5.4, Beavis = GPT-5-mini)
+async function callWithOpenAI(
+  member: CouncilMember,
+  userMessage: string,
+  model: string
+): Promise<string> {
+  const chat = await openai.chat.completions.create({
+    model,
+    max_tokens: 4096,
+    messages: [
+      { role: "system", content: COUNCIL_PROMPTS[member] },
+      { role: "user", content: userMessage },
+    ],
+  });
+  return chat.choices[0]?.message?.content ?? "";
 }
 
 // National standards framework mapping — auto-detected from subject
@@ -317,16 +336,17 @@ export async function runCurriculumFactory(
       `If Data flagged monotone styles or flat energy, fix those sequences.`
     );
 
-    // Pass 4: Earl operational assessment
+    // Pass 4: Earl operational assessment (GPT-5.4 — Earl's blunt operational voice suits OpenAI's style)
     await updateProgress(jobId, 52, "Pass 4/6: Earl assessing operational viability...");
-    const earlReport = await callCouncilMember(
+    const earlReport = await callWithOpenAI(
       "earl",
-      `Review this finalized scope and sequence from an operational standpoint:\n\n${polgaraFinal}`
+      `Review this finalized scope and sequence from an operational standpoint:\n\n${polgaraFinal}`,
+      "gpt-5.4"
     );
 
     // Pass 5: Beavis & Butthead engagement test
     await updateProgress(jobId, 75, "Pass 5/6: Beavis & Butthead engagement stress test...");
-    const beavisReport = await callCouncilMember(
+    const beavisReport = await callWithOpenAI(
       "beavis",
       `Stress test this finalized scope and sequence for student engagement.\n\n` +
       `For each unit, judge:\n` +
@@ -335,7 +355,8 @@ export async function runCurriculumFactory(
       `- Does the energy flow feel like a roller coaster (good) or a flatline (bad)?\n` +
       `- Is there enough variety in lesson types or does it all feel the same?\n` +
       `- Is the review lesson a game or a boring test?\n\n` +
-      `${polgaraFinal}`
+      `${polgaraFinal}`,
+      "gpt-5-mini"
     );
 
     // Pass 6: Structured extraction — convert Polgara's markdown to handoff JSON
@@ -384,13 +405,14 @@ export async function runCurriculumFactory(
         // Set is_review_lesson explicitly on every lesson and renumber sequentially.
         // true only for the last lesson — false on all others. Never rely on AI for either.
         unit.lessons.forEach((lesson, i) => {
-          lesson.is_review_lesson = i === unit.lessons.length - 1;
+          lesson.is_review_lesson = i === lessonCount - 1;
           lesson.lesson_number = i + 1;
         });
       }
 
-      // Guarantee canonical subject label — overwrite whatever the AI emitted
+      // Guarantee canonical subject label and schema version — overwrite whatever the AI emitted
       structuredJson.subject = canonicalSubject;
+      structuredJson.schema_version = "1.0";
 
       // Authoritative metadata — totals, real timestamp, tool name (never trust AI values)
       if (structuredJson.meta && typeof structuredJson.meta === "object") {
@@ -398,6 +420,7 @@ export async function runCurriculumFactory(
         meta.total_lessons = totalLessons;
         meta.total_units = units.length;
         meta.generated_at = new Date().toISOString(); // real timestamp — set at generator runtime
+        meta.generated_by = "chapterhouse-curriculum-factory"; // always this tool, never trust AI
         delete meta.lessons_per_unit; // remove legacy field if present
       }
     }

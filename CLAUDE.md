@@ -16,7 +16,7 @@ This document is your complete technical brief. Read all of it before touching a
 
 ---
 
-## What Chapterhouse Already Is (Current State — Updated March 16, 2026, Session 13)
+## What Chapterhouse Already Is (Current State — Updated March 17, 2026, Session 14)
 
 **Stack:** Next.js 16.1.6 (App Router), React 19, TypeScript, Tailwind 4, Supabase (auth + DB + realtime), Anthropic SDK, OpenAI SDK, Zod
 
@@ -41,7 +41,7 @@ This document is your complete technical brief. Read all of it before touching a
 
 ### AI & Automation
 - `/jobs` — Real-time job dashboard. QStash → Railway workers. Supabase Realtime progress. Visual 6-step PassStepper on curriculum jobs. Accumulating session log. Job detail drawer with output viewer.
-- `/curriculum-factory` — 6-pass Council of the Unserious (Gandalf → Data → Polgara → Earl → Beavis & Butthead → Extract JSON). National standards auto-aligned (CCSS-ELA/CCSS-M/NGSS/C3 auto-detected from subject). Produces BOTH `finalScopeAndSequence` (Polgara's markdown) AND `structuredOutput` (validated SomersSchool pipeline JSON — drop into `scope-sequence/`). HTML/PDF/DOCX export. Batch mode (parent + child jobs).
+- `/curriculum-factory` — 6-pass Council of the Unserious (Gandalf → Data → Polgara → Earl → Beavis & Butthead → Extract JSON). National standards auto-aligned (CCSS-ELA/CCSS-Math/NGSS/C3 auto-detected from subject). Produces BOTH `finalScopeAndSequence` (Polgara's markdown) AND `structuredOutput` (validated SomersSchool pipeline JSON — drop into `scope-sequence/`). HTML/PDF/DOCX export. Batch mode (parent + child jobs).
 - `/pipelines` — n8n workflow control panel. Status, execution history, manual triggers. Proxies to Railway-hosted n8n.
 - `/council` — 6-pass Council Chamber as background job. Same pipeline as curriculum-factory. Output: Final Scope & Sequence → Pipeline Handoff JSON (emerald card, copy/download/preview) → Earl (open by default) → B&B → Working Papers accordion (Gandalf draft + Data critique, closed) → Download full session transcript (includes JSON fenced block).
 - `/social` — Social media automation (replaces Sintra, $49/mo). 3-tab UI: **Review Queue** (Supabase Realtime live updates, inline text edit, datetime picker, Buffer channel selector, approve/reject, full edit history tracking in JSONB), **Generate** (Claude Sonnet 4.6, 3 brands × 3 platforms, topic seed, brand voice enforced per brand), **Accounts** (Buffer GraphQL sync via GetOrganizations + GetChannels, manual brand→channel mapping). Weekly cron: Monday 05:00 UTC. Shopify webhook: new product → NCHO launch posts auto-generated (HMAC-verified).
@@ -73,7 +73,7 @@ This document is your complete technical brief. Read all of it before touching a
 
 ### AI & Automation
 - `/jobs` — Real-time job dashboard. QStash → Railway workers. Supabase Realtime progress updates.
-- `/curriculum-factory` — 6-pass Council of the Unserious curriculum generation form (Gandalf → Data → Polgara → Earl → Beavis & Butthead → Extract JSON). National standards auto-aligned (CCSS-ELA, CCSS-M, NGSS, C3). Produces BOTH `finalScopeAndSequence` (markdown) AND `structuredOutput` (SomersSchool pipeline JSON).
+- `/curriculum-factory` — 6-pass Council of the Unserious curriculum generation form (Gandalf → Data → Polgara → Earl → Beavis & Butthead → Extract JSON). National standards auto-aligned (CCSS-ELA, CCSS-Math, NGSS, C3). Produces BOTH `finalScopeAndSequence` (markdown) AND `structuredOutput` (SomersSchool pipeline JSON).
 - `/pipelines` — n8n workflow control panel. Status, execution history, manual triggers.
 - `/council` — 6-pass Council of the Unserious Chamber for curriculum scope & sequence generation. Background job.
 - `/social` — Social media automation. 3-tab UI: Review Queue (approve/edit/reject AI-generated posts with live Realtime updates), Generate (Claude-powered multi-brand × multi-platform batch generation), Accounts (Buffer channel sync + brand mapping).
@@ -159,7 +159,7 @@ PHASE 1 — The Job Runner                    ✅ COMPLETE
 PHASE 2 — The Curriculum Factory             ✅ COMPLETE
   6-pass Council of the Unserious critique loop (Gandalf → Data → Polgara → Earl → Beavis & Butthead → Extract JSON).
   Produces BOTH finalScopeAndSequence (markdown) AND structuredOutput (validated SomersSchool pipeline JSON).
-  National standards auto-alignment: CCSS-ELA, CCSS-M, NGSS, C3 Framework.
+  National standards auto-alignment: CCSS-ELA, CCSS-Math, NGSS, C3 Framework.
   Form + batch support at /curriculum-factory.
   Also Council Chamber at /council (6-pass background job variant; 6-step visual stepper + accumulating session log).
 
@@ -607,7 +607,7 @@ Standards are auto-detected from the subject field — no manual input needed:
 | Subject | National Framework |
 |---|---|
 | ELA, English, Reading, Writing, Language Arts | CCSS-ELA |
-| Math, Algebra, Geometry | CCSS-M |
+| Math, Algebra, Geometry | CCSS-Math |
 | Science, Biology, Chemistry, Physics, Earth Science | NGSS |
 | Social Studies, History, Geography, Civics, Economics | C3 Framework |
 
@@ -630,7 +630,7 @@ Prompts defined in `worker/src/lib/council-prompts.ts` (TS) and `council-worker/
 
 Output keys:
 - `finalScopeAndSequence` — Polgara's production-ready markdown document
-- `structuredOutput` — SomersSchool pipeline JSON (id, grade, grade_band, units[], lessons[], meta). Validated: pacing math corrected, is_review_lesson enforced on last lesson, lessons renumbered, total_units/total_lessons computed. Null if extraction fails.
+- `structuredOutput` — SomersSchool pipeline JSON (id, grade, grade_band, units[], lessons[], meta). Post-extraction fixup guarantees canonical `subject` label, `schema_version: "1.0"`, real `generated_at`/`generated_by`, explicit `is_review_lesson` on every lesson, correct pacing math, sequential lesson numbers, computed `total_units`/`total_lessons`. Null if extraction fails.
 - `operationalAssessment` — Earl's build/ship/revenue analysis
 - `engagementReport` — Beavis & Butthead's COOL/SUCKS verdict
 - `draftsRetained.gandalfInitialDraft` — Gandalf's original draft
@@ -667,7 +667,7 @@ The worker auto-detects the national standards framework from the subject field,
 3. **Polgara finalizes** (35%) — synthesizes Gandalf + Data, produces production-ready markdown, child-first lens, preserves structural elements
 4. **Earl assesses** (52%) — operational viability: build order, revenue timeline, minimum viable version, go/no-go
 5. **Beavis & Butthead stress-test** (75%) — COOL/SUCKS/MEH per unit, energy-flow check, engagement reality
-6. **Extract JSON** (88%) — `extractStructuredOutput()` converts Polgara's markdown to validated SomersSchool pipeline JSON. Post-extraction: pacing math corrected (`N+1` enforced), `is_review_lesson` set on last lesson of each unit, lessons renumbered sequentially, `total_units`/`total_lessons` recomputed programmatically.
+6. **Extract JSON** (88%) — `extractStructuredOutput()` converts Polgara's markdown to validated SomersSchool pipeline JSON. Post-extraction fixup (all values authoritative — AI output overridden): `subject` set to canonical label (`"Language Arts"`, `"Science"`, etc.), `schema_version` set to `"1.0"`, `generated_at` set to real JS timestamp, `generated_by` set to `"chapterhouse-curriculum-factory"`, `is_review_lesson` explicitly `true`/`false` on every lesson (never omitted), pacing math corrected (`N+1` enforced), lessons renumbered sequentially, `total_units`/`total_lessons` recomputed programmatically.
 
 Progress breakpoints: 5% → 18% → 35% → 52% → 75% → 88% → 100%.
 Resend email notification on completion.
@@ -1081,9 +1081,17 @@ All build steps completed across March 13-16 sessions. Deployed on Vercel.
 31. `council/page.tsx` "How It Works" — added Pass 6 (Extract, emerald) to the 6-step pipeline description, updated total runtime to ~11 min.
 32. Probe test framework (`chapterhouse-evolution-handoff.md`) — 11 diagnostic questions across 4 tiers (Business Context, Synthesis, Output Quality, Self-Awareness) to validate context injection depth.
 
----
+**Session 14: Contract-Clean JSON + Audit Fixes (March 17, 2026):**
 
-## Security Requirements
+33. `CANONICAL_SUBJECT_LABELS` map + `getCanonicalSubjectLabel()` — maps subject code → spec-canonical display name (`ela → "Language Arts"`, `sci → "Science"`, `mth → "Mathematics"`, `hst → "Social Studies"`). Hard-overrides `structuredJson.subject` post-extraction regardless of AI output.
+34. `ExtractionMeta` interface adds `canonicalSubject` field. Extraction prompt uses `${meta.canonicalSubject}` for `"subject"` and `"title"` — both fields canonical on first AI output.
+35. Non-final lesson template in extraction prompt shows `"is_review_lesson": false` explicitly. STRUCTURAL RULES mandate explicit `false` on all non-final lessons. Fixup forEach iterates every lesson unconditionally: `lesson.is_review_lesson = i === unit.lessons.length - 1`.
+36. `generated_at` in extraction prompt evaluates at call time (`${new Date().toISOString()}`). Post-extraction fixup hard-sets `meta.generated_at = new Date().toISOString()`.
+37. Audit fix: `schema_version = "1.0"` and `generated_by = "chapterhouse-curriculum-factory"` added to post-extraction fixup — guaranteed on every output, not just when AI follows the template.
+38. Earl (Pass 4) → GPT-5.4 via new `callWithOpenAI()` function. Beavis (Pass 5) → `gpt-5-mini`. Passes 1–3 and 6 remain Claude Sonnet 4.6. `openai` dep added to `worker/package.json`. `OPENAI_API_KEY` required in Railway worker env.
+39. `scope-sequence/ela-g1.json` — sample validated Grade 1 Language Arts handoff: 4 units, 22 lessons, variable unit sizes (4+1 / 5+1 / 3+1 / 6+1), CCSS-ELA standards, explicit `is_review_lesson` on every lesson.
+40. `CCSS-M` → `CCSS-Math` throughout all documentation (canonical per `scope-sequence-handoff.md` line 223).
+41. Commits: `b35246e` (initial handoff + ela-g1 sample), `[new commit]` (audit fixes + OpenAI routing).
 
 **QStash signature verification is non-negotiable.** Every POST to `/process-job` on the Railway worker must verify the `upstash-signature` header before processing. Without this, anyone who knows the worker URL can inject arbitrary jobs.
 
@@ -1195,7 +1203,8 @@ Effort: 2–3 days.
 
 ---
 
-*Document version: March 16, 2026 (Session 13)*
+*Document version: March 17, 2026 (Session 14)*
+*Session 14 additions: Contract-clean Pipeline Handoff JSON + code audit. `CANONICAL_SUBJECT_LABELS` (`ela→"Language Arts"` etc.), `schema_version` + `generated_by` guaranteed in post-extraction fixup. Earl (Pass 4) → GPT-5.4, Beavis (Pass 5) → `gpt-5-mini` via new `callWithOpenAI()` — `openai` dep added to worker. `scope-sequence/ela-g1.json` sample. `CCSS-M` → `CCSS-Math` throughout docs (spec-canonical). Commits: `b35246e` + `[new commit]`.*
 *Session 13 additions: Phase 7 Brief Intelligence Upgrade (full context injection + collision scoring + track impact badges). Phase 7.1 daily.dev source integration (3-feed parallel fetch, dedup, 30-post cap). Turbopack build fix for council-chamber-viewer.tsx (3 attempts → final fix: parseOutput() module-level function as opaque type boundary + !! JSX guards + Job.output typed as unknown). Evolution roadmap added from chapterhouse-evolution-handoff.md. Supabase tables registry added.*
 *Session 12 additions: Curriculum factory upgraded to full SomersSchool pipeline handoff. `structuredOutput` wired to council-chamber-viewer UI — Pipeline Handoff JSON panel (emerald card, copy/download/preview). 6-pass visual PassStepper replaces bare progress bar. Accumulating session log. Output order corrected (Scope → JSON → Earl open → B&B → Working Papers → Download). Duplicate Earl card removed. Working Papers accordion (Gandalf draft + Data critique). "How It Works" panel updated with Pass 6. Phase 2 architecture reference fully updated to reflect 6-pass reality.*
 *All six phases built and deployed. Session 11 additions: Phase 6 YouTube Intelligence — paste any YouTube URL → extract transcript via Gemini 2.5 Flash on Railway (~77s, 21K+ chars) → generate 8 types of curriculum materials via Claude Sonnet 4.6. 3-tier Vercel fast path (captions → innertube → Railway handoff). Hallucination guard validates video via YouTube Data API before Gemini processes. youtube-transcript npm blocked from cloud IPs — Gemini handles 100% of production transcripts. 4 API routes, 4 UI components, 1 Railway worker job type. Sessions 9-10: initial build + Gemini integration + timeout debugging. Session 8: Phase 5 Social Media Automation. Sessions 6-7: Council of the Unserious + national standards + chat features.*
