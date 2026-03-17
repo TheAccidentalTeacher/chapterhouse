@@ -245,86 +245,6 @@ function decodeXmlEntities(text: string): string {
     );
 }
 
-/** Fallback 2: Google Gemini 2.0 Flash — process YouTube video via fileData */
-async function fetchGeminiTranscript(
-  videoId: string,
-): Promise<{ segments: { start: number; text: string }[]; text: string } | null> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    console.warn("[transcript] GEMINI_API_KEY not set — skipping Gemini fallback");
-    return null;
-  }
-
-  try {
-    // Gemini 2.5 Flash supports YouTube URLs as fileData content parts
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  fileData: {
-                    fileUri: `https://www.youtube.com/watch?v=${videoId}`,
-                    mimeType: "video/*",
-                  },
-                },
-                {
-                  text: "Produce a complete, accurate transcript of everything said in this video. Include timestamps in [MM:SS] format at the start of each paragraph. Be thorough — capture every word spoken.",
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            maxOutputTokens: 16384,
-            temperature: 0.1,
-          },
-        }),
-        signal: AbortSignal.timeout(90_000),
-      },
-    );
-
-    if (!res.ok) {
-      const errBody = await res.text().catch(() => "");
-      console.warn("[transcript] Gemini failed:", res.status, errBody.slice(0, 200));
-      return null;
-    }
-
-    const data = await res.json();
-    const text =
-      data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-
-    if (!text || text.length < 50) return null;
-
-    // Parse timestamps from Gemini output [MM:SS] → seconds
-    const segments: { start: number; text: string }[] = [];
-    const chunks = text.split(/\[(\d{1,2}:\d{2})\]/);
-
-    for (let i = 1; i < chunks.length; i += 2) {
-      const timeParts = chunks[i].split(":");
-      const seconds =
-        parseInt(timeParts[0], 10) * 60 + parseInt(timeParts[1], 10);
-      const segText = chunks[i + 1]?.trim();
-      if (segText) {
-        segments.push({ start: seconds, text: segText });
-      }
-    }
-
-    // If parsing failed, return as single segment
-    if (segments.length === 0) {
-      segments.push({ start: 0, text });
-    }
-
-    return { segments, text: segments.map((s) => s.text).join(" ") };
-  } catch (error) {
-    console.warn("[transcript] Gemini error:", error instanceof Error ? error.message : error);
-    return null;
-  }
-}
-
 // --- Route handler ---
 
 export async function POST(req: Request) {
@@ -398,19 +318,8 @@ export async function POST(req: Request) {
     }
     attempts.push({ tier: "innertube", result: "failed", ms: Date.now() - t });
 
-    // Fallback 2: Gemini 2.5 Flash — Google→Google, no bot check, works from cloud IPs
-    if (fallbackToAI) {
-      console.log("[transcript] Innertube failed, trying Gemini transcription...");
-      t = Date.now();
-      const geminiResult = await fetchGeminiTranscript(videoId);
-      if (geminiResult) {
-        attempts.push({ tier: "gemini", result: "success", ms: Date.now() - t });
-        return Response.json({ ...buildResponse(geminiResult, "gemini"), attempts });
-      }
-      attempts.push({ tier: "gemini", result: "failed", ms: Date.now() - t });
-    }
-
-    // All Vercel-side tiers exhausted — hand off to Railway worker for audio-based fallbacks
+    // Captions + innertube both failed from cloud IPs — hand off to Railway worker
+    // Railway has no timeout limit, so Gemini (which takes 45-90s for video processing) runs there
     if (fallbackToAI && process.env.QSTASH_TOKEN && process.env.RAILWAY_WORKER_URL) {
       try {
         const supabase = getSupabaseServiceRoleClient();

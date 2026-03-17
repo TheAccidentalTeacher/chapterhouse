@@ -379,7 +379,7 @@ No headers, no summaries, no additional commentary. Just the raw transcript with
             temperature: 0.1,
           },
         }),
-        signal: AbortSignal.timeout(60_000),
+        signal: AbortSignal.timeout(180_000),
       }
     );
 
@@ -403,7 +403,8 @@ No headers, no summaries, no additional commentary. Just the raw transcript with
     return segments.length > 0
       ? { segments, text }
       : { segments: [{ start: 0, text }], text };
-  } catch {
+  } catch (error) {
+    console.warn("[youtube-transcript] Gemini transcript failed:", error instanceof Error ? error.message : error);
     return null;
   }
 }

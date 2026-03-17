@@ -29,7 +29,7 @@
       "maxDuration": 30
     },
     "src/app/api/youtube/transcript/route.ts": {
-      "maxDuration": 120
+      "maxDuration": 30
     },
     "src/app/api/youtube/analyze/route.ts": {
       "maxDuration": 60
