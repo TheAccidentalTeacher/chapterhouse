@@ -10,22 +10,58 @@ You are the AI agent working inside `TheAccidentalTeacher/chapterhouse`.
 
 Scott Somers is a middle school teacher in Glennallen, Alaska building a homeschool SaaS empire. This app — Chapterhouse — is his **primary operations tool**. Think of it as mission control: every AI job, every automation pipeline, every overnight batch task runs through or is visible from here. It is private (Scott + Anna only). Not a product. His cockpit.
 
+**Teaching contract ends May 24, 2026. Revenue required before August 2026. Everything built here serves that deadline.**
+
 This document is your complete technical brief. Read all of it before touching any code.
 
 ---
 
-## What Chapterhouse Already Is (Current State — Updated March 16, 2026)
+## What Chapterhouse Already Is (Current State — Updated March 16, 2026, Session 13)
 
 **Stack:** Next.js 16.1.6 (App Router), React 19, TypeScript, Tailwind 4, Supabase (auth + DB + realtime), Anthropic SDK, OpenAI SDK, Zod
 
 **All routes — grouped by sidebar section:**
 
 ### Command Center
-- `/` (Home) — Chat-first interface with Solo/Council mode toggle. Council mode streams multi-member Council of the Unserious responses via SSE (Gandalf, Data, Polgara, Earl, Beavis & Butthead). Rebuttal round after initial responses.
-- `/daily-brief` — Automated daily brief from RSS feeds + GitHub activity. Cron runs at 3:00 UTC.
+- `/` (Home) — Chat-first interface with Solo/Council mode toggle. Solo mode uses a single model (GPT-5.4, Claude Sonnet 4.6, Haiku 4.5, GPT-5-mini). Council mode streams multi-member Council of the Unserious responses via SSE (Gandalf, Data, Polgara, Earl, Beavis & Butthead). Rebuttal round after initial responses. Persistent threads, auto-save, `/remember` command, auto-learn extracts facts to `founder_notes`.
+- `/daily-brief` — Automated daily brief from 3 sources: 9 RSS feeds + 11 GitHub repos + **daily.dev** (For You, Popular, Anthropic/Security/Next.js tag feeds, up to 30 posts). Full business context injected: founder_notes, research_items, open opportunities, knowledge_summaries, days-remaining countdown. Claude Haiku 4.5 post-generation pass scores every item ncho/somersschool/biblesaas (0–3). Items scoring ≥2 on 2+ tracks get collision_note. "⚡ Collisions" section pinned at top of brief page. Vercel cron: 3:00 UTC (7 AM Alaska). Meta response includes collisionCount + contextInjected stats.
 
 ### Intelligence
-- `/research` — URL ingest, manual paste, screenshot attach. AI extraction, tagging, knowledge summaries. Full CRUD.
+- `/research` — URL ingest, paste text, quick note, screenshot (GPT Vision), agentic auto-research (Tavily → GPT-5.4 → dedup → auto-ingest), Deep Research (multi-source parallel: Tavily + SerpAPI + Reddit + NewsAPI + Internet Archive). AI extraction, tagging, OG metadata (site_name, author, published_at, og_image), knowledge summaries. SSRF-protected URL fetching. Full CRUD.
+- `/product-intelligence` — Scored opportunity cards (A+/A/B). Triple-scored: Store (NCHO) / Curriculum (SomerSchool) / Content (marketing). Status tracking. Routes to Review Queue.
+- `/youtube` — YouTube Intelligence. Paste URL or search YouTube (Data API v3) → 3-tier transcript: captions (npm, fast) → innertube API → Gemini 2.5 Flash (Railway worker, ~77s, production path). Hallucination guard: validates video via YouTube Data API before Gemini processes. 8 curriculum tools: quiz, lesson plan, vocabulary, discussion questions, DOK projects, graphic organizers, guided notes, full analysis (Claude Sonnet 4.6 grade-appropriate). Batch mode for multi-video processing. Supabase Realtime job watching.
+
+### Production
+- `/content-studio` — AI content generation (3 modes): newsletter/campaign, curriculum guide, product description. Claude Sonnet 4.6. Copy to clipboard.
+- `/creative-studio` — Multi-provider AI image generation: GPT Image 1, Stability AI (SDXL), Flux (Replicate), Leonardo.ai (Phoenix — best for Gimli character consistency). Stock photo search: Pexels + Pixabay + Unsplash simultaneously. 4× upscale via Real-ESRGAN. One-click save to Cloudinary CDN. Freesound sound effects browser (CC license + duration filters, in-browser preview). Suno AI music workflow. HeyGen avatar video generation (polls status every 10s). Generation history preserved in session.
+- `/voice-studio` — ElevenLabs TTS (premium voices, scoped key per project) + Azure Speech TTS (free tier, 10+ neural voices). In-browser recording → Azure Speech STT transcription. Speed control 0.5×–2.0×. Download as MP3.
+- `/review-queue` — Combined research + opportunity review queue. Approve/reject/flag. Create Task directly.
+- `/tasks` — Task board with full status machine: open → in-progress → blocked → done → canceled. Source linking (from brief, opportunity, or manual). Full CRUD.
+- `/documents` — Workspace markdown files rendered and searchable.
+
+### AI & Automation
+- `/jobs` — Real-time job dashboard. QStash → Railway workers. Supabase Realtime progress. Visual 6-step PassStepper on curriculum jobs. Accumulating session log. Job detail drawer with output viewer.
+- `/curriculum-factory` — 6-pass Council of the Unserious (Gandalf → Data → Polgara → Earl → Beavis & Butthead → Extract JSON). National standards auto-aligned (CCSS-ELA/CCSS-M/NGSS/C3 auto-detected from subject). Produces BOTH `finalScopeAndSequence` (Polgara's markdown) AND `structuredOutput` (validated SomersSchool pipeline JSON — drop into `scope-sequence/`). HTML/PDF/DOCX export. Batch mode (parent + child jobs).
+- `/pipelines` — n8n workflow control panel. Status, execution history, manual triggers. Proxies to Railway-hosted n8n.
+- `/council` — 6-pass Council Chamber as background job. Same pipeline as curriculum-factory. Output: Final Scope & Sequence → Pipeline Handoff JSON (emerald card, copy/download/preview) → Earl (open by default) → B&B → Working Papers accordion (Gandalf draft + Data critique, closed) → Download full session transcript (includes JSON fenced block).
+- `/social` — Social media automation (replaces Sintra, $49/mo). 3-tab UI: **Review Queue** (Supabase Realtime live updates, inline text edit, datetime picker, Buffer channel selector, approve/reject, full edit history tracking in JSONB), **Generate** (Claude Sonnet 4.6, 3 brands × 3 platforms, topic seed, brand voice enforced per brand), **Accounts** (Buffer GraphQL sync via GetOrganizations + GetChannels, manual brand→channel mapping). Weekly cron: Monday 05:00 UTC. Shopify webhook: new product → NCHO launch posts auto-generated (HMAC-verified).
+
+### System
+- `/settings` — Environment status, provider configuration, founder memory panel (add/edit/delete notes).
+- `/help` — Help guide rendered from `chapterhouse-help-guide.md`.
+- `/login` — Supabase email/password auth.
+
+**Additional API routes not surfaced in nav:**
+- `voice/synthesize/` — ElevenLabs + Azure Speech TTS
+- `voice/transcribe/` — Azure Speech STT
+- `translate/` — Azure Translator
+- `images/` — Multi-provider image generation + stock search
+- `sounds/` — Freesound API proxy
+- `video/generate/` + `video/status/` — HeyGen avatar video
+- `chat/` — Single-model chat + Council SSE
+- `extract-learnings/` — Auto-extract facts from conversations to `founder_notes`
+- `search/` — Global cross-table search (tasks, research, opportunities, threads, briefs)
+- `debug/` + `debug/context/` — Debug context and logging
 - `/product-intelligence` — Scored opportunity cards (A+/A/B). Competitive analysis, market signals.
 - `/youtube` — YouTube Intelligence. Paste URL or search YouTube → extract transcript (captions → innertube → Gemini via Railway worker) → generate curriculum materials (quizzes, lesson plans, vocabulary, discussion questions, DOK projects, graphic organizers, guided notes). Batch mode for multi-video processing.
 
@@ -203,6 +239,48 @@ PHASE 7 — Brief Intelligence Upgrade         ✅ COMPLETE
     - src/app/daily-brief/page.tsx — Collisions section + collisionItems computation
 
   Cost: ~$0.05/brief (Sonnet, brief gen) + ~$0.002/brief (Haiku, collision scoring)
+
+PHASE 7.1 — daily.dev Source Integration    ✅ COMPLETE
+  Added daily.dev as a third source in the brief pipeline alongside RSS and GitHub.
+  Token: DAILYDEV_TOKEN already set in Vercel env.
+
+  What changed:
+    1. src/lib/sources/dailydev.ts — new source file (matches rss.ts/github.ts pattern).
+       Fetches 5 feeds in parallel: /feeds/foryou, /feeds/popular, /feeds/tag/anthropic,
+       /feeds/tag/security, /feeds/tag/nextjs.
+       Deduplicates by post ID across all feeds. Sorts by upvotes. Caps at 30 posts.
+       formatDailyDevForPrompt() includes title, source name, tags, upvote/comment counts,
+       and the pre-existing summary field (pre-digested developer signal).
+       Non-fatal when DAILYDEV_TOKEN absent — returns empty result silently.
+    2. /api/briefs/generate — daily.dev added to parallel fetch alongside RSS + GitHub.
+       New "## LIVE DATA — DAILY.DEV" section injected into userPrompt.
+       totalScanned and meta response both include dailyDevResult.scannedCount.
+
+  API base: https://api.daily.dev/public/v1
+  Auth: Bearer token. Rate limit: 60 req/min (user), 300 req/min (IP).
+  Working endpoints: /feeds/foryou, /feeds/popular, /feeds/discussed, /feeds/tag/{tag}
+  Broken (500): /search/posts, /recommend/semantic — their backend issue, not ours.
+
+TURBOPACK BUILD FIX — council-chamber-viewer.tsx  ✅ COMPLETE (3 attempts)
+  Root cause: Turbopack re-derives TypeScript property types from the *source* type
+  at point of access, ignoring cast annotations and explicit const type declarations.
+  job.output typed as Record<string, unknown> leaked `unknown` into every JSX expression
+  regardless of any cast applied to the whole object.
+
+  Final fix (commit 90c2f10):
+    1. parseOutput(raw: unknown): CouncilOutput | null — module-level function.
+       A function call is an opaque type boundary Turbopack cannot trace through.
+       Uses `as any` internally only (contained, does not leak).
+       Turbopack must accept the declared return type CouncilOutput | null.
+    2. All JSX guards changed from `{output.X && (` to `{!!output.X && (`
+       so expressions always evaluate to boolean — never string|undefined — and
+       `false | JSX.Element` is always a valid ReactNode.
+    3. Job.output type changed from Record<string,unknown>|null to `unknown`
+       so downstream casts in job-detail-drawer.tsx remain valid.
+
+  Files changed:
+    - src/components/council-chamber-viewer.tsx — parseOutput + !! guards
+    - src/hooks/use-jobs-realtime.ts — Job.output: unknown (from Record<string,unknown>|null)
 ```
 
 ---
@@ -1064,7 +1142,60 @@ Do this before the Railway worker exists. Validate the UI layer independently.
 
 ---
 
-*Document version: March 16, 2026 (Session 12)*
+## Evolution Roadmap — What Chapterhouse Becomes Next
+
+These are the planned next phases from `chapterhouse-evolution-handoff.md`. Each is additive — nothing built gets replaced.
+
+**Phase A — Dynamic Fetch Engine**
+Add the ability for Chapterhouse's AI to read any URL on demand (not just RSS). Tool: `fetchPage(url)` → returns cleaned text. Use `@extractus/article-extractor` or Puppeteer. SSRF protection required — allowlist or URL sanitization before server-side fetch. Enables: brief can read full articles instead of RSS summaries. Enables Phase G.
+Effort: 1–2 days.
+
+**Phase B — Scott's Context Layer** *(Highest Priority)*
+A `chapterhouse-context.md` file (or Supabase-stored equivalent) loaded as system context into every brief generation call. Already partially done via Phase 7 (SYSTEM_PROMPT expansion). Phase B completes it: adds competitor list, locked decisions log, Alaska allotment context, student data protection rules, Gimli character reference. Success measure: brief says "parents pushing back on screens → NCHO should lean low-screen This week; SomersSchool should use 'intentional learning' not 'digital curriculum.'"
+Effort: 1 day to write context file + 2–4 hours to wire.
+
+**Phase C — Collision Mapping** *(Already partially shipped in Phase 7)*
+Phase 7 built track-impact scoring and collision detection. Phase C completes it: auto-generate SEED propositions from high-collision items. When collision score ≥2 on 2+ tracks → auto-queue a seed idea to the dreamer queue for Scott's review.
+Effort: 1 day.
+
+**Phase D — Artifact Creation Pipeline**
+Chapterhouse produces structured markdown files — not just summaries. Handoff docs, architecture specs, policy drafts, prompt templates. Artifact schema in Supabase (type, title, content, source_brief_id). Brief can auto-propose artifacts for high-priority items.
+Effort: 2–3 days.
+
+**Phase E — Council Voices in Brief**
+Wire Council Chamber into brief generation workflow. After standard brief, run a Council pass on the top 3 priority items: Gandalf synthesizes → Data audits → Polgara checks child-impact → Earl asks "so what, by when" → B&B stress tests. Council Chamber is already live — needs wiring, not rebuilding.
+Effort: 2–3 days.
+
+**Phase F — Dream Integration**
+High-collision findings auto-generate SEED propositions queued for Scott's review. Depends on Phase C.
+Effort: 1 day.
+
+**Phase G — Feed Self-Healing**
+Source health monitoring. When a feed goes stale (default: 30 days since last new item), trigger a research job to find 3 active replacement sources. Route to approval queue. Depends on Phase A (fetch engine to verify candidates are active).
+Effort: 2–3 days.
+
+**Autoresearch Loop Instrument** (build now, optimize later)
+`brief_action_rate` — percentage of "What actually matters" items that result in a task or artifact within 24 hours. Simple counter in Supabase: `brief_id, item_id, actioned_at`. Build the instrument now. Run the optimization loop after real data exists.
+
+---
+
+## Supabase Tables — Complete Registry
+
+| Table | Migration | Purpose |
+|---|---|---|
+| `briefs` | 001 | Daily brief records |
+| `research_items` | 003 | Research library + verdicts |
+| `opportunities` | 004 | Product intelligence cards |
+| `tasks` | 005 | Task board |
+| `chat_threads` | 006 | Persistent chat threads |
+| `knowledge_summaries` | 007 | Condensed topic summaries |
+| `jobs` | 008 | Background AI job queue |
+| `social_accounts` | 010 | Buffer channel mappings per brand |
+| `social_posts` | 011 | AI-generated social posts + lifecycle |
+
+---
+
+*Document version: March 16, 2026 (Session 13)*
+*Session 13 additions: Phase 7 Brief Intelligence Upgrade (full context injection + collision scoring + track impact badges). Phase 7.1 daily.dev source integration (3-feed parallel fetch, dedup, 30-post cap). Turbopack build fix for council-chamber-viewer.tsx (3 attempts → final fix: parseOutput() module-level function as opaque type boundary + !! JSX guards + Job.output typed as unknown). Evolution roadmap added from chapterhouse-evolution-handoff.md. Supabase tables registry added.*
 *Session 12 additions: Curriculum factory upgraded to full SomersSchool pipeline handoff. `structuredOutput` wired to council-chamber-viewer UI — Pipeline Handoff JSON panel (emerald card, copy/download/preview). 6-pass visual PassStepper replaces bare progress bar. Accumulating session log. Output order corrected (Scope → JSON → Earl open → B&B → Working Papers → Download). Duplicate Earl card removed. Working Papers accordion (Gandalf draft + Data critique). "How It Works" panel updated with Pass 6. Phase 2 architecture reference fully updated to reflect 6-pass reality.*
 *All six phases built and deployed. Session 11 additions: Phase 6 YouTube Intelligence — paste any YouTube URL → extract transcript via Gemini 2.5 Flash on Railway (~77s, 21K+ chars) → generate 8 types of curriculum materials via Claude Sonnet 4.6. 3-tier Vercel fast path (captions → innertube → Railway handoff). Hallucination guard validates video via YouTube Data API before Gemini processes. youtube-transcript npm blocked from cloud IPs — Gemini handles 100% of production transcripts. 4 API routes, 4 UI components, 1 Railway worker job type. Sessions 9-10: initial build + Gemini integration + timeout debugging. Session 8: Phase 5 Social Media Automation. Sessions 6-7: Council of the Unserious + national standards + chat features.*
-*All five phases built and deployed. Session 8 additions: Phase 5 Social Media Automation — replaces Sintra ($49/mo). Claude Sonnet 4.6 generates posts for 3 brands × 3 platforms with enforced brand voice. Human review gate (approve/edit/reject). Buffer GraphQL API integration (createPost mutation, GetChannels/GetOrganizations queries, analytics pull-back). Shopify webhook auto-generates NCHO product launch posts. Weekly Monday 05:00 UTC cron batch generation. Supabase Realtime updates review queue live. Edit history tracking on manual edits. 2 new tables (social_accounts, social_posts), 8 API routes + 1 cron + 1 webhook, 3 UI components, 1 Railway worker job type, 3 migrations. All Buffer routes migrated from dead REST API (api.bufferapp.com/1/) to GraphQL (api.buffer.com). Full system audit and documentation. Session 7: global cross-table search, inline URL fetching, auto-learning, agentic research, research metadata extraction, daily brief email delivery, thread persistence. Session 6: Council of the Unserious 5-pass pipeline, national standards auto-alignment, HTML/PDF/DOCX export, accordion nav, tooltips, status badges, Council Mode in chat.*
