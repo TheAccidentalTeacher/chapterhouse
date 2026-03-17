@@ -131,7 +131,10 @@ export function CouncilChamberViewer({ job }: Props) {
   const logEndRef = useRef<HTMLDivElement>(null);
   const [showStructured, setShowStructured] = useState(false);
   const [sessionLog, setSessionLog] = useState<string[]>([]);
-  const output = job.output as CouncilOutput | null;
+  // Double-cast through unknown so TypeScript fully trusts CouncilOutput property types in JSX
+  const output: CouncilOutput | null = job.output
+    ? (job.output as unknown as CouncilOutput)
+    : null;
 
   // Accumulate progress messages — Realtime only gives the current row, so we
   // append each new distinct message ourselves to build a running history.
