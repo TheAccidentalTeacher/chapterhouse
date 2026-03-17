@@ -57,7 +57,7 @@
 | Repo | Stack | Status | What It Is |
 |---|---|---|---|
 | roleplaying | TS | 🔴 Active | AI RPG: DM + 3D physics dice (Babylon+Ammo) + ElevenLabs TTS + DALL-E + Supabase |
-| chapterhouse | TS | 🔴 Active | Private ops brain — daily brief (live + auto-cron), multi-model AI, research ingestion, Council Mode (SSE multi-member), job runner, curriculum factory, n8n pipelines. Deployed: chapterhouse.vercel.app |
+| chapterhouse | TS + Python | 🔴 Active | Private ops brain — 6-pass Council curriculum factory, Phase 7 brief intelligence (context injection + collision scoring + daily.dev), YouTube Intelligence, Social Media Automation, Voice Studio, Creative Studio, job runner (QStash→Railway), n8n control panel, Council Mode chat, research ingestion. Deployed: chapterhouse.vercel.app |
 | NextChapterHomeschool | TS | 🔴 Active | ClassCiv — real-time multiplayer classroom civilization, 29 tables, 11-phase epoch FSM |
 | agentsvercel | JS | 🟡 Warm | Hypomnemata — 12 AI personas, 39 serverless fns, 6 AI providers, YouTube intelligence |
 | arms-of-deliverance | TS | 🟡 Warm | Epub/course generator / curriculum builder |
