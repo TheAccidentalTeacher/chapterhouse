@@ -131,9 +131,26 @@ export function CouncilChamberViewer({ job }: Props) {
   const logEndRef = useRef<HTMLDivElement>(null);
   const [showStructured, setShowStructured] = useState(false);
   const [sessionLog, setSessionLog] = useState<string[]>([]);
-  // Double-cast through unknown so TypeScript fully trusts CouncilOutput property types in JSX
-  const output: CouncilOutput | null = job.output
-    ? (job.output as unknown as CouncilOutput)
+  // Construct a properly-typed CouncilOutput from the untyped job.output Record.
+  // Turbopack resolves property types from the *source* type at point of access,
+  // so a whole-object cast leaves each property as `unknown` in JSX. Explicit
+  // field-level casts create a real CouncilOutput value with known property types.
+  const r = job.output; // r: Record<string, unknown> | null
+  const output: CouncilOutput | null = r
+    ? {
+        subject: r.subject as string | undefined,
+        gradeLevel: r.gradeLevel as number | undefined,
+        duration: r.duration as string | undefined,
+        finalScopeAndSequence: r.finalScopeAndSequence as string | undefined,
+        structuredOutput: r.structuredOutput,
+        operationalAssessment: r.operationalAssessment as string | undefined,
+        engagementReport: r.engagementReport as string | undefined,
+        councilLog: r.councilLog as string | undefined,
+        draftsRetained: r.draftsRetained as
+          | { gandalfInitialDraft?: string; dataCritique?: string }
+          | undefined,
+        generatedAt: r.generatedAt as string | undefined,
+      }
     : null;
 
   // Accumulate progress messages — Realtime only gives the current row, so we
