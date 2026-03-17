@@ -1,0 +1,366 @@
+{
+  "id": "ela-g1",
+  "schema_version": "1.0",
+  "subject": "Language Arts",
+  "subject_code": "ela",
+  "grade": 1,
+  "grade_band": "early_elementary",
+  "title": "Grade 1 Language Arts",
+  "subtitle": "Building Readers and Writers Through Story, Sound, and Conversation",
+  "faith_integration": false,
+  "theology_profile": "none",
+  "standards_framework": "CCSS-ELA",
+  "units": [
+    {
+      "unit_number": 1,
+      "title": "Sounds and Letters",
+      "description": "Students develop phonemic awareness and phonics skills by exploring letter-sound relationships, blending sounds into words, and breaking words into their component sounds. The unit builds the decoding foundation all future reading depends on.",
+      "pacing": "4+1",
+      "lessons": [
+        {
+          "lesson_number": 1,
+          "title": "Letters Have Sounds",
+          "big_idea": "Every letter makes at least one sound, and knowing those sounds helps you read any word.",
+          "standards": ["RF.1.2", "RF.1.3"],
+          "key_concepts": [
+            "consonant sounds are predictable",
+            "vowels say their name and a short sound",
+            "letter recognition vs. letter sound"
+          ],
+          "is_review_lesson": false,
+          "style": "exploration",
+          "energy": "high"
+        },
+        {
+          "lesson_number": 2,
+          "title": "Blending Sounds Into Words",
+          "big_idea": "When you push sounds together smoothly, you can read words you have never seen before.",
+          "standards": ["RF.1.2b", "RF.1.3b"],
+          "key_concepts": [
+            "blending onset and rime",
+            "continuous blending (holding sounds)",
+            "CVC word pattern"
+          ],
+          "is_review_lesson": false,
+          "style": "hands_on",
+          "energy": "medium"
+        },
+        {
+          "lesson_number": 3,
+          "title": "Breaking Words Into Sounds",
+          "big_idea": "Segmenting a word into its individual sounds helps you spell it and understand how it works.",
+          "standards": ["RF.1.2c", "RF.1.2d"],
+          "key_concepts": [
+            "phoneme segmentation",
+            "counting syllables by clapping",
+            "connecting segmenting to spelling"
+          ],
+          "is_review_lesson": false,
+          "style": "hands_on",
+          "energy": "low"
+        },
+        {
+          "lesson_number": 4,
+          "title": "Tricky Sounds: Digraphs and Blends",
+          "big_idea": "Some letter pairs make one new sound — knowing them unlocks hundreds of new words.",
+          "standards": ["RF.1.3a", "RF.1.3b"],
+          "key_concepts": [
+            "consonant digraphs: sh, ch, th, wh",
+            "consonant blends: bl, cr, st, tr",
+            "reading and spelling words with digraphs and blends"
+          ],
+          "is_review_lesson": false,
+          "style": "challenge",
+          "energy": "high"
+        },
+        {
+          "lesson_number": 5,
+          "title": "Unit 1 Review: Sounds and Letters All Around Us",
+          "big_idea": "The sounds we know and the letters that spell them are the building blocks of every word we will ever read.",
+          "standards": ["RF.1.2", "RF.1.2b", "RF.1.2c", "RF.1.2d", "RF.1.3", "RF.1.3a", "RF.1.3b"],
+          "key_concepts": [
+            "letter-sound relationships",
+            "blending sounds to decode",
+            "segmenting words to spell",
+            "digraphs and consonant blends"
+          ],
+          "is_review_lesson": true,
+          "style": "review_game",
+          "energy": "high"
+        }
+      ]
+    },
+    {
+      "unit_number": 2,
+      "title": "Reading Stories",
+      "description": "Students read and listen to literary texts, learning to identify characters, settings, and key events while making connections between stories and their own lives. They practice retelling as a comprehension strategy.",
+      "pacing": "5+1",
+      "lessons": [
+        {
+          "lesson_number": 1,
+          "title": "What Makes a Story",
+          "big_idea": "Every story has characters who want something, a setting where it happens, and a problem to solve.",
+          "standards": ["RL.1.3", "RL.1.7"],
+          "key_concepts": [
+            "character, setting, problem, solution",
+            "story structure as a predictable pattern",
+            "using illustrations to support comprehension"
+          ],
+          "is_review_lesson": false,
+          "style": "story_driven",
+          "energy": "high"
+        },
+        {
+          "lesson_number": 2,
+          "title": "Getting to Know Characters",
+          "big_idea": "A character's words, actions, and feelings tell you who they really are.",
+          "standards": ["RL.1.3"],
+          "key_concepts": [
+            "character traits vs. character feelings",
+            "using text evidence to describe a character",
+            "how characters change across a story"
+          ],
+          "is_review_lesson": false,
+          "style": "deep_dive",
+          "energy": "medium"
+        },
+        {
+          "lesson_number": 3,
+          "title": "Retelling a Story",
+          "big_idea": "Retelling uses the story's own order — beginning, middle, and end — to show you understood what happened.",
+          "standards": ["RL.1.2", "RL.1.3"],
+          "key_concepts": [
+            "beginning-middle-end sequence",
+            "key details vs. every detail",
+            "using story language when retelling"
+          ],
+          "is_review_lesson": false,
+          "style": "creative",
+          "energy": "medium"
+        },
+        {
+          "lesson_number": 4,
+          "title": "Comparing Two Stories",
+          "big_idea": "When you compare two stories about similar topics, you notice what makes each one special.",
+          "standards": ["RL.1.9"],
+          "key_concepts": [
+            "comparing characters, settings, and events",
+            "similarities and differences",
+            "using a simple Venn diagram or T-chart"
+          ],
+          "is_review_lesson": false,
+          "style": "exploration",
+          "energy": "low"
+        },
+        {
+          "lesson_number": 5,
+          "title": "Asking and Answering Questions",
+          "big_idea": "Asking who, what, where, when, why, and how keeps your brain active while you read.",
+          "standards": ["RL.1.1"],
+          "key_concepts": [
+            "question words: who, what, where, when, why, how",
+            "finding answers in the text",
+            "generating your own questions before and while reading"
+          ],
+          "is_review_lesson": false,
+          "style": "challenge",
+          "energy": "high"
+        },
+        {
+          "lesson_number": 6,
+          "title": "Unit 2 Review: Story Detectives",
+          "big_idea": "Good readers notice characters, settings, key events, and story structure — and they ask questions as they go.",
+          "standards": ["RL.1.1", "RL.1.2", "RL.1.3", "RL.1.7", "RL.1.9"],
+          "key_concepts": [
+            "story structure: character, setting, problem, solution",
+            "retelling with beginning, middle, end",
+            "character traits and evidence",
+            "comparing two stories",
+            "questioning strategies"
+          ],
+          "is_review_lesson": true,
+          "style": "review_game",
+          "energy": "high"
+        }
+      ]
+    },
+    {
+      "unit_number": 3,
+      "title": "Reading to Learn",
+      "description": "Students explore informational texts, learning to find the main topic, identify key details, and use text features like headers, captions, and bold words to locate information. They practice explaining what they learned in their own words.",
+      "pacing": "3+1",
+      "lessons": [
+        {
+          "lesson_number": 1,
+          "title": "What Is Informational Text?",
+          "big_idea": "Informational books teach facts about the real world, and they use special features to help you find information fast.",
+          "standards": ["RI.1.5", "RI.1.6"],
+          "key_concepts": [
+            "informational vs. literary text",
+            "text features: title, heading, caption, bold word, table of contents",
+            "author's purpose in nonfiction: to inform"
+          ],
+          "is_review_lesson": false,
+          "style": "exploration",
+          "energy": "medium"
+        },
+        {
+          "lesson_number": 2,
+          "title": "Main Topic and Key Details",
+          "big_idea": "The main topic is what the whole text is about — every key detail adds one more fact about that topic.",
+          "standards": ["RI.1.1", "RI.1.2"],
+          "key_concepts": [
+            "main topic vs. key details",
+            "asking 'what is this mostly about?'",
+            "supporting details strengthen the main idea"
+          ],
+          "is_review_lesson": false,
+          "style": "deep_dive",
+          "energy": "low"
+        },
+        {
+          "lesson_number": 3,
+          "title": "Connecting Words and Pictures in Nonfiction",
+          "big_idea": "In informational books, images and diagrams add details the words alone do not tell you.",
+          "standards": ["RI.1.6", "RI.1.7"],
+          "key_concepts": [
+            "diagrams, photographs, and labels",
+            "captions explain images",
+            "information from images vs. information from text"
+          ],
+          "is_review_lesson": false,
+          "style": "hands_on",
+          "energy": "high"
+        },
+        {
+          "lesson_number": 4,
+          "title": "Unit 3 Review: Nonfiction Explorers",
+          "big_idea": "Readers of informational texts use text features, main topic, key details, and images together to understand and remember what they learned.",
+          "standards": ["RI.1.1", "RI.1.2", "RI.1.5", "RI.1.6", "RI.1.7"],
+          "key_concepts": [
+            "informational vs. literary text",
+            "text features and their purposes",
+            "main topic and supporting key details",
+            "images and diagrams as information sources"
+          ],
+          "is_review_lesson": true,
+          "style": "review_game",
+          "energy": "high"
+        }
+      ]
+    },
+    {
+      "unit_number": 4,
+      "title": "Writing to Share Ideas",
+      "description": "Students develop as writers by learning to plan, draft, and share three types of writing: opinion, informational, and narrative. They practice using spaces between words, capitals, and end punctuation.",
+      "pacing": "6+1",
+      "lessons": [
+        {
+          "lesson_number": 1,
+          "title": "Telling What You Think: Opinion Writing",
+          "big_idea": "An opinion tells what you believe, and a reason tells why someone else should agree with you.",
+          "standards": ["W.1.1"],
+          "key_concepts": [
+            "opinion vs. fact",
+            "stating an opinion clearly",
+            "giving at least one reason"
+          ],
+          "is_review_lesson": false,
+          "style": "creative",
+          "energy": "high"
+        },
+        {
+          "lesson_number": 2,
+          "title": "Teaching With Words: Informational Writing",
+          "big_idea": "An informational piece names a topic and uses facts and definitions to teach the reader something real.",
+          "standards": ["W.1.2"],
+          "key_concepts": [
+            "introducing a topic",
+            "supplying facts and definitions",
+            "providing a sense of closure"
+          ],
+          "is_review_lesson": false,
+          "style": "deep_dive",
+          "energy": "medium"
+        },
+        {
+          "lesson_number": 3,
+          "title": "Telling a Story: Narrative Writing",
+          "big_idea": "A narrative uses details and a clear sequence of events to put your reader right inside the story.",
+          "standards": ["W.1.3"],
+          "key_concepts": [
+            "story events in order",
+            "using temporal words: first, next, then, finally",
+            "adding details to help the reader see and feel"
+          ],
+          "is_review_lesson": false,
+          "style": "story_driven",
+          "energy": "medium"
+        },
+        {
+          "lesson_number": 4,
+          "title": "Writing Sentences the Right Way",
+          "big_idea": "Every sentence begins with a capital letter, ends with a punctuation mark, and leaves spaces between words — these rules help your reader understand you.",
+          "standards": ["L.1.1j", "L.1.2b"],
+          "key_concepts": [
+            "capitalization at sentence start and for proper nouns",
+            "end punctuation: period, question mark, exclamation point",
+            "finger spaces between words in draft writing"
+          ],
+          "is_review_lesson": false,
+          "style": "hands_on",
+          "energy": "low"
+        },
+        {
+          "lesson_number": 5,
+          "title": "Revising and Sharing Our Writing",
+          "big_idea": "Writers read their own work out loud to find places where they can add details, fix mistakes, or make sentences clearer.",
+          "standards": ["W.1.5"],
+          "key_concepts": [
+            "self-revision: reading aloud to yourself",
+            "adding a detail to make writing stronger",
+            "sharing writing with an audience"
+          ],
+          "is_review_lesson": false,
+          "style": "creative",
+          "energy": "medium"
+        },
+        {
+          "lesson_number": 6,
+          "title": "Digital Writing: Using Technology to Publish",
+          "big_idea": "Typing and publishing your writing on a screen is another way to share your ideas with the world.",
+          "standards": ["W.1.6"],
+          "key_concepts": [
+            "using keyboard to type words",
+            "digital tools for writing and publishing",
+            "sharing writing digitally with teacher guidance"
+          ],
+          "is_review_lesson": false,
+          "style": "exploration",
+          "energy": "high"
+        },
+        {
+          "lesson_number": 7,
+          "title": "Unit 4 Review: Writer's Showcase",
+          "big_idea": "Strong writers use the right structure for each type of writing, follow sentence rules, and revise to make their message clear.",
+          "standards": ["W.1.1", "W.1.2", "W.1.3", "W.1.5", "W.1.6", "L.1.1j", "L.1.2b"],
+          "key_concepts": [
+            "three types of writing: opinion, informational, narrative",
+            "capitalization and end punctuation rules",
+            "revising to add details",
+            "digital publishing basics"
+          ],
+          "is_review_lesson": true,
+          "style": "review_game",
+          "energy": "high"
+        }
+      ]
+    }
+  ],
+  "meta": {
+    "generated_at": "2026-03-17T00:00:00.000Z",
+    "generated_by": "chapterhouse-curriculum-factory",
+    "total_units": 4,
+    "total_lessons": 22
+  }
+}

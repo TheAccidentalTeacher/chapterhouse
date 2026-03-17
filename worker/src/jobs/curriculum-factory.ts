@@ -50,6 +50,22 @@ function getGradeBand(grade: number): string {
   return "high";
 }
 
+// ── Canonical subject display names — must match scope-sequence-handoff.md exactly ─
+const CANONICAL_SUBJECT_LABELS: Record<string, string> = {
+  ela: "Language Arts",
+  sci: "Science",
+  mth: "Mathematics",
+  hst: "Social Studies",
+  bib: "Bible",
+  art: "Art",
+  mus: "Music",
+  pe: "Physical Education",
+};
+
+function getCanonicalSubjectLabel(subjectCode: string, fallback: string): string {
+  return CANONICAL_SUBJECT_LABELS[subjectCode] ?? fallback;
+}
+
 async function callCouncilMember(
   member: CouncilMember,
   userMessage: string
@@ -112,7 +128,8 @@ export interface CurriculumJobPayload {
 // ── Structured extraction — converts Polgara's markdown to handoff JSON ──────
 
 interface ExtractionMeta {
-  subject: string;
+  subject: string;            // raw user input
+  canonicalSubject: string;   // spec-canonical label (e.g. "Language Arts" for ela)
   subjectCode: string;
   gradeLevel: number;
   gradeBand: string;
@@ -133,11 +150,11 @@ REQUIRED OUTPUT FORMAT (respond with ONLY valid JSON — no markdown fences, no 
 {
   "id": "${meta.courseId}",
   "schema_version": "1.0",
-  "subject": "${meta.subject}",
+  "subject": "${meta.canonicalSubject}",
   "subject_code": "${meta.subjectCode}",
   "grade": ${meta.gradeLevel},
   "grade_band": "${meta.gradeBand}",
-  "title": "Grade ${meta.gradeLevel} ${meta.subject}",
+  "title": "Grade ${meta.gradeLevel} ${meta.canonicalSubject}",
   "subtitle": "<descriptive subtitle extracted from the document>",
   "faith_integration": false,
   "theology_profile": "none",
@@ -155,6 +172,7 @@ REQUIRED OUTPUT FORMAT (respond with ONLY valid JSON — no markdown fences, no 
           "big_idea": "<one sentence core takeaway>",
           "standards": ["<real standard codes from ${meta.frameworkShort}>"],
           "key_concepts": ["<2-5 short phrases>"],
+          "is_review_lesson": false,
           "style": "<exploration|deep_dive|hands_on|story_driven|challenge|creative|review_game|field_journal|debate|lab>",
           "energy": "<high|medium|low>"
         },
@@ -172,7 +190,7 @@ REQUIRED OUTPUT FORMAT (respond with ONLY valid JSON — no markdown fences, no 
     }
   ],
   "meta": {
-    "generated_at": "<ISO 8601 timestamp>",
+    "generated_at": "${new Date().toISOString()}",
     "generated_by": "chapterhouse-curriculum-factory",
     "total_units": "<number>",
     "total_lessons": "<actual sum of all lessons across all units>"
@@ -183,7 +201,9 @@ STRUCTURAL RULES:
 - Each unit has 3-8 lessons. Different units CAN have different lesson counts.
 - The pacing field = "N+1" where N = teaching lessons, 1 = review. E.g. 5 teaching + 1 review = "5+1" (6 total lessons).
 - The LAST lesson in every unit is ALWAYS a review with "is_review_lesson": true.
+- ALL non-final lessons MUST have "is_review_lesson": false explicitly — never omit the field.
 - total_lessons in meta = the actual SUM of all lessons across all units (not a formula).
+- OPTIONAL: If the source document specifies a section count for a lesson, include "section_count": <integer 3-6>. If a specific lesson duration is mentioned, include "duration_override_minutes": <integer>. Otherwise omit both fields.
 
 LESSON VARIETY RULES:
 - Every lesson MUST have a "style" hint from: exploration, deep_dive, hands_on, story_driven, challenge, creative, review_game, field_journal, debate, lab.
@@ -325,10 +345,11 @@ export async function runCurriculumFactory(
     const gradeBand = getGradeBand(gradeLevel);
     const frameworkShort = getStandardsFrameworkShort(subject);
     const courseId = `${subjectCode}-g${gradeLevel}`;
+    const canonicalSubject = getCanonicalSubjectLabel(subjectCode, subject);
 
     const structuredJson = await extractStructuredOutput(
       polgaraFinal,
-      { subject, subjectCode, gradeLevel, gradeBand, frameworkShort, courseId }
+      { subject, canonicalSubject, subjectCode, gradeLevel, gradeBand, frameworkShort, courseId }
     );
 
     // Post-extraction validation & fixup
@@ -360,25 +381,24 @@ export async function runCurriculumFactory(
           unit.pacing = `${lessonCount - 1}+1`;
         }
 
-        // Ensure last lesson has is_review_lesson = true
-        const lastLesson = unit.lessons[unit.lessons.length - 1];
-        if (lastLesson && !lastLesson.is_review_lesson) {
-          lastLesson.is_review_lesson = true;
-        }
-
-        // Renumber lessons sequentially
+        // Set is_review_lesson explicitly on every lesson and renumber sequentially.
+        // true only for the last lesson — false on all others. Never rely on AI for either.
         unit.lessons.forEach((lesson, i) => {
+          lesson.is_review_lesson = i === unit.lessons.length - 1;
           lesson.lesson_number = i + 1;
         });
       }
 
-      // Compute accurate total_lessons (never trust AI math)
+      // Guarantee canonical subject label — overwrite whatever the AI emitted
+      structuredJson.subject = canonicalSubject;
+
+      // Authoritative metadata — totals, real timestamp, tool name (never trust AI values)
       if (structuredJson.meta && typeof structuredJson.meta === "object") {
         const meta = structuredJson.meta as Record<string, unknown>;
         meta.total_lessons = totalLessons;
         meta.total_units = units.length;
-        // Remove legacy field if present
-        delete meta.lessons_per_unit;
+        meta.generated_at = new Date().toISOString(); // real timestamp — set at generator runtime
+        delete meta.lessons_per_unit; // remove legacy field if present
       }
     }
 
