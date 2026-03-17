@@ -496,6 +496,23 @@ Be thorough and detailed. This analysis will be used to generate quizzes, lesson
 export async function runYoutubeTranscript(jobId: string, payload: YoutubeTranscriptPayload) {
   const { videoId, metadata } = payload;
 
+  // Guard: if the Vercel route couldn't verify this video via YouTube Data API,
+  // the video likely doesn't exist or is private. Proceeding would cause Gemini
+  // to hallucinate a fake transcript — dangerous for educational content.
+  if (!metadata) {
+    await updateProgress(
+      jobId, 100,
+      "Video could not be verified — may not exist or may be private",
+      "completed",
+      buildOutput(
+        videoId, { segments: [], text: "" }, "none", null,
+        "Video metadata could not be retrieved from YouTube. The video may not exist, be private, or the URL may be incorrect.",
+        [{ tier: "validation", result: "failed", detail: "No metadata — video unverifiable" }]
+      )
+    );
+    return;
+  }
+
   let wavPath: string | null = null;
   const attempts: AttemptRecord[] = [];
 
