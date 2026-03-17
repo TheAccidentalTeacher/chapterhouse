@@ -107,6 +107,27 @@ function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) 
   );
 }
 
+// Turbopack re-derives property types through `as` casts, tracing back to the
+// source type and ignoring cast annotations. A function call is an opaque type
+// boundary — Turbopack must accept the declared return type without tracing.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parseOutput(raw: unknown): CouncilOutput | null {
+  if (raw == null || typeof raw !== "object") return null;
+  const o = raw as any; // `any` inside this function only — contained here
+  return {
+    subject: o.subject,
+    gradeLevel: o.gradeLevel,
+    duration: o.duration,
+    finalScopeAndSequence: o.finalScopeAndSequence,
+    structuredOutput: o.structuredOutput,
+    operationalAssessment: o.operationalAssessment,
+    engagementReport: o.engagementReport,
+    councilLog: o.councilLog,
+    draftsRetained: o.draftsRetained,
+    generatedAt: o.generatedAt,
+  };
+}
+
 interface CouncilOutput {
   subject?: string;
   gradeLevel?: number;
@@ -131,10 +152,7 @@ export function CouncilChamberViewer({ job }: Props) {
   const logEndRef = useRef<HTMLDivElement>(null);
   const [showStructured, setShowStructured] = useState(false);
   const [sessionLog, setSessionLog] = useState<string[]>([]);
-  // job.output is typed as `unknown` (Supabase JSONB). Cast directly — `unknown`
-  // allows a single `as` to any specific type, and Turbopack honours the cast
-  // destination type without re-deriving from the source Record type.
-  const output = job.output as CouncilOutput | null;
+  const output = parseOutput(job.output);
 
   // Accumulate progress messages — Realtime only gives the current row, so we
   // append each new distinct message ourselves to build a running history.
@@ -214,7 +232,7 @@ export function CouncilChamberViewer({ job }: Props) {
         <div className="space-y-4">
 
           {/* 1. Final Scope & Sequence ─ Polgara's deliverable */}
-          {output.finalScopeAndSequence && (
+          {!!output.finalScopeAndSequence && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wide">
@@ -240,7 +258,7 @@ export function CouncilChamberViewer({ job }: Props) {
           )}
 
           {/* 2. Pipeline Handoff JSON ─ structured extraction output */}
-          {output.structuredOutput && (
+          {!!output.structuredOutput && (
             <div className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-4 space-y-2">
               <div className="flex items-center justify-between">
                 <div>
@@ -279,7 +297,7 @@ export function CouncilChamberViewer({ job }: Props) {
           )}
 
           {/* 3. Earl's Operational Assessment ─ open by default */}
-          {output.operationalAssessment && (
+          {!!output.operationalAssessment && (
             <details className="group" open>
               <summary className="cursor-pointer list-none flex items-center gap-2 hover:opacity-80 transition-opacity select-none">
                 <span className="group-open:rotate-90 transition-transform inline-block text-amber-500 text-xs">▶</span>
@@ -294,7 +312,7 @@ export function CouncilChamberViewer({ job }: Props) {
           )}
 
           {/* 4. Beavis & Butthead's Engagement Report */}
-          {output.engagementReport && (
+          {!!output.engagementReport && (
             <details className="group">
               <summary className="cursor-pointer list-none flex items-center gap-2 hover:opacity-80 transition-opacity select-none">
                 <span className="group-open:rotate-90 transition-transform inline-block text-purple-500 text-xs">▶</span>
@@ -309,7 +327,7 @@ export function CouncilChamberViewer({ job }: Props) {
           )}
 
           {/* 5. Working Papers ─ Gandalf's draft + Data's critique (closed by default) */}
-          {(output.draftsRetained?.gandalfInitialDraft || output.draftsRetained?.dataCritique) && (
+          {!!(output.draftsRetained?.gandalfInitialDraft || output.draftsRetained?.dataCritique) && (
             <details className="group">
               <summary className="cursor-pointer list-none flex items-center gap-2 hover:opacity-80 transition-opacity select-none">
                 <span className="group-open:rotate-90 transition-transform inline-block text-zinc-400 text-xs">▶</span>
