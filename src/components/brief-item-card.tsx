@@ -9,7 +9,24 @@ type BriefItem = {
   whyItMatters: string;
   score: string;
   sources: number;
+  track_impacts?: { ncho: number; somersschool: number; biblesaas: number };
+  collision_note?: string;
 };
+
+function TrackBadge({ label, score }: { label: string; score: number }) {
+  if (score === 0) return null;
+  const styles = [
+    "",
+    "border-border/70 text-muted/70",
+    "border-blue-500/40 bg-blue-500/10 text-blue-400",
+    "border-emerald-500/40 bg-emerald-500/15 text-emerald-300 font-semibold",
+  ];
+  return (
+    <span className={`rounded-full border px-2 py-0.5 text-xs ${styles[score] ?? styles[1]}`}>
+      {label} {"●".repeat(score)}
+    </span>
+  );
+}
 
 type ActionState = "idle" | "loading" | "done" | "error";
 
@@ -83,6 +100,18 @@ export function BriefItemCard({
         </span>
       </div>
       <p className="mt-2 text-sm leading-6 text-muted">{item.whyItMatters}</p>
+      {item.collision_note ? (
+        <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
+          <span className="font-semibold">⚡ Collision — </span>{item.collision_note}
+        </div>
+      ) : null}
+      {item.track_impacts ? (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          <TrackBadge label="NCHO" score={item.track_impacts.ncho} />
+          <TrackBadge label="SomersSchool" score={item.track_impacts.somersschool} />
+          <TrackBadge label="BibleSaaS" score={item.track_impacts.biblesaas} />
+        </div>
+      ) : null}
       <div className="mt-4 flex flex-wrap gap-2 text-xs">
         <span className="rounded-full border border-border/70 px-2.5 py-1 text-muted">
           {item.sources} source{item.sources === 1 ? "" : "s"}

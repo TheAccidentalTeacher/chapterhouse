@@ -9,6 +9,8 @@ type PersistedBriefItem = {
   whyItMatters: string;
   score: string;
   sources: number;
+  track_impacts?: { ncho: number; somersschool: number; biblesaas: number };
+  collision_note?: string;
 };
 
 type PersistedBriefSection = {
@@ -66,6 +68,8 @@ function normalizeSections(input: unknown): PersistedBriefSection[] {
             whyItMatters?: unknown;
             score?: unknown;
             sources?: unknown;
+            track_impacts?: unknown;
+            collision_note?: unknown;
           };
 
           if (
@@ -81,11 +85,20 @@ function normalizeSections(input: unknown): PersistedBriefSection[] {
               ? value.sources
               : 0;
 
+          const track_impacts =
+            value.track_impacts &&
+            typeof value.track_impacts === "object" &&
+            "ncho" in value.track_impacts
+              ? (value.track_impacts as { ncho: number; somersschool: number; biblesaas: number })
+              : undefined;
+
           return {
             headline: value.headline,
             whyItMatters: value.whyItMatters,
             score: value.score,
             sources: sourceCount,
+            ...(track_impacts ? { track_impacts } : {}),
+            ...(typeof value.collision_note === "string" ? { collision_note: value.collision_note } : {}),
           };
         })
         .filter((item): item is PersistedBriefItem => item !== null);

@@ -31,6 +31,9 @@ const GITHUB_REPOS = [
 
 export default async function DailyBriefPage() {
   const brief = await getLatestDailyBrief();
+  const collisionItems = brief.sections
+    .flatMap((s) => s.items.map((item) => ({ ...item, sectionTitle: s.title })))
+    .filter((item) => !!item.collision_note);
 
   return (
     <PageFrame
@@ -65,6 +68,38 @@ export default async function DailyBriefPage() {
             </section>
           ) : null}
 
+          {collisionItems.length > 0 ? (
+            <section className="glass-panel rounded-3xl border border-amber-500/20 bg-amber-500/5 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <h2 className="text-lg font-semibold">⚡ Collisions</h2>
+                <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-semibold text-amber-400">
+                  {collisionItems.length} cross-track signal{collisionItems.length === 1 ? "" : "s"}
+                </span>
+              </div>
+              <div className="space-y-3">
+                {collisionItems.map((item) => (
+                  <div key={item.headline} className="rounded-xl border border-border/50 bg-background/50 p-4">
+                    <p className="font-medium text-sm">{item.headline}</p>
+                    <p className="mt-1 text-xs text-amber-300/90">{item.collision_note}</p>
+                    {item.track_impacts ? (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {(["ncho", "somersschool", "biblesaas"] as const).map((key) => {
+                          const score = item.track_impacts![key];
+                          const name = key === "ncho" ? "NCHO" : key === "somersschool" ? "SomersSchool" : "BibleSaaS";
+                          if (score < 2) return null;
+                          return (
+                            <span key={key} className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs text-amber-300">
+                              {name} {"●".repeat(score)}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
           {brief.sections.map((section) => (
             <section key={section.title} className="glass-panel rounded-3xl p-6">
               <div className="flex items-center justify-between gap-3">

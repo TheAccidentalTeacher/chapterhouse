@@ -85,6 +85,12 @@ function CouncilContent() {
                 time: "~1 min",
                 desc: "Engagement stress test. Would a real kid give a crap about this? COOL/SUCKS/MEH per unit.",
               },
+              {
+                agent: "Extract",
+                color: "bg-emerald-100 text-emerald-700",
+                time: "~1 min",
+                desc: "Converts Polgara's markdown to the SomersSchool pipeline JSON — structured, validated, ready to drop into scope-sequence/.",
+              },
             ].map((step) => (
               <div key={step.agent} className="flex gap-3">
                 <span className={`inline-flex items-center justify-center w-16 h-6 text-xs font-semibold rounded-full flex-shrink-0 ${step.color}`}>
@@ -98,7 +104,7 @@ function CouncilContent() {
             ))}
           </div>
           <p className="text-xs text-[var(--muted)] pt-2 border-t border-[var(--border)]">
-            Total: ~10 min. You can close this tab — the session runs in the background and results appear in Job Runner.
+            Total: ~11 min across 6 passes. You can close this tab — the session runs in the background and results appear in Job Runner.
           </p>
         </div>
       </div>
