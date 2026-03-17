@@ -4,6 +4,20 @@
 
 ---
 
+## ⛔ NON-NEGOTIABLE RULE — READ BEFORE TOUCHING SOMERSSCHOOL CODE
+
+> **Student work is NEVER used to train, fine-tune, or improve any AI model. No exceptions. No workarounds.**
+>
+> - Only **Anthropic API**, **OpenAI API**, or **Azure AI** may process student content — these providers contractually prohibit training on API data.
+> - **Groq, consumer AI products (ChatGPT web, Claude.ai web), and any free-tier service** must NEVER receive student content.
+> - Any new AI provider added to SomersSchool must meet the same contractual standard **before** student data flows through it.
+> - All student content must be **anonymized** before any AI call — no names, no `child_id`, no PII in prompts.
+> - All AI calls touching student data MUST route through `src/lib/ai/student-safe-completion.ts`. No direct SDK calls.
+>
+> Full implementation spec: `intel/student-ai-protection-handoff.md`
+
+---
+
 ## Who I Am
 
 **Scott Somers** — TheAccidentalTeacher on GitHub.
@@ -15,10 +29,23 @@
 - Deacon. Two nonprofit board presidencies.
 
 **Anna Somers** — wife and creative/editorial partner.
-- Pen name: Alana Terry. USA Today bestselling Christian fiction author.
-- Host: "Praying Christian Women" podcast.
+- Pen name: **Alana Terry**. USA Today bestselling Christian fiction author. Fully indie — no traditional publisher.
+- Host: **"Praying Christian Women" podcast** (on LifeAudio). Substack newsletter. Free Scripture Journal lead magnet. Co-author: *She Prays Like a Girl* (with Jaime Hampton, 2026).
 - **Primary builder of the NCHO Shopify store** — very high-touch, curating every product personally.
-- Her audience is a warm launch market for all products — not yet actively marketed to.
+
+**Alana Terry published catalog:**
+- **Kennedy Stern Christian Suspense** — flagship series, 9+ books. Crime/faith/social justice. *Unplanned* (Book 1) is the lead magnet free thriller.
+- **Alaskan Refuge Christian Suspense** — 3+ books + box set. Alaska-set thrillers.
+- **Sweet Dreams Christian Romance** — 4+ books (*What Dreams May Come / Lie / Die / Fall*).
+- **Turbulent Skies Christian Thriller Novellas** — 5+ books.
+- **Orchard Grove Christian Women's Fiction** — 3+ books + box set.
+- **Whispers of Refuge** — 3+ books + box set. North Korea-themed Christian fiction.
+- Standalones: *Forget Me Now*, *Blessing on the Run*, others.
+- SomersSchool courses (separate education lane): "Newsies: The American Story" + "Les Misérables: Revolution and Justice"
+
+**christianbooks.today** — Anna and Scott's *existing* Shopify store, already live. Same P.O. Box 29, Glennallen, AK 99588. 24,600+ happy readers. Carries Alana Terry novels, other Christian books and gifts, Amazon affiliate model. *She Prays Like a Girl* featured prominently. Completely separate from NCHO — different audience (Christian fiction readers vs. homeschool families), different products, different brand identity.
+
+**⚠️ BRAND WALL — NON-NEGOTIABLE:** Anna is very reticent to use her Alana Terry brand, PCW podcast audience, or christianbooks.today to cross-promote NCHO or SomersSchool. Do NOT suggest cross-promotion between these brands. The audiences overlap on paper — that is not an invitation to pitch the bridge. Anna keeps these worlds separate by deliberate choice. Respect this in all copy, strategy, campaign, and marketing suggestions. If Scott wants to explore it, he will raise it. Until then: the wall stands.
 
 **Trisha Goyer** — former partner at Epic Learning. Parting ways amicably March 2026.
 - SomerSchool is moving off her platform and becoming its own SaaS under NCHO umbrella.
@@ -240,7 +267,7 @@ Use these when generating copy, landing pages, ad campaigns, email sequences, or
 | **USP** | Curated by a real classroom teacher (not a wholesaler). Alaska allotment eligible. Carries faith resources without being a "Christian store." Companion guides + public domain texts = affordable, legal, original. "Your one-stop homeschool shop" — proven in click test. |
 | **Challenges** | Crowded market (Rainbow Resource, CBD, Christianbook). No existing audience — cold start. Competing against massive catalogs with a curated boutique. Launch must happen before teaching contract ends May 2026. PRH Christian "Grace Corner" D2C launched Q1 2026 — **this validates the market, not threatens it.** The bigger they are, the more NCHO's curation and teacher-credibility stands out. Counter-position: "An actual classroom teacher curated this for your child" vs "a publishing conglomerate with 2,000 titles." |
 | **Brand Message** | "For the child who doesn't fit in a box." — Lead with the unique child (emotional). Convert with "your one-stop homeschool shop" (practical). Two-layer strategy validated by A/B click tests. |
-| **Visual Identity** | Earthy, warm, organic. Olive greens, dusty roses, teals. No corporate navy/gray. No aggressive reds. Think curated lifestyle blog, not educational supplier. |
+| **Visual Identity** | **Red and white primary** (logos, banners, hero sections — click-test confirmed). Secondary/accent palette: earthy, warm, organic (olive greens, dusty roses, teals) used underneath as supporting tones. No corporate navy/gray. Think curated lifestyle blog with a bold identity, not a generic educational supplier. |
 | **Voice** | Empathetic, specific, convictional. We see her child. We have a point of view. We are the calm exhale, not a generic catalog. **Always say "your child" not "your student."** Parents see their kids as children first, learners second. Validated by Facebook click testing — emotional resonance peaks when the child is referenced personally, not academically. This applies to all copy, emails, in-product notifications, and landing pages. Never lead with curriculum features; always lead with the child. |
 
 ### Track 2: SomerSchool / SomersVerse
@@ -326,6 +353,7 @@ Base rate: $49/mo (1 student). Each additional student adds $25/mo. Capped at 5 
 - Add `faith_based BOOLEAN DEFAULT false` to `products` (MUST be false for all SomerSchool courses)
 - Make `child_id NOT NULL` in lesson_progress (was nullable)
 - Complete credits/xp/badges tables (partially built)
+- Add `exit_point FLOAT` to `lesson_progress` (0.0–1.0, autoresearch loop instrument)
 
 ### Track 3: BibleSaaS
 | Element | Definition |
@@ -363,14 +391,24 @@ Base rate: $49/mo (1 student). Each additional student adds $25/mo. Capped at 5 
 - Chapterhouse is private (Scott & Anna only) — not a product unless productized deliberately
 - BibleSaaS is personal use first (Scott + son). Needs beta before commercial. Not the current revenue priority.
 - NCHO two-layer messaging: Brand = emotional ("for the child who doesn't fit in a box"), Offer = practical ("your one-stop homeschool shop"). Validated by Facebook click tests.
-- **NCHO (store) visual identity: earthy/warm palette (olive, rose, teal).** No corporate or aggressive colors. Data-backed.
-- **SomerSchool visual identity: RED AND WHITE.** Bold, clean, educational. Confirmed via Facebook ad test. These are different brands — do NOT mix or confuse the palettes.
+- **NCHO (store) visual identity: RED AND WHITE PRIMARY** (logos, banners, hero sections — click-test confirmed). Secondary/accent palette: earthy/warm (olive, rose, teal) used underneath as supporting tones. Both brands share red/white as primary — NCHO is distinguished by its earthy warmth in supporting elements; SomersSchool stays bold and clean all the way through with no earthy layer.
+- **SomersSchool visual identity: RED AND WHITE.** Bold, clean, educational throughout. No earthy accent layer. Confirmed via Facebook ad test. These are different brands — do NOT mix or confuse the palettes.
 - Full customer avatar documented in `customer-avatar.md` — "Alaskan Annie."
 - Email domain: **buttercup.cfd** on Porkbun → Cloudflare catch-all → `alaskanguy555@yahoo.com`. Verified and active.
 - **Always say "your child" not "your student."** Parents see their kids as children first, learners second. Validated by Facebook click testing — emotional resonance peaks when the child is referenced personally, not academically. This applies to all copy, emails, in-product notifications, and landing pages. Never lead with curriculum features; always lead with the child.
 - **Visible progress is the SomerSchool retention mechanism** — not decoration. Every lesson ends with a badge unlocked, XP added, and a parent notification sent. RevenueCat 2026: AI apps churn 30% faster than non-AI apps when they lack visible outcome tracking. Design question before shipping any feature: *"What does the child get to SHOW for finishing this?"*
 - **PRH "Grace Corner" D2C launching Q1 2026 validates the homeschool digital market — it is positioning fuel for NCHO, not a threat.** The bigger the publishing giants get, the more NCHO's teacher-curated identity stands out. Counter-position: "curated by a real classroom teacher" vs "shipped by a publishing conglomerate."
 - **Groq cannot process student content.** Groq's free-tier terms do not explicitly exclude user data from training. All student-facing AI features in SomersSchool must use Anthropic, OpenAI (enterprise terms), or Azure (FERPA layer). Groq is approved for Chapterhouse and internal tooling only — never route student essays, assessments, or personally identifiable child data through Groq.
+- **Anna's brand wall is non-negotiable.** Alana Terry / PCW / christianbooks.today do NOT cross-promote NCHO or SomersSchool. Separate brands, separate audiences, separate worlds. Never suggest using Anna's existing audience or platforms to launch Scott's products unless Scott explicitly raises it first.
+- **NCHO product page callout box:** Use a free PDF paired to each product category. One static PDF per category, free with purchase. Box says: "Free: [Name of PDF] — included with this purchase." Image = PDF cover. Consultation idea is parked in dreamer.md for later.
+- **Convicted, not curious — universal copy test.** Before writing any copy, ask: *is my user still deciding, or have they decided?* NCHO and BibleSaaS users are convicted (already decided). SomersSchool users are convicted about homeschooling but curious about this platform. Write to the right state. Mixing conviction and curiosity language in the same copy produces beige. Every product has one primary lane — know it and stay in it.
+- **Autoresearch loop — cross-app programming pattern.** Any metric you can measure programmatically can be handed to an agent to optimize. Three requirements: (1) a meaningful number, (2) a script that produces it on demand, (3) an agent + goal to make it better. Build measurement instruments at feature-build time even if the optimization loop runs later. SomersSchool: `exit_point` in lesson_progress. ClassCiv: epoch transition latency. BibleSaaS: cost per study session. Unmetered features cannot be improved by agents.
+- **Skill/MCP two-layer architecture is now the default mental model for all agent system design.** Knowledge → Markdown. Execution → MCP. Hybrid → skill calls MCP. This applies to Chapterhouse (Council Mode system prompts → extract to `.md` files), SomersSchool (lesson generation prompts → extract to `.md`), BibleSaaS (study session prompts → extract to `.md`). Scott's `copilot-instructions.md` is already the master skill file for this workspace.
+- **CLAUDE.md per active repo is a locked architectural decision** — not a pending action. Every hot/warm repo ships with a CLAUDE.md before any new feature work. The file is the knowledge layer for Claude Code. Without it, every session starts cold and rediscovers what's already known.
+- **Do not build custom MCP servers until stateless architecture lands** — MCP's stateful session model means load balancers can't route requests across multiple instances without breaking sessions. The `.well-known` discovery endpoint and stateless session spec are expected Q2/Q3 2026. Until then: use existing production-hardened MCP servers only (Supabase `postgres-mcp`, Stripe MCP when available).
+- **Batch size law for Claude Code:** When an agent task fails, first question is "is this batch too large?" — not "what did I prompt wrong?" Cut large tasks in half. The Chapterhouse job-type-per-unit pattern is correct.
+- **TypeScript 6.0 upgrade prep:** Before upgrading any active repo to TS 6.0 stable, add `"types": ["node"]` to `tsconfig.json`. Without it, upgrade produces a wall of "Cannot find name" errors. Also: fix any `strict` violations and move `baseUrl` path aliases to `paths`. Do this prep work now so TypeScript 7.0 (Go compiler rewrite, dramatically faster builds) is a clean migration.
+- **“Restoring wonder” — third NCHO/SomersSchool brand layer (test pending).** Current two-layer: emotional ("doesn't fit in a box") + practical ("one-stop shop"). "Restoring wonder" is the aspirational layer: *what if school felt like wonder again?* Test in Facebook copy before committing. Also applies to Gimli lesson design: add a WONDER beat between example and check — one question with no wrong answer.
 
 ---
 
@@ -484,7 +522,74 @@ The end state: every major decision — product, architecture, curriculum, marke
 
 ---
 
-## What Copilot Can Build Right Now — Capability Reference
+## Content Marketing & Organic Growth Strategy
+
+*The legitimate version of "faceless digital marketing" — no ad spend required, compounds over time, built on Scott's actual credentials.*
+
+### What "Faceless" Actually Means
+Content marketing without being on camera. Scott's avatar (HeyGen) and Gimli (ToonBee) are the faces. Scott's teacher knowledge and script-writing is the engine. The audience doesn't need to see Scott set up a ring light — they need to see a real teacher who knows what he's talking about.
+
+### The Content Stack Scott Can Deploy Right Now
+
+| Channel | Format | Tool Chain | Audience | Revenue Path |
+|---|---|---|---|---|
+| **YouTube (long-form)** | 10–20 min lesson videos | HeyGen + ToonBee + Flixier | Homeschool parents searching for curriculum help | SomersSchool enrollment |
+| **YouTube Shorts / Reels / TikTok** | 30–60 sec Gimli explains one thing | ToonBee + ElevenLabs + Repurpose.io | Broad discovery | Top-of-funnel → long-form |
+| **SEO blog content** | 800–1500 word posts targeting search terms | Copilot writes, Scott edits | Parents Googling homeschool curriculum | NCHO store + SomersSchool |
+| **Email list** | Free lead magnet → Brevo nurture sequence | Brevo (free tier) | Anyone who downloads a free resource | Course sales, NCHO products |
+
+### YouTube AI Content — Disclosure Rules (as of early 2026)
+
+**Disclosure label NOT required for:**
+- HeyGen Scott avatar (your own likeness + your own script = your content)
+- ToonBee/Gimli cartoon (clearly animated — no one mistakes a cartoon dog for real)
+- AI-assisted script writing (tools assistance ≠ synthetic media)
+- AI-generated background music used in educational context
+
+**Bottom line:** Scott's entire production stack (HeyGen + ToonBee + ElevenLabs + Flixier) requires ZERO YouTube AI disclosure labels.
+
+### The Organic Growth Ladder (No Paid Ads)
+
+```
+Month 1–2: Build the asset base
+  → Commission Gimli 5-8 pose illustrations
+  → Run ToonBee character consistency test → purchase
+  → Build 3 HeyGen Scott scripts for long-form YouTube
+  → Set up Repurpose.io for auto-distribution
+  → Set up Brevo email list with one lead magnet (free PDF)
+
+Month 3–4: Content volume
+  → 3 long-form YouTube videos published
+  → 8–10 Gimli Shorts published (distributed via Repurpose.io)
+  → 10 SEO blog posts targeting homeschool search terms
+  → Email list growing via lead magnet on every page
+
+Month 5–6: Community + conversion
+  → Active in 3–5 homeschool Facebook groups (genuine, helpful)
+  → NCHO store soft-launched
+  → SomersSchool first paying enrollments
+
+Month 7–12: Compound
+  → YouTube SEO kicks in (3–6 month lag is normal)
+  → Email list at 500+ → warm launch sequence to SomersSchool
+  → First affiliate/allotment eligible sales on NCHO
+```
+
+### Lead Magnet Ideas (Free → Email → Sale)
+- "Free Secular Homeschool 4th Grade Science Unit" (PDF) → SomersSchool enrollment
+- "Alaska Education Allotment Guide" (PDF) → NCHO store + SomersSchool
+- "30 Gimli Math Warm-Up Problems" (PDF, K–3) → SomersSchool enrollment
+- "How to Choose Homeschool Curriculum Without Overwhelm" (PDF) → NCHO curation
+
+### SEO Target Terms (Wide Open, Low Competition)
+- "best secular homeschool curriculum [grade]"
+- "homeschool [subject] for [grade] without religious content"
+- "Alaska education allotment approved curriculum"
+- "how to homeschool without buying a full kit"
+- "[subject] homeschool [grade] free printable"
+
+### The Gimli-First Principle
+**Everything else in this stack is blocked behind Gimli existing as a reusable asset.** Once Gimli's 5–8 poses are illustrated and locked in ToonBee, every short costs 20 minutes of production instead of 3 hours. Before podcasts, before blog posts, before YouTube — build Gimli. — Capability Reference
 *Distilled from verified sessions. These are things Scott can ask for and receive in a single exchange.*
 
 ### Single-File Browser Deliverables (Drop Into Any App)
@@ -589,24 +694,27 @@ The end state: every major decision — product, architecture, curriculum, marke
 | N8N | Automation | 🟢 Parked — use going forward | Go-to automation layer. Railway deploy. Connects all Vercel apps, Railway backends, Supabase, Stripe, LearnWorlds via webhooks/HTTP. Not platform-specific — pure HTTP glue. |
 | Claude Code | AI Dev Tool | 🔴 Install now | `npm install -g @anthropic-ai/claude-code` then `claude` in any project terminal. The one thing it does that Copilot doesn't: **autonomous unsupervised iteration** — runs a command, reads the error, fixes it, runs again, loops until done, without checking in. Copilot collaborates (you stay in the loop). Claude Code executes (you walk away). Same Anthropic API key. Has voice mode. Use for "go fix this whole thing while I sleep" jobs. API key set ✅ — ready to use. |
 | ~~Helicone~~ | API Monitoring | ⚫ Acquired/dead | Acquired by Mintlify March 3, 2026. Maintenance mode only. Use **Langfuse** instead — open source, Railway-deployable, same capability. |
+| **Langfuse** | LLM Observability | 🔴 Wire in now | Keys in hand. Open source. **What it is:** Structured logging for every AI call — exact prompt, response, token count, cost, latency, tool calls. **Core concepts:** (1) **Trace** = one complete request through your app end-to-end. (2) **Observation** = every step inside a trace: `Generation` (LLM call), `Span` (code block), `Event` (point-in-time). (3) **Session** = group of traces for one user conversation. **Key features:** token+cost tracking per call/user/feature; user tracking; environment tags; agent graphs; prompt management with version control; LLM-as-a-judge evals. **Where to wire it:** Chapterhouse (cost per brief + pipeline latency), SomersSchool (cost per lesson generation), BibleSaaS (cost per study session = autoresearch benchmark). **Rule:** Wire Langfuse into every AI-calling app **before charging customers.** You cannot debug production AI failures without it. SDK: `npm install langfuse` (JS/TS) or `pip install langfuse` (Python). Env vars: `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_HOST`. Keys in `.env.master`. |
 | dreamer.py | Python TUI | ⚫ Killed | Retired. VS Code + Copilot does everything it did, better. Say "dream with me" instead. |
 | Descript | AI Video/Podcast | ✅ Scott has it | Edit lessons by transcript. Overdub voice cloning. Best for recorded talking-head content. Anna's podcast editor too. |
 | HeyGen Creator | AI Avatar Video | ✅ Scott has it | Digital twin avatar. No camera after setup. 175 languages. E-learning listed use case. |
 | Flixier Pro | Cloud Video Editor | ✅ Scott has it | Browser-based full editor. 103-language subtitle translation. 4M+ stock assets. Used by Netflix/Google/Disney. |
 | InVideo Max | AI Video Generator | ✅ Scott has it | Marketing/promo videos. Integrates Sora 2, Veo, ElevenLabs, GPT Image 1. Best for NCHO promos. |
-| Minvo Pro | Clip Repurposing | ✅ Scott has it | Long video → short social clips. AI clipping, captions, scheduling. Not for LMS — for social promotion. |
+| Minvo Pro | Clip Repurposing | ✅ Scott has it | Long video → short social clips. AI clipping, captions, scheduling. Not for LMS — for social promotion. Scott prefers Repurpose.io for distribution. |
+| Repurpose.io | Content Distribution | 🔴 Preferred | Auto-distribute HeyGen/lesson clips to TikTok, Reels, YouTube Shorts. Scott's preferred tool over Minvo for repurposing. |
 | Lordicon PRO | Animated Icon Library | ✅ Scott has it | 32,700 animated icons. Lottie/GIF/SVG exports. React/JS native. Use in all Next.js apps. |
 | Doodly (Voomly Cloud) | Whiteboard Animation | 🔴 Get this | Smart Draw = upload Gimli illustration → system draws him on whiteboard. Includes Toonly, Talkia, Voomly hosting. |
 | ToonBee | AI Cartoon Generator | 🟡 Trial first | Character Consistency Engine. Education + faith use cases explicit. $77/mo. Test: same dog across 2 scenes? |
 | Kling AI | AI Cinematic Video | 🟡 Consider | 3.0 architecture rebuilt for cross-scene visual identity consistency. ~$29.99/mo. Best $/character-consistency. |
 | Animaker Pro | 2D Animation Platform | 🔵 Option | 30 custom characters, commercial rights, 2K video, #1 rated design product. $43/mo. |
 | Superhuman | AI Email | ⚫ Skip | Email client, $30/mo. Cloudflare catch-all + Brevo covers Scott's needs for free. |
+| **daily.dev** | Dev Feed / Intel | ✅ Active | Personalized dev news feed — Chapterhouse brief ingestion. **Requires Plus ($7/mo) for API access.** Base URL: `https://api.daily.dev/public/v1`. Auth: Bearer token. Working endpoints: `GET /feeds/foryou` (NO hyphen — `/for-you` returns 404), `/feeds/popular`, `/feeds/discussed`, `/feeds/tag/{tag}`. All accept `limit` (1–50) + `cursor`. Rate limit: 60 req/min. |
 
 ---
 
 ## AI Landscape Intel — What's Current (March 2026)
 
-- **Claude Sonnet 4.6** — current default in VS Code Copilot. Use `claude-sonnet-4-6` in all new code. Full Claude family: Opus 4.6 (most capable, $5/$25 per MTok), Sonnet 4.6 (best speed+intelligence, $3/$15), Haiku 4.5 (fastest, $1/$5). **1M token context window now GA at standard pricing for both Sonnet 4.6 and Opus 4.6 (Mar 13, 2026) — no long-context surcharge. OpenAI charges a premium above 272K tokens; Gemini above 200K. Anthropic is eating the cost to differentiate. Means Chapterhouse, BibleSaaS, and SomerSchool can use full-document context without worrying about cost spikes — automatic, no API changes needed.** **Architectural implication: design new features to ingest full documents — entire textbooks, full curricula, complete lesson archives — as context. Do NOT chunk content unnecessarily. No RAG workarounds needed for most use cases when content fits in 1M tokens (~750K words). This changes the default architecture for SomerSchool lesson pipelines, Chapterhouse research ingestion, and BibleSaaS commentary synthesis.**
+- **Claude Sonnet 4.6** — current default in VS Code Copilot. Use `claude-sonnet-4-6` in all new code. Full Claude family: Opus 4.6 (most capable, $5/$25 per MTok), Sonnet 4.6 (best speed+intelligence, $3/$15), Haiku 4.5 (fastest, $1/$5). **1M token context window GA at standard pricing for both Sonnet 4.6 and Opus 4.6 — officially confirmed March 14, 2026 (source: The New Stack). No long-context surcharge. Previous pricing: Sonnet input rose from $3→$6/M above 200K tokens; Opus rose from $5→$10/M above 200K. Both premium tiers are gone. OpenAI charges a premium above 272K tokens; Gemini above 200K. Anthropic is eating the cost to differentiate. Means Chapterhouse, BibleSaaS, and SomerSchool can use full-document context without worrying about cost spikes — automatic, no API changes needed. Real-world cost check: full copilot-instructions.md (~22K tokens) loaded into every Chapterhouse brief generation call costs ~$0.066 per call. Full contextualized daily brief with collision mapping and Council synthesis: ~$0.15–0.25/day ($4–7/month). Phase B (Chapterhouse context layer) is now essentially free to run.** **Architectural implication: design new features to ingest full documents — entire textbooks, full curricula, complete lesson archives — as context. Do NOT chunk content unnecessarily. No RAG workarounds needed for most use cases when content fits in 1M tokens (~750K words). This changes the default architecture for SomerSchool lesson pipelines, Chapterhouse research ingestion, and BibleSaaS commentary synthesis.** Brad Feld (Techstars co-founder) on the shift: *"I built four markdown state machines totaling 4,700 lines to manage my development workflow — most of that complexity existed because of the 200K context limit. With 1M tokens, reliability is largely solved by having enough room. The constraint shifts to wall-clock speed — and speed comes from parallelism."* This is the authoritative external validation of the 'design for full documents' architectural principle. Available on Claude Platform natively, Amazon Bedrock, Google Cloud Vertex AI, and Microsoft Foundry. Claude Code Max, Team, and Enterprise users get full 1M window on Opus 4.6 by default.
 - **GPT-5.4** — **live in the OpenAI API now**, not just Copilot. `model: "gpt-5.4"`. 1M token context, built-in computer use, tool search, native compaction. Full family: gpt-5.4 (flagship), gpt-5.4-pro (deepest reasoning), gpt-5-mini (cost-optimized), gpt-5-nano (high-throughput). Use **Responses API** (`client.responses.create`) not Chat Completions for GPT-5.4 — passes chain-of-thought between turns, fewer tokens, better performance. DALL-E 3 is now **GPT Image 1** (`model: "gpt-image-1"`).
 - **Claude Cowork** — Anthropic's real product at claude.com/product/cowork. Collaborative AI workspace. Built in partnership with Microsoft — powering Copilot Cowork inside M365.
 - **Claude Code** — terminal-based autonomous coding agent. Has voice mode. The one thing it does that Copilot doesn't: fully unsupervised iteration loop. Use for "go fix this while I sleep" jobs.
@@ -619,6 +727,13 @@ The end state: every major decision — product, architecture, curriculum, marke
   - **Scott-specific applications**: BibleSaaS post-launch → AI study agent triggered by user action, plans SM-2 sequences, pulls TSK refs. ClassCiv → epoch transition agent handles game state + NPC queuing. Chapterhouse → daily brief system built on proper execution layer.
   - **Key mental model shift**: AI stops being a chat sidebar and becomes infrastructure — available wherever your software runs.
   - **MCP** (Model Context Protocol) is real, standardized, increasingly the backbone of AI ↔ external systems. Watch this space.
+- **MCP 2026 Roadmap — Four Priorities (March 14, 2026):** Maintainers published the production readiness roadmap. Four priority areas: (1) **Transport evolution/scalability** — reworking stateful sessions so MCP servers can scale horizontally without per-machine state. Adding `.well-known` discovery endpoint so tools can find what an MCP server does without a live connection. **This is the trigger for the GitHub Copilot SDK pattern — wire Supabase/Stripe as MCP tools queryable at runtime.** Wait for this before building custom MCP servers. (2) **Agent task lifecycle** — retry and persistence rules for long-running agent jobs. Scott's QStash+Railway+Supabase pattern already solves this outside MCP — architecture is ahead of the protocol. (3) **Governance maturation** — SEPs will ship faster in 2026 via working groups. Features Scott wants (streaming, stateless, event-driven) will land in months. (4) **Enterprise readiness** — audit trails, SSO, gateway controls. Relevant when FERPA compliance is a hard SomersSchool requirement. **Decision: Do not build custom MCP servers until stateless architecture and `.well-known` spec land (target: Q2/Q3 2026).** Use existing production-hardened MCP servers: Supabase `postgres-mcp`, Stripe MCP when available.
+- **Groq durability confirmed (December 2025):** NVIDIA closed a ~$20B licensing deal with Groq. NVIDIA is unveiling a dedicated inference chip *with Groq technology* at GTC 2026 in March. The 500 tok/s free tier Scott already uses is now backed by the most powerful hardware company in the world. This Groq position is more durable than it appeared 6 months ago. Watch SambaNova: 637 tok/s on a 120B model (vs Groq's 500 tok/s on 70B). No developer free tier yet — bookmark for when one opens.
+- **Inference is 2/3 of all AI compute in 2026** (Deloitte TMT Predictions): Scott's entire operation — all 47 repos, every Claude call, every Groq call — is 100% inference. He started on the right side of this split and has stayed there. Azure compliance layer now backed by Blackwell silicon via Microsoft-CoreWeave/Lambda/Nebius partnerships.
+- **TypeScript 6.0 RC (March 14, 2026) — Three breaking changes, action required before upgrading:** (1) **`types` defaults to empty array** — every active repo's `tsconfig.json` needs `"types": ["node"]` explicitly declared or builds will fail with "Cannot find name" walls. This single fix cuts build times 20–50%. (2) **`strict: true` is now the default** — projects not already on strict mode will surface a pile of type errors on upgrade. Fix the errors; do not add `"strict": false`. (3) **`--baseUrl` deprecated** — move path aliases to `paths` field before TS 7.0 (where `baseUrl` is removed entirely). **TypeScript 7.0 = full Go compiler rewrite, dramatically faster builds, parallel type checking. Ships months after 6.0 stable. Do 6.0 config cleanup now for a smooth 7.0 migration. Do NOT upgrade to 6.0 RC today — wait for stable release.**
+- **Two-layer agent memory architecture (March 2026 production pattern):** Interface and storage are independent decisions. Interface = what the agent *sees* (Markdown skill files, filesystem abstraction, MCP tools). Storage = where data *persists* (database). The "filesystem vs database" debate is a false choice — leading teams (LangChain, Supabase, Microsoft .NET Skills Executor) use both layers. Filesystem/Markdown interface wins for coding agents (200 tokens vs 50,000 for GitHub MCP server). Database wins for structured queries. **Implication for Scott's stack:** System prompts embedded in API route files should be extracted to `.md` files loaded at runtime — then they can be edited without redeploying, version-controlled in git, reviewed in PRs. Feld's CompanyOS does this for email voice calibration: edit a paragraph, commit, done. No deployment needed.
+- **Batch size law for AI agents (March 14, 2026):** Multi-agent AI research shows AI systems fail for the same structural reasons human teams fail — not human factors, but batch size. Coordination overhead eats the benefit of parallelism above a certain batch threshold. **When Claude Code fails on a task, the first question is not "what did I prompt wrong?" — it is "is this batch too large?"** Cut the task in half and hand it one piece. The Chapterhouse job-type pattern (`social_batch`, `research_batch`, `council_brief`) is structurally correct for this reason — each job type is a small, scoped unit of work.
+- **Skill/MCP two-layer architecture (March 2026 — now a locked principle):** Every agent task is either a knowledge problem or an execution problem. Knowledge problems → Markdown skill files (cheap, git-versioned, 200 tokens). Execution problems → MCP servers (auth, error handling, observability). Hybrid (know how to do something well) → skill file that *calls* MCP tools. Brad Feld runs an entire VC firm on 12 Markdown files + 8 MCP servers. Scott's `copilot-instructions.md` IS that skill layer. Every active repo needs a `CLAUDE.md` — this is now a locked architectural decision, not a pending action. **Standalone test:** If you disconnect all tools and Claude Code can only read the CLAUDE.md, does it still produce the right analysis? If yes: knowledge properly separated. If no: execution logic snuck into the knowledge layer — move it out.
 
 ## VS Code Copilot v1.110 — February 2026 Release (Key New Features)
 
@@ -640,19 +755,47 @@ The end state: every major decision — product, architecture, curriculum, marke
 1. ~~**BibleSaaS Phase 27 (commercial launch)**~~ — Personal use only. Needs beta before commercial. Long-game. Not current priority.
 2. ~~**Email & Domain Setup**~~ — DONE ✅. buttercup.cfd live.
 3. ~~**Claude Code API Key**~~ — DONE ✅. Run `claude` in any project terminal.
-4. **NCHO Shopify Storefront** — #1 revenue priority. Contract ends May 24, 2026. Launch before June 2026. Anna is primary builder.
+4. **NCHO Shopify Storefront** — #1 revenue priority. Contract ends May 24, 2026. Launch before June 2026. Anna is primary builder. **API access established** — Yellow CoPilot custom app installed via client credentials grant. Full store audit completed (108 products, 33 collections). See NCHO Store Status section below.
 5. **Stripe webhook secret** (`whsec_...`) — **Required before first paid enrollment.** Stripe Dashboard → Webhooks → your endpoint → Signing secret. Without this, webhook verification is broken and enrollment pipeline is open to spoofing.
-6. **Shopify API section in api-guide-master.md** — Add before NCHO launches. Need Admin API key + `SHOPIFY_WEBHOOK_SECRET` for order webhook verification.
+6. **Shopify API section in api-guide-master.md** — ⏳ API access working (Yellow CoPilot app). Still need `SHOPIFY_WEBHOOK_SECRET` for order webhook verification before launch. Add full entry to api-guide-master.md.
 7. ~~**Helicone**~~ — DEAD. Acquired by Mintlify March 3, 2026. Maintenance mode. Replaced by Langfuse.
 8. ~~**Langfuse**~~ — DONE ✅. Keys in hand (see api-guide-master.md and .env.master). Wire into all AI-calling apps before charging customers.
-9. **N8N on Railway** — Park until SomerSchool enrollments or Stripe→Supabase flows need automation wiring.
+9. **N8N on Railway** — Park until SomersSchool enrollments or Stripe→Supabase flows need automation wiring. **⚠️ SECURITY: n8n had four CVSS 9.4-9.5 vulnerabilities (CVE-2026-27577/27493/27495/27497) patched in versions 2.10.1/2.9.3/1.123.22. One is zero-click unauthenticated RCE via Form nodes. When deploying: must be >= 2.10.1, use external runner mode, disable Form nodes if unused, restrict workflow permissions to Scott only.**
 10. ~~dreamer.py~~ — killed, no action needed.
 11. **SomerSchool DB schema** — apply pending changes: `faith_based BOOLEAN`, `child_id NOT NULL`, complete credits/xp/badges tables before first enrollment.
 12. **ToonBee** — Subscribe and run Gimli character consistency test. Commission 5-8 Gimli pose illustrations.
 13. **Mat-Su Central allotment** — contact gena.chastain@matsuk12.us after conflict-of-interest question resolved.
-14. **CLAUDE.md per active repo** — create in CoursePlatform, roleplaying, BibleSaaS, chapterhouse. Claude Code reads it automatically when you run `claude` in that directory.
+14. **⚡ URGENT: CLAUDE.md per active repo** — This is now a **locked architectural decision**, not a pending action. Every hot/warm repo ships with a CLAUDE.md before any new feature work. Create in CoursePlatform, roleplaying, BibleSaaS, chapterhouse. Claude Code reads it automatically when you run `claude` in that directory. Without it, every session starts cold and burns tokens rediscovering what's documented.
 15. **Twilio toll-free verification** — console.twilio.com → Regulatory Compliance → verify +18772697929. Trial account cannot SMS real users until done.
 16. **youtube-transcript npm** — fix video Q&A in agentsvercel. `npm install youtube-transcript` → fetch real transcript → feed to Claude. Replaces the metadata-guessing that currently produces garbage questionnaires.
+17. **Vaultwarden** — Self-hosted Bitwarden (Rust, ultra-lightweight). `.env.master` currently lives as a flat file on desktop — if it leaks (GitHub accident, OneDrive sync, malware), the entire 47-repo stack burns simultaneously. Fix: Railway deploy + Tailscale private access. All API keys + annotations migrate to Secure Notes. Full Bitwarden client compatibility (iOS, Android, browser extensions). Oracle Cloud always-free ARM instance (4 cores, 24GB RAM, 200GB) is better compute for always-on services than Railway free — use that instead. One afternoon of work. The cost of not doing it is one `git push` without checking .gitignore.
+
+---
+
+## NCHO Shopify Store Status
+
+**Store:** `next-chapter-homeschool.myshopify.com` | **Plan:** Basic | **Status:** LOCKED (not public)
+**Owner:** Anna Somers / alaskansomers@gmail.com
+
+**API Access (Yellow CoPilot Custom App — WORKING):**
+- Auth: **Client credentials grant** (NOT OAuth) — POST to `/admin/oauth/access_token` with `grant_type=client_credentials`
+- API Version: 2026-01 | All 24 read-only scopes granted
+
+**Audit Results (March 17, 2026 — 708KB):**
+- 108 products (102 Ingram GetBooks imports, 6 manual)
+- 33 smart collections (auto-filtered by tags)
+- 49 unique product tags (Age/Grade/Subject/Type taxonomy)
+- Top vendors: Ravensburger (16), Klutz (13), Ace Academic (10), IXL (9)
+- 4 pages, 1 blog (0 articles), 3 navigation menus, 2 shipping zones
+
+**Critical Issues Before Launch:**
+- ⚠️ ALL 108 products missing SEO title/description — invisible to Google
+- ⚠️ 5 placeholder products with vendor = "Author Name"
+- ⚠️ Policies mostly empty (paste-ready versions in `ncho-shopify-policies.md`)
+- ⚠️ Blog has 0 articles
+- ⚠️ Still on `.myshopify.com` domain
+
+**Installed Apps:** Boost AI Search & Filter, Search & Discovery, Ingram integration, Matrixify, Flow, Yellow CoPilot
 
 ---
 
