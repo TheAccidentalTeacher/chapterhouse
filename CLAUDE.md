@@ -14,7 +14,7 @@ This document is your complete technical brief. Read all of it before touching a
 
 ---
 
-## What Chapterhouse Already Is (Current State — Updated March 15, 2026)
+## What Chapterhouse Already Is (Current State — Updated March 16, 2026)
 
 **Stack:** Next.js 16.1.6 (App Router), React 19, TypeScript, Tailwind 4, Supabase (auth + DB + realtime), Anthropic SDK, OpenAI SDK, Zod
 
@@ -27,6 +27,7 @@ This document is your complete technical brief. Read all of it before touching a
 ### Intelligence
 - `/research` — URL ingest, manual paste, screenshot attach. AI extraction, tagging, knowledge summaries. Full CRUD.
 - `/product-intelligence` — Scored opportunity cards (A+/A/B). Competitive analysis, market signals.
+- `/youtube` — YouTube Intelligence. Paste URL or search YouTube → extract transcript (captions → innertube → Gemini via Railway worker) → generate curriculum materials (quizzes, lesson plans, vocabulary, discussion questions, DOK projects, graphic organizers, guided notes). Batch mode for multi-video processing.
 
 ### Production
 - `/content-studio` — AI content generation (newsletters, curriculum guides, product descriptions) via Claude.
@@ -74,13 +75,19 @@ This document is your complete technical brief. Read all of it before touching a
 - `summarize/` — AI summarization
 - `tasks/` — Task list + create, `[id]/` (PATCH, DELETE)
 - `threads/` — Chat thread list + create, `[id]/` (PATCH)
+- `youtube/transcript/` — YouTube transcript extraction (POST): captions → innertube fast path on Vercel, then Railway worker handoff for Gemini 2.5 Flash. Returns `{pending: true, jobId}` for async jobs.
+- `youtube/search/` — YouTube Data API v3 search proxy (GET)
+- `youtube/batch/` — Batch transcript processing for multiple videos (POST)
+- `youtube/analyze/` — AI curriculum material generation from transcripts (POST): quizzes, lesson plans, vocabulary, discussion questions, DOK projects, graphic organizers, guided notes via Claude Sonnet 4.6
 
 **Supabase tables:**
 - `briefs`, `research_items`, `opportunities`, `tasks`, `chat_threads`, `knowledge_summaries`, `founder_notes`, `jobs`, `social_accounts`, `social_posts`
 
-**Key env vars:** `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `TAVILY_API_KEY`, `NEWSAPI_API_KEY`, `N8N_BASE_URL`, `N8N_API_KEY`, `RAILWAY_WORKER_URL`, `GITHUB_TOKEN`, `CRON_SECRET`, `NEXT_PUBLIC_APP_URL`, `ALLOWED_EMAILS`, `BUFFER_ACCESS_TOKEN`, `SHOPIFY_WEBHOOK_SECRET`
+**Key env vars:** `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `TAVILY_API_KEY`, `NEWSAPI_API_KEY`, `N8N_BASE_URL`, `N8N_API_KEY`, `RAILWAY_WORKER_URL`, `GITHUB_TOKEN`, `CRON_SECRET`, `NEXT_PUBLIC_APP_URL`, `ALLOWED_EMAILS`, `BUFFER_ACCESS_TOKEN`, `SHOPIFY_WEBHOOK_SECRET`, `YOUTUBE_API_KEY`, `GEMINI_API_KEY`, `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION`
 
-**Installed and active:** `@upstash/qstash`, `@upstash/redis`, `@anthropic-ai/sdk`, `openai`, `@supabase/supabase-js`, `@supabase/ssr`, `zod`, `react-markdown`, `remark-gfm`, `resend`, `rss-parser`, `date-fns`, `html-to-docx`, `marked`, `lucide-react`
+**Installed and active:** `@upstash/qstash`, `@upstash/redis`, `@anthropic-ai/sdk`, `openai`, `@supabase/supabase-js`, `@supabase/ssr`, `zod`, `react-markdown`, `remark-gfm`, `resend`, `rss-parser`, `date-fns`, `html-to-docx`, `marked`, `lucide-react`, `youtube-transcript` (v1.3.0 — captions extraction, blocked from cloud IPs)
+
+**Worker-only packages (Railway):** `@google/generative-ai` (Gemini 2.5 Flash), `microsoft-cognitiveservices-speech-sdk` (Azure Speech STT, Tier 3 fallback)
 
 **UI features built across Sessions 6-7 (March 14, 2026):**
 - Council Mode toggle (Solo/Council) inside chat input bar
@@ -149,6 +156,20 @@ PHASE 5 — Social Media Automation            ✅ COMPLETE
   API: 8 routes under /api/social/ + 1 cron + 1 webhook.
   DB: 2 new tables (social_accounts, social_posts).
   Worker: social-batch.ts job type in Railway worker.
+
+PHASE 6 — YouTube Intelligence              ✅ COMPLETE
+  Paste any YouTube URL → extract transcript → generate curriculum materials.
+  3-tier transcript extraction: captions (youtube-transcript npm) → innertube API → Gemini 2.5 Flash (Railway worker).
+  Vercel fast path: captions + innertube (~2.5s). If both fail, creates async job → QStash → Railway → Gemini.
+  Gemini watches the actual video (multimodal, 289K tokens for 20-min video, ~77s processing).
+  Hallucination guard: metadata validation via YouTube Data API before Gemini processes.
+  8 curriculum tools: quizzes, lesson plans, vocabulary, discussion questions, DOK projects,
+    graphic organizers, guided notes — all grade-appropriate via Claude Sonnet 4.6.
+  YouTube search built in (Data API v3). Batch mode for multi-video processing.
+  Supabase Realtime job watching — UI polls job status and displays transcript when ready.
+  UI: 4 components (youtube-input, youtube-transcript-viewer, youtube-curriculum-tools, youtube-batch-sidebar).
+  API: 4 routes under /api/youtube/ (transcript, search, batch, analyze).
+  Worker: youtube-transcript.ts job type with 4-tier fallback + hallucination guard.
 ```
 
 ---
@@ -807,6 +828,74 @@ The old Buffer REST API (`api.bufferapp.com/1/`) is **dead and deprecated**. All
 
 ---
 
+## Architecture Reference — Phase 6: YouTube Intelligence (BUILT ✅)
+
+### What It Does
+
+Paste any YouTube URL → extract a verbatim transcript → generate 8 types of curriculum materials from it. YouTube search built in so you never have to leave Chapterhouse.
+
+### Transcript Extraction Pipeline
+
+**Vercel Fast Path** (runs first, ~2.5s total):
+1. **Captions** — `youtube-transcript` npm library fetches YouTube's own captions. Works locally but **YouTube blocks cloud IPs** (Vercel, Railway). Falls through instantly in production.
+2. **Innertube** — Direct call to YouTube's internal `get_transcript` API. Same cloud IP blocking applies. Falls through in production.
+3. If both fail → creates a Supabase `jobs` row (type: `youtube_transcript`) + publishes to QStash → returns `{pending: true, jobId}` immediately.
+
+**Railway Worker** (async, ~77s for a 20-min video):
+1. **yt-dlp subtitles** — Attempts to download subtitle files. YouTube bot-checks block this from Railway too.
+2. **Gemini 2.5 Flash** — Watches the actual video via multimodal input (289K tokens for 20-min video). Outputs verbatim transcript with timestamps. **This is the tier that actually works in production.** Timeout: 180s.
+3. **Audio download + Azure Speech / OpenAI Whisper** — Fallback if Gemini fails. Downloads WAV via yt-dlp + ffmpeg → transcribes. Currently blocked by yt-dlp bot-check.
+4. **Gemini educational analysis** — Last resort: generates educational summary (not verbatim) with structural breakdown. Flagged as `gemini-analysis` source so UI shows warning.
+
+**Hallucination Guard:** Before Gemini processes any video, the worker validates the video ID via YouTube Data API v3. If `metadata` is null (video doesn't exist or is private), the worker fails immediately with a clear error instead of letting Gemini hallucinate a fake transcript.
+
+### Production Reality
+
+| Tier | Where | Works? | Why/Why Not |
+|------|-------|--------|-------------|
+| Captions (npm) | Vercel | ❌ | YouTube blocks cloud IPs |
+| Innertube API | Vercel | ❌ | Same IP blocking |
+| yt-dlp subtitles | Railway | ❌ | YouTube bot-check |
+| **Gemini 2.5 Flash** | **Railway** | **✅** | **Watches video natively, ~77s, 21K+ chars** |
+| Audio + Azure/Whisper | Railway | ❌ | yt-dlp can't download audio |
+| Gemini analysis | Railway | ✅ | Fallback — summary not verbatim |
+
+**In practice, 100% of production transcripts come through Gemini 2.5 Flash on Railway.**
+
+### Curriculum Generation Tools
+
+Route: `POST /api/youtube/analyze` — Claude Sonnet 4.6 generates grade-appropriate materials:
+
+| Tool | What It Produces |
+|------|-----------------|
+| Quiz | Multiple choice + short answer questions |
+| Lesson Plan | Full lesson plan with objectives, activities, assessment |
+| Vocabulary | Key terms with definitions and context |
+| Discussion Questions | Open-ended questions for group or family discussion |
+| DOK Projects | Depth of Knowledge projects at multiple levels |
+| Graphic Organizers | Visual organization templates for the content |
+| Guided Notes | Fill-in-the-blank style study guides |
+
+### UI Components
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| `YoutubeInput` | `src/components/youtube-input.tsx` | URL paste + YouTube search + Realtime job watching |
+| `YoutubeTranscriptViewer` | `src/components/youtube-transcript-viewer.tsx` | Transcript display with source badges (gemini=green, gemini-analysis=warning) |
+| `YoutubeCurriculumTools` | `src/components/youtube-curriculum-tools.tsx` | 8 curriculum generation tools |
+| `YoutubeBatchSidebar` | `src/components/youtube-batch-sidebar.tsx` | Batch mode for multi-video processing |
+
+### Key Env Vars (YouTube-specific)
+
+```bash
+YOUTUBE_API_KEY=...    # YouTube Data API v3 — search + metadata validation
+GEMINI_API_KEY=...     # Gemini 2.5 Flash — multimodal transcript extraction
+AZURE_SPEECH_KEY=...   # Azure Speech STT (Tier 3 fallback, not currently used)
+AZURE_SPEECH_REGION=... # Azure region (westus)
+```
+
+---
+
 ## Navigation (BUILT ✅)
 
 Navigation uses a grouped accordion system defined in `src/lib/navigation.ts`:
@@ -831,7 +920,7 @@ Sidebar component in `src/components/chapterhouse-shell.tsx` renders accordion g
 
 ## Build History (ALL COMPLETE ✅)
 
-All build steps completed across March 13-15 sessions. Deployed on Vercel.
+All build steps completed across March 13-16 sessions. Deployed on Vercel.
 
 **Phases 1-4 + Bonus (Sessions 6-7, March 13-14):**
 
@@ -855,6 +944,20 @@ All build steps completed across March 13-15 sessions. Deployed on Vercel.
 15. Shopify webhook — `/api/webhooks/shopify-product` with HMAC signature verification
 16. Railway worker — `social-batch.ts` job type added to worker dispatcher
 17. Buffer GraphQL migration — all 3 Buffer-calling routes rewritten from dead REST API to GraphQL. Commits: `66c20fa` (initial build, 1,370 lines) + `93c2ffd` (GraphQL migration, 252 lines)
+
+**Phase 6: YouTube Intelligence (Sessions 9-11, March 15-16):**
+
+18. YouTube transcript API — `/api/youtube/transcript` with 2-tier Vercel fast path (captions + innertube) and Railway worker handoff
+19. YouTube search API — `/api/youtube/search` proxying YouTube Data API v3
+20. YouTube batch API — `/api/youtube/batch` for multi-video transcript processing
+21. YouTube analyze API — `/api/youtube/analyze` generating 8 curriculum material types via Claude Sonnet 4.6
+22. YouTube UI — 4 components: `youtube-input.tsx`, `youtube-transcript-viewer.tsx`, `youtube-curriculum-tools.tsx`, `youtube-batch-sidebar.tsx`
+23. Railway worker — `youtube-transcript.ts` job type with 4-tier fallback: yt-dlp → Gemini 2.5 Flash → audio+STT → Gemini analysis
+24. Gemini 2.5 Flash integration — Multimodal video processing on Railway (watches actual video, ~77s for 20-min video, 21K+ chars)
+25. Hallucination guard — YouTube Data API metadata validation before Gemini processes; fails immediately on invalid video IDs
+26. Architecture refinement — Gemini removed from Vercel fast path (timeout issues, 77-90s consistently exceeds limits), Railway-only for Gemini processing
+27. Production validated — End-to-end test: Vercel returns `pending: true` in ~80ms → Railway processes via Gemini → 21,903 chars, 59 segments of real transcript content
+28. Key commits: `afe185e` (Gemini fast path), `b7b6227` (timeout tuning), `21ed339` (Gemini to Railway only), `7117667` (hallucination guard)
 
 ---
 
@@ -917,5 +1020,6 @@ Do this before the Railway worker exists. Validate the UI layer independently.
 
 ---
 
-*Document version: March 15, 2026 (Session 8)*
+*Document version: March 16, 2026 (Session 11)*
+*All six phases built and deployed. Session 11 additions: Phase 6 YouTube Intelligence — paste any YouTube URL → extract transcript via Gemini 2.5 Flash on Railway (~77s, 21K+ chars) → generate 8 types of curriculum materials via Claude Sonnet 4.6. 3-tier Vercel fast path (captions → innertube → Railway handoff). Hallucination guard validates video via YouTube Data API before Gemini processes. youtube-transcript npm blocked from cloud IPs — Gemini handles 100% of production transcripts. 4 API routes, 4 UI components, 1 Railway worker job type. Sessions 9-10: initial build + Gemini integration + timeout debugging. Session 8: Phase 5 Social Media Automation. Sessions 6-7: Council of the Unserious + national standards + chat features.*
 *All five phases built and deployed. Session 8 additions: Phase 5 Social Media Automation — replaces Sintra ($49/mo). Claude Sonnet 4.6 generates posts for 3 brands × 3 platforms with enforced brand voice. Human review gate (approve/edit/reject). Buffer GraphQL API integration (createPost mutation, GetChannels/GetOrganizations queries, analytics pull-back). Shopify webhook auto-generates NCHO product launch posts. Weekly Monday 05:00 UTC cron batch generation. Supabase Realtime updates review queue live. Edit history tracking on manual edits. 2 new tables (social_accounts, social_posts), 8 API routes + 1 cron + 1 webhook, 3 UI components, 1 Railway worker job type, 3 migrations. All Buffer routes migrated from dead REST API (api.bufferapp.com/1/) to GraphQL (api.buffer.com). Full system audit and documentation. Session 7: global cross-table search, inline URL fetching, auto-learning, agentic research, research metadata extraction, daily brief email delivery, thread persistence. Session 6: Council of the Unserious 5-pass pipeline, national standards auto-alignment, HTML/PDF/DOCX export, accordion nav, tooltips, status badges, Council Mode in chat.*

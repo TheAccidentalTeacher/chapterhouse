@@ -21,6 +21,10 @@ import type { LucideIcon } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+// =============================================================================
+// Types
+// =============================================================================
+
 type ToolDef = {
   id: string;
   label: string;
@@ -28,56 +32,133 @@ type ToolDef = {
   icon: LucideIcon;
 };
 
+type ToolOptions = {
+  gradeLevel?: string;
+  // Quiz
+  numMultipleChoice?: number;
+  numShortAnswer?: number;
+  numTrueFalse?: number;
+  numFillInBlank?: number;
+  difficulty?: string;
+  // Discussion
+  includeSocratic?: boolean;
+  includeDebate?: boolean;
+  // Guided notes
+  noteStyle?: string;
+  // Graphic organizer
+  organizerType?: string;
+  // DOK project
+  dokLevel?: number;
+  projectType?: string;
+  duration?: string;
+  // Add-ons
+  includeReading?: boolean;
+  includeExitTicket?: boolean;
+};
+
+// =============================================================================
+// Tool definitions
+// =============================================================================
+
 const TOOLS: ToolDef[] = [
   {
     id: "quiz",
     label: "Quiz",
-    description: "Multiple choice + short answer + extended response with answer key",
+    description:
+      "MC, short answer, T/F, fill-in-blank — configurable counts, difficulty, DOK level",
     icon: FileQuestion,
   },
   {
     id: "lesson-plan",
     label: "Lesson Plan",
-    description: "Full lesson plan with objectives, activities, and assessment",
+    description:
+      "Backward design (UbD) with differentiation, ELL supports, and standards alignment",
     icon: BookOpen,
   },
   {
     id: "vocabulary",
     label: "Vocabulary",
-    description: "15–20 key terms with definitions, context, and flashcard format",
+    description:
+      "15–20 Tier 2/3 terms with definitions, memory tips, and flashcard format",
     icon: List,
   },
   {
     id: "discussion",
     label: "Discussion",
-    description: "Discussion questions organized by Bloom's taxonomy level",
+    description:
+      "All 6 Bloom's levels with follow-up probes, Socratic seminar, and debate prompts",
     icon: MessageCircle,
   },
   {
     id: "dok-project",
     label: "DOK Project",
-    description: "DOK 3–4 extended projects with rubrics and timelines",
+    description:
+      "DOK 3–4 extended project with rubric, timeline, differentiation, and reflection",
     icon: Target,
   },
   {
     id: "graphic-organizer",
     label: "Graphic Organizer",
-    description: "Timeline, cause/effect, concept map, KWL chart templates",
+    description:
+      "6 types: concept map, timeline, Venn, cause/effect, KWL, mind map",
     icon: LayoutGrid,
   },
   {
     id: "guided-notes",
     label: "Guided Notes",
-    description: "Cornell notes, outlines, fill-in-blank with timestamp refs",
+    description:
+      "4 styles: Cornell, outline, fill-in-blank worksheet, guided questions",
     icon: StickyNote,
   },
   {
     id: "full-analysis",
     label: "Full Analysis",
-    description: "Multi-perspective analysis: accuracy, pedagogy, standards, verdict",
+    description:
+      "Multi-perspective analysis: accuracy, pedagogy, standards, verdict",
     icon: Sparkles,
   },
 ];
+
+const GRADE_BANDS = [
+  { value: "elementary", label: "Elementary (K-5)" },
+  { value: "middle", label: "Middle School (6-8)" },
+  { value: "high", label: "High School (9-12)" },
+  { value: "college", label: "College" },
+];
+
+const NOTE_STYLES = [
+  { value: "cornell", label: "Cornell Notes" },
+  { value: "outline", label: "Outline" },
+  { value: "fillinblank", label: "Fill-in-the-Blank" },
+  { value: "guided", label: "Guided Questions" },
+];
+
+const ORGANIZER_TYPES = [
+  { value: "concept-map", label: "Concept Map" },
+  { value: "timeline", label: "Timeline" },
+  { value: "venn", label: "Venn Diagram" },
+  { value: "cause-effect", label: "Cause & Effect" },
+  { value: "kwl", label: "KWL Chart" },
+  { value: "mind-map", label: "Mind Map" },
+];
+
+const PROJECT_TYPES = [
+  { value: "research", label: "Research" },
+  { value: "design", label: "Design" },
+  { value: "investigation", label: "Investigation" },
+  { value: "synthesis", label: "Synthesis" },
+];
+
+const DIFFICULTIES = [
+  { value: "easy", label: "Easy" },
+  { value: "medium", label: "Medium" },
+  { value: "hard", label: "Hard" },
+  { value: "mixed", label: "Mixed" },
+];
+
+// =============================================================================
+// Props
+// =============================================================================
 
 type Props = {
   videoId: string;
@@ -92,17 +173,81 @@ type GeneratedOutput = {
   generatedAt: string;
 };
 
+// =============================================================================
+// Component
+// =============================================================================
+
 export default function YoutubeCurriculumTools({
   videoId,
   videoTitle,
   transcript,
 }: Props) {
-  const [gradeLevel, setGradeLevel] = useState<number | undefined>(7);
+  // Global
+  const [gradeLevel, setGradeLevel] = useState("middle");
   const [generating, setGenerating] = useState<string | null>(null);
   const [outputs, setOutputs] = useState<Record<string, GeneratedOutput>>({});
   const [expandedTool, setExpandedTool] = useState<string | null>(null);
   const [copiedTool, setCopiedTool] = useState<string | null>(null);
   const [error, setError] = useState("");
+
+  // Quiz options
+  const [numMC, setNumMC] = useState(5);
+  const [numSA, setNumSA] = useState(3);
+  const [numTF, setNumTF] = useState(5);
+  const [numFIB, setNumFIB] = useState(5);
+  const [difficulty, setDifficulty] = useState("mixed");
+
+  // Discussion options
+  const [includeSocratic, setIncludeSocratic] = useState(true);
+  const [includeDebate, setIncludeDebate] = useState(true);
+
+  // Guided notes
+  const [noteStyle, setNoteStyle] = useState("cornell");
+
+  // Graphic organizer
+  const [organizerType, setOrganizerType] = useState("concept-map");
+
+  // DOK project
+  const [dokLevel, setDokLevel] = useState(3);
+  const [projectType, setProjectType] = useState("research");
+  const [duration, setDuration] = useState("2-3 weeks");
+
+  // Add-ons (guided-notes + graphic-organizer)
+  const [includeReading, setIncludeReading] = useState(false);
+  const [includeExitTicket, setIncludeExitTicket] = useState(false);
+
+  // Track which tool's config panel is open
+  const [configOpen, setConfigOpen] = useState<string | null>(null);
+
+  function buildOptions(toolId: string): ToolOptions {
+    const base: ToolOptions = { gradeLevel };
+    switch (toolId) {
+      case "quiz":
+        return {
+          ...base,
+          numMultipleChoice: numMC,
+          numShortAnswer: numSA,
+          numTrueFalse: numTF,
+          numFillInBlank: numFIB,
+          difficulty,
+        };
+      case "discussion":
+        return { ...base, includeSocratic, includeDebate };
+      case "guided-notes":
+        return { ...base, noteStyle, includeReading, includeExitTicket };
+      case "graphic-organizer":
+        return {
+          ...base,
+          organizerType,
+          includeReading,
+          includeExitTicket,
+        };
+      case "dok-project":
+        return { ...base, dokLevel, projectType, duration };
+      default:
+        return base;
+    }
+  }
 
   async function handleGenerate(toolId: string) {
     setError("");
@@ -116,7 +261,7 @@ export default function YoutubeCurriculumTools({
           videoTitle,
           transcript,
           outputType: toolId,
-          options: gradeLevel ? { gradeLevel } : undefined,
+          options: buildOptions(toolId),
         }),
       });
       const data = await res.json();
@@ -161,26 +306,253 @@ export default function YoutubeCurriculumTools({
     URL.revokeObjectURL(url);
   }
 
+  // ---- Sub-option renderers per tool ----
+
+  function renderToolConfig(toolId: string) {
+    const selectClass =
+      "rounded-lg border border-border/70 bg-muted-surface px-2 py-1 text-xs text-foreground focus:border-accent/40 focus:outline-none";
+    const toggleClass = (on: boolean) =>
+      `rounded-lg px-2.5 py-1 text-xs font-medium transition ${
+        on
+          ? "bg-accent/20 text-accent border border-accent/40"
+          : "bg-muted-surface text-muted border border-border/70 hover:text-foreground"
+      }`;
+
+    switch (toolId) {
+      case "quiz":
+        return (
+          <div className="mt-2 space-y-2 rounded-xl border border-border/40 bg-muted-surface/30 p-3">
+            <div className="grid grid-cols-2 gap-2">
+              <label className="flex items-center justify-between text-xs text-muted">
+                MC
+                <input
+                  type="number"
+                  min={0}
+                  max={20}
+                  value={numMC}
+                  onChange={(e) => setNumMC(Number(e.target.value))}
+                  className="ml-1 w-12 rounded border border-border/70 bg-muted-surface px-1 py-0.5 text-center text-xs text-foreground"
+                />
+              </label>
+              <label className="flex items-center justify-between text-xs text-muted">
+                Short Ans
+                <input
+                  type="number"
+                  min={0}
+                  max={10}
+                  value={numSA}
+                  onChange={(e) => setNumSA(Number(e.target.value))}
+                  className="ml-1 w-12 rounded border border-border/70 bg-muted-surface px-1 py-0.5 text-center text-xs text-foreground"
+                />
+              </label>
+              <label className="flex items-center justify-between text-xs text-muted">
+                T/F
+                <input
+                  type="number"
+                  min={0}
+                  max={10}
+                  value={numTF}
+                  onChange={(e) => setNumTF(Number(e.target.value))}
+                  className="ml-1 w-12 rounded border border-border/70 bg-muted-surface px-1 py-0.5 text-center text-xs text-foreground"
+                />
+              </label>
+              <label className="flex items-center justify-between text-xs text-muted">
+                Fill-Blank
+                <input
+                  type="number"
+                  min={0}
+                  max={10}
+                  value={numFIB}
+                  onChange={(e) => setNumFIB(Number(e.target.value))}
+                  className="ml-1 w-12 rounded border border-border/70 bg-muted-surface px-1 py-0.5 text-center text-xs text-foreground"
+                />
+              </label>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted">Difficulty</span>
+              <select
+                value={difficulty}
+                onChange={(e) => setDifficulty(e.target.value)}
+                className={selectClass}
+              >
+                {DIFFICULTIES.map((d) => (
+                  <option key={d.value} value={d.value}>
+                    {d.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        );
+
+      case "discussion":
+        return (
+          <div className="mt-2 flex flex-wrap gap-1.5 rounded-xl border border-border/40 bg-muted-surface/30 p-3">
+            <button
+              type="button"
+              onClick={() => setIncludeSocratic(!includeSocratic)}
+              className={toggleClass(includeSocratic)}
+            >
+              🏛️ Socratic
+            </button>
+            <button
+              type="button"
+              onClick={() => setIncludeDebate(!includeDebate)}
+              className={toggleClass(includeDebate)}
+            >
+              ⚔️ Debate
+            </button>
+          </div>
+        );
+
+      case "guided-notes":
+        return (
+          <div className="mt-2 space-y-2 rounded-xl border border-border/40 bg-muted-surface/30 p-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted">Style</span>
+              <select
+                value={noteStyle}
+                onChange={(e) => setNoteStyle(e.target.value)}
+                className={selectClass}
+              >
+                {NOTE_STYLES.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={() => setIncludeReading(!includeReading)}
+                className={toggleClass(includeReading)}
+              >
+                📖 Reading Passage
+              </button>
+              <button
+                type="button"
+                onClick={() => setIncludeExitTicket(!includeExitTicket)}
+                className={toggleClass(includeExitTicket)}
+              >
+                🎫 Exit Ticket
+              </button>
+            </div>
+          </div>
+        );
+
+      case "graphic-organizer":
+        return (
+          <div className="mt-2 space-y-2 rounded-xl border border-border/40 bg-muted-surface/30 p-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted">Type</span>
+              <select
+                value={organizerType}
+                onChange={(e) => setOrganizerType(e.target.value)}
+                className={selectClass}
+              >
+                {ORGANIZER_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={() => setIncludeReading(!includeReading)}
+                className={toggleClass(includeReading)}
+              >
+                📖 Reading Passage
+              </button>
+              <button
+                type="button"
+                onClick={() => setIncludeExitTicket(!includeExitTicket)}
+                className={toggleClass(includeExitTicket)}
+              >
+                🎫 Exit Ticket
+              </button>
+            </div>
+          </div>
+        );
+
+      case "dok-project":
+        return (
+          <div className="mt-2 space-y-2 rounded-xl border border-border/40 bg-muted-surface/30 p-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted">DOK</span>
+              <select
+                value={dokLevel}
+                onChange={(e) => setDokLevel(Number(e.target.value))}
+                className={selectClass}
+              >
+                <option value={3}>Level 3 — Strategic Thinking</option>
+                <option value={4}>Level 4 — Extended Thinking</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted">Type</span>
+              <select
+                value={projectType}
+                onChange={(e) => setProjectType(e.target.value)}
+                className={selectClass}
+              >
+                {PROJECT_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted">Duration</span>
+              <select
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+                className={selectClass}
+              >
+                <option value="1 week">1 week</option>
+                <option value="2-3 weeks">2-3 weeks</option>
+                <option value="1 month">1 month</option>
+                <option value="semester-long">Semester-long</option>
+              </select>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  }
+
+  const hasConfig = (id: string) =>
+    ["quiz", "discussion", "guided-notes", "graphic-organizer", "dok-project"].includes(id);
+
   return (
     <div className="space-y-4">
-      {/* Grade level selector */}
+      {/* Grade band selector */}
       <div className="glass-panel rounded-3xl p-4">
         <div className="flex items-center gap-4">
-          <label className="text-sm font-medium text-muted">Grade Level</label>
-          <select
-            value={gradeLevel ?? ""}
-            onChange={(e) =>
-              setGradeLevel(e.target.value ? Number(e.target.value) : undefined)
-            }
-            className="rounded-xl border border-border/70 bg-muted-surface px-3 py-1.5 text-sm text-foreground focus:border-accent/40 focus:outline-none"
-          >
-            <option value="">Auto-detect</option>
-            {Array.from({ length: 12 }, (_, i) => i + 1).map((g) => (
-              <option key={g} value={g}>
-                Grade {g}
-              </option>
+          <label className="text-sm font-medium text-muted">
+            Grade Level
+          </label>
+          <div className="flex gap-1.5">
+            {GRADE_BANDS.map((band) => (
+              <button
+                key={band.value}
+                type="button"
+                onClick={() => setGradeLevel(band.value)}
+                className={`rounded-xl px-3 py-1.5 text-xs font-medium transition ${
+                  gradeLevel === band.value
+                    ? "bg-accent text-accent-foreground shadow shadow-accent/25"
+                    : "bg-muted-surface text-muted hover:text-foreground border border-border/70"
+                }`}
+              >
+                {band.label}
+              </button>
             ))}
-          </select>
+          </div>
         </div>
       </div>
 
@@ -190,6 +562,7 @@ export default function YoutubeCurriculumTools({
           const hasOutput = !!outputs[tool.id];
           const isExpanded = expandedTool === tool.id;
           const isGenerating = generating === tool.id;
+          const isConfigOpen = configOpen === tool.id;
 
           return (
             <div
@@ -211,6 +584,28 @@ export default function YoutubeCurriculumTools({
                   </p>
                 </div>
               </div>
+
+              {/* Config toggle */}
+              {hasConfig(tool.id) && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setConfigOpen(isConfigOpen ? null : tool.id)
+                  }
+                  className="mt-2 flex w-full items-center justify-center gap-1 text-xs text-muted transition hover:text-foreground"
+                >
+                  {isConfigOpen ? (
+                    <ChevronUp className="h-3 w-3" />
+                  ) : (
+                    <ChevronDown className="h-3 w-3" />
+                  )}
+                  {isConfigOpen ? "Hide Options" : "Options"}
+                </button>
+              )}
+
+              {/* Inline config */}
+              {isConfigOpen && renderToolConfig(tool.id)}
+
               <button
                 onClick={() => handleGenerate(tool.id)}
                 disabled={isGenerating || generating !== null}

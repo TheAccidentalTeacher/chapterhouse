@@ -14,7 +14,7 @@ Nobody else can see it. It's locked to your two email addresses.
 
 ## All Screens
 
-Chapterhouse has fifteen screens organized in five sidebar groups. Here's what each one does.
+Chapterhouse has seventeen screens organized in five sidebar groups. Here's what each one does.
 
 ### Command Center
 
@@ -101,9 +101,36 @@ Chapterhouse has fifteen screens organized in five sidebar groups. Here's what e
 
 ---
 
+### 5. YouTube Intelligence
+
+**What it is:** Turn any YouTube video into curriculum materials. Paste a URL, get a transcript, then generate quizzes, lesson plans, vocabulary lists, and more — all grade-appropriate.
+
+**How to use it:**
+- **Paste a YouTube URL** into the input box or **search YouTube** right from the page
+- Chapterhouse attempts to extract a transcript instantly (via captions or YouTube's internal API)
+- If the instant path fails (YouTube blocks cloud IPs), the system creates a background job that uses **Gemini 2.5 Flash** to watch the actual video and transcribe it (~77 seconds for a 20-minute video)
+- Watch the job status update in real time — no page refresh needed
+- Once you have a transcript, use the **8 curriculum tools** to generate materials:
+
+| Tool | What You Get |
+|------|-------------|
+| **Quiz** | Multiple choice + short answer questions |
+| **Lesson Plan** | Full plan with objectives, activities, assessment |
+| **Vocabulary** | Key terms with definitions and context |
+| **Discussion Questions** | Open-ended questions for group or family discussion |
+| **DOK Projects** | Depth of Knowledge projects at multiple levels |
+| **Graphic Organizers** | Visual organization templates |
+| **Guided Notes** | Fill-in-the-blank study guides |
+
+**Batch mode:** Process multiple videos at once using the batch sidebar. Great for building materials across a unit that uses several videos.
+
+**Behind the scenes:** Gemini 2.5 Flash on Railway handles 100% of production transcripts. A hallucination guard validates every video ID via YouTube Data API before processing — if the video doesn't exist, it fails immediately instead of generating fake content.
+
+---
+
 ### Production
 
-### 5. Content Studio
+### 6. Content Studio
 
 **What it is:** A writing assistant that drafts content in your brand voice. Three modes:
 
@@ -120,7 +147,7 @@ Chapterhouse has fifteen screens organized in five sidebar groups. Here's what e
 
 ---
 
-### 6. Review Queue
+### 7. Review Queue
 
 **What it is:** A holding pen where items wait for your decision before they move forward.
 
@@ -138,7 +165,7 @@ Chapterhouse has fifteen screens organized in five sidebar groups. Here's what e
 
 ---
 
-### 7. Tasks
+### 8. Tasks
 
 **What it is:** Your to-do list. Simple, focused, no fluff.
 
@@ -160,7 +187,7 @@ Each task shows where it came from (brief, opportunity, or manual) so you always
 
 ---
 
-### 8. Documents
+### 9. Documents
 
 **What it is:** A library of all the brand documents, strategy guides, and reference files in the system.
 
@@ -175,7 +202,7 @@ Each task shows where it came from (brief, opportunity, or manual) so you always
 
 ### System
 
-### 9. Settings
+### 10. Settings
 
 **What it is:** System configuration and your "founder memory" manager.
 
@@ -189,7 +216,7 @@ Each task shows where it came from (brief, opportunity, or manual) so you always
 
 ### AI & Automation
 
-### 10. Job Runner
+### 11. Job Runner
 
 **What it is:** A dashboard for background AI jobs that run while you sleep. Jobs are queued, processed by a Railway worker, and report progress in real time.
 
@@ -204,7 +231,7 @@ Each task shows where it came from (brief, opportunity, or manual) so you always
 
 ---
 
-### 11. Curriculum Factory
+### 12. Curriculum Factory
 
 **What it is:** A 5-pass AI pipeline that generates curriculum scope & sequences using the Council of the Unserious critique loop.
 
@@ -226,7 +253,7 @@ Each task shows where it came from (brief, opportunity, or manual) so you always
 
 ---
 
-### 12. Council Chamber
+### 13. Council Chamber
 
 **What it is:** A purpose-built 5-agent system for generating curriculum scope & sequences as a background job. Uses the full Council of the Unserious (Gandalf → Data → Polgara → Earl → Beavis & Butthead) as a longer, more thorough process.
 
@@ -240,7 +267,7 @@ Each task shows where it came from (brief, opportunity, or manual) so you always
 
 ---
 
-### 13. Pipelines
+### 14. Pipelines
 
 **What it is:** A control panel for n8n automation workflows running on Railway.
 
@@ -254,13 +281,42 @@ Each task shows where it came from (brief, opportunity, or manual) so you always
 
 ---
 
-### 14. Help
+### 15. Social Media
+
+**What it is:** AI-powered social media post generation, human review, and scheduling for all your brands. Replaces Sintra ($49/mo).
+
+**Three tabs:**
+
+**Review Queue** — Every AI-generated post lands here first. Nothing auto-publishes. For each post:
+- Edit the text inline if you want to change anything
+- Pick a date/time to schedule it
+- Select which Buffer channel to publish to
+- Click **Approve** to schedule via Buffer, or **Reject** to dismiss
+- Every edit is tracked — you can see what the AI originally wrote vs. what you changed
+
+**Generate** — Create new posts on demand:
+- Toggle which brands (NCHO, SomersSchool, Alana Terry) and platforms (Facebook, Instagram, LinkedIn)
+- Set how many posts per combo, optionally add a topic seed
+- Claude writes each post following brand-specific voice rules
+
+**Accounts** — Manage your Buffer channel connections:
+- Click **Sync from Buffer** to pull in your connected channels
+- Map each channel to a brand + platform combination
+- View active accounts
+
+**Auto-triggers (hands-free):**
+- **Weekly cron** (Monday 5:00 AM UTC) generates a fresh batch of 18 posts (3 brands × 3 platforms × 2 each)
+- **Shopify webhook** — when Anna adds a new product to the NCHO store, launch posts are auto-generated
+
+---
+
+### 16. Help
 
 **What it is:** This page! A plain-English guide to every feature in Chapterhouse.
 
 ---
 
-### 15. Login
+### 17. Login
 
 **What it is:** The authentication gate. Locked to two email addresses only.
 
@@ -268,14 +324,14 @@ Each task shows where it came from (brief, opportunity, or manual) so you always
 
 ## The Sidebar
 
-The sidebar on the left organizes all 15 screens into five collapsible groups:
+The sidebar on the left organizes all 17 screens into five collapsible groups:
 
 | Group | Screens |
 |-------|---------|
 | **Command Center** | Home (Chat), Daily Brief |
-| **Intelligence** | Research, Product Intelligence |
+| **Intelligence** | Research, Product Intelligence, YouTube Intelligence |
 | **Production** | Content Studio, Review Queue, Tasks, Documents |
-| **AI & Automation** | Job Runner, Curriculum Factory, Pipelines, Council Chamber |
+| **AI & Automation** | Job Runner, Curriculum Factory, Pipelines, Council Chamber, Social Media |
 | **System** | Settings |
 
 Click a group header to expand/collapse it. The group containing the current page opens automatically.
@@ -324,7 +380,7 @@ Here's how a typical day might look:
 | **Who can access this?** | Only scott@somers.com and anna@somers.com |
 | **Where does it live?** | chapterhouse.vercel.app |
 | **Is my data private?** | Yes — stored in your private Supabase database. No one else has access. |
-| **What AI models are used?** | GPT-5.4 (chat, research, opportunities), Claude Sonnet 4.6 (daily brief, content studio, curriculum factory). Council Mode uses both: Gandalf + Data + Polgara on Claude, Earl on GPT-5.4, Beavis & Butthead on GPT-5-mini. |
+| **What AI models are used?** | GPT-5.4 (chat, research, opportunities), Claude Sonnet 4.6 (daily brief, content studio, curriculum factory, social media, YouTube curriculum tools). Council Mode uses both: Gandalf + Data + Polgara on Claude, Earl on GPT-5.4, Beavis & Butthead on GPT-5-mini. YouTube transcripts use Gemini 2.5 Flash on Railway. |
 | **Does it cost money to run?** | Vercel Pro hosting + AI API usage. No per-user fees. |
 | **How do I sign out?** | Click the door icon in the top right corner |
 | **How do I teach it something?** | Type `/remember [fact]` in chat, or add facts in Settings → Founder Memory |
@@ -332,4 +388,4 @@ Here's how a typical day might look:
 
 ---
 
-*This guide lives in the Documents section of Chapterhouse. Last updated: March 14, 2026.*
+*This guide lives in the Documents section of Chapterhouse. Last updated: March 16, 2026.*
