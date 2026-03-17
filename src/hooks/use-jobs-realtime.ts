@@ -14,7 +14,7 @@ export type Job = {
   progress: number;
   progress_message: string | null;
   input_payload: Record<string, unknown>;
-  output: Record<string, unknown> | null;
+  output: unknown;
   error: string | null;
   started_at: string | null;
   completed_at: string | null;
