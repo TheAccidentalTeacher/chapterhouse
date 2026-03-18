@@ -193,6 +193,12 @@ Use these when generating copy, landing pages, ad campaigns, email sequences, or
 | .env | API keys (not committed to git) |
 | .env.local | Local overrides (not committed to git) |
 | .vscode/settings.json | Gold VS Code theme |
+| CLAUDE.md | Complete Chapterhouse technical reference — all routes, architecture, build history, env vars. Claude Code reads this automatically. Must-read before touching Chapterhouse code. |
+| scope-sequence-handoff.md | SomersSchool pipeline JSON contract spec — canonical field names and structure for `scope-sequence/*.json` files. |
+| somersschool-curriculum-factory-handoff.md | Curriculum Factory port contract for CoursePlatform — 6-pass pipeline, DB schema SQL, API routes, 11-step build order. Paste into any CoursePlatform session. |
+| chapterhouse-evolution-handoff.md | Future phases roadmap (Phases A–G) + probe test framework. |
+| jobs-test-prompts.md | Curriculum factory test prompts — ready-to-paste for all grade levels and subjects. |
+| social-media-automation-brain.md | Social Media Automation reference — Buffer GraphQL, 3-brand voice rules, post lifecycle. |
 | vercel.json | Vercel Cron config — daily brief at 03:00 UTC (7am AKST) |
 | src/lib/sources/rss.ts | RSS feed fetcher — 9 feeds (MIT Tech Review AI, OpenAI, GitHub, Vercel, Hacker News, Homeschool Mom, Shopify News, Gospel Coalition, Hechinger Report) |
 | src/lib/sources/github.ts | GitHub API — Dependabot alerts + failed builds + open issues across 11 repos |
