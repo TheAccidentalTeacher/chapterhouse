@@ -3,6 +3,7 @@ import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
 import { fetchAllRssFeeds, formatRssItemsForPrompt } from "@/lib/sources/rss";
 import { fetchGitHubAlerts, formatGitHubAlertsForPrompt } from "@/lib/sources/github";
 import { fetchDailyDevPosts, formatDailyDevForPrompt } from "@/lib/sources/dailydev";
+import { fetchInboxMessages, formatEmailForPrompt } from "@/lib/sources/email";
 
 function getAnthropic() { return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }); }
 
@@ -153,11 +154,12 @@ export async function POST(request: Request) {
     const { context } = await request.json().catch(() => ({ context: "" }));
     const today = new Date().toISOString().split("T")[0];
 
-    // Fetch RSS + GitHub + daily.dev in parallel
-    const [rssResult, githubResult, dailyDevResult] = await Promise.all([
+    // Fetch RSS + GitHub + daily.dev + NCHO inbox in parallel
+    const [rssResult, githubResult, dailyDevResult, emailResult] = await Promise.all([
       fetchAllRssFeeds(),
       fetchGitHubAlerts(),
       fetchDailyDevPosts(),
+      fetchInboxMessages(),
     ]);
 
     const supabase = getSupabaseServiceRoleClient();
@@ -227,20 +229,23 @@ export async function POST(request: Request) {
       knowledgeSummaryBlock = `\n---\n## ACCUMULATED KNOWLEDGE BASE\nScott's research, condensed by category:\n${lines}`;
     }
 
-    const totalScanned = rssResult.scannedCount + githubResult.scannedCount + dailyDevResult.scannedCount;
+    const totalScanned = rssResult.scannedCount + githubResult.scannedCount + dailyDevResult.scannedCount + emailResult.scannedCount;
     const rssSection = formatRssItemsForPrompt(rssResult.items);
     const githubSection = formatGitHubAlertsForPrompt(githubResult.alerts);
     const dailyDevSection = formatDailyDevForPrompt(dailyDevResult);
+    const emailSection = formatEmailForPrompt(emailResult);
 
     const userPrompt = [
       `Daily brief date: ${today}`,
       `Teaching contract ends: May 24, 2026 (${daysLeft} days remaining — revenue required before August 2026)`,
-      `Total items scanned: ${totalScanned} (${rssResult.scannedCount} RSS from ${rssResult.feedsSucceeded} feeds, ${githubResult.scannedCount} GitHub across ${githubResult.reposChecked} repos, ${dailyDevResult.scannedCount} daily.dev posts from ${dailyDevResult.feedsSucceeded} feeds)`,
+      `Total items scanned: ${totalScanned} (${rssResult.scannedCount} RSS from ${rssResult.feedsSucceeded} feeds, ${githubResult.scannedCount} GitHub across ${githubResult.reposChecked} repos, ${dailyDevResult.scannedCount} daily.dev posts from ${dailyDevResult.feedsSucceeded} feeds, ${emailResult.scannedCount} NCHO inbox emails)`,
       context ? `\nAdditional context from Scott: ${context}` : "",
       "\n---\n## LIVE DATA — RSS FEEDS",
       rssSection || "(no RSS items returned — all feeds may be down)",
       "\n---\n## LIVE DATA — DAILY.DEV (developer signal, pre-summarized)",
       dailyDevSection,
+      emailResult.scannedCount > 0 ? "\n---\n## LIVE DATA — NCHO INBOX (emails received in last 24 hours)" : "",
+      emailSection,
       "\n---",
       githubSection,
       knowledgeSummaryBlock,
