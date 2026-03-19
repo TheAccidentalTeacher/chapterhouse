@@ -76,7 +76,7 @@ export async function listMessages(
 
     try {
       // Get all UIDs (returns false on empty mailbox)
-      const searchResult = await client.search({ all: true });
+      const searchResult = await client.search({ all: true }, { uid: true });
       if (!searchResult || searchResult.length === 0) {
         return { messages: [], total: 0, page, limit };
       }

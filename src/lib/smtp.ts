@@ -23,6 +23,7 @@ function getTransporter() {
     port: 465,
     secure: true, // SSL — matches SiteGround SMTP port 465
     auth: { user, pass: password },
+    tls: { rejectUnauthorized: false }, // self-hosted Mailcow cert compatibility
     connectionTimeout: 8000,
     greetingTimeout: 5000,
   });

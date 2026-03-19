@@ -275,7 +275,7 @@ export function EmailInbox() {
   const [composing, setComposing] = useState(false);
   const [compose, setCompose] = useState<ComposeState>(EMPTY_COMPOSE);
   const [sending, setSending] = useState(false);
-  const [sendStatus, setSendStatus] = useState<"idle" | "success" | "error">("idle");
+  const [sendStatus, setSendStatus] = useState<"idle" | "success" | string>("idle");
   const [mobileView, setMobileView] = useState<"list" | "message">("list");
   const limit = 30;
   const isMounted = useRef(true);
@@ -380,7 +380,10 @@ export function EmailInbox() {
         }),
       });
 
-      if (!res.ok) throw new Error("Send failed");
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error ?? `Send failed (${res.status})`);
+      }
       setSendStatus("success");
       setComposing(false);
       setCompose(EMPTY_COMPOSE);
@@ -390,8 +393,9 @@ export function EmailInbox() {
       setTimeout(() => setSendStatus("idle"), 3000);
     } catch (err) {
       console.error("[inbox] handleSend:", err);
-      setSendStatus("error");
-      setTimeout(() => setSendStatus("idle"), 4000);
+      const msg = err instanceof Error ? err.message : "Send failed";
+      setSendStatus(msg);
+      setTimeout(() => setSendStatus("idle"), 6000);
     } finally {
       setSending(false);
     }
@@ -410,13 +414,13 @@ export function EmailInbox() {
       {/* Send status toast */}
       {sendStatus !== "idle" && (
         <div
-          className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-lg text-sm font-medium shadow-lg transition-all ${
+          className={`fixed top-4 right-4 z-50 max-w-sm px-4 py-2 rounded-lg text-sm font-medium shadow-lg transition-all ${
             sendStatus === "success"
               ? "bg-emerald-600 text-white"
               : "bg-red-600 text-white"
           }`}
         >
-          {sendStatus === "success" ? "Message sent." : "Failed to send. Try again."}
+          {sendStatus === "success" ? "Message sent." : sendStatus}
         </div>
       )}
 
