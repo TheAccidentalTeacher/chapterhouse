@@ -16,7 +16,7 @@ function getAllowedEmails(): string[] {
     .filter(Boolean);
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Always pass through Next.js internals and static assets
