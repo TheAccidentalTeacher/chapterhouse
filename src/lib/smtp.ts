@@ -34,6 +34,7 @@ export interface SendEmailOptions {
   html: string;
   text?: string;
   from?: string;
+  headers?: Record<string, string>;
 }
 
 export async function sendEmail({
@@ -42,6 +43,7 @@ export async function sendEmail({
   html,
   text,
   from,
+  headers,
 }: SendEmailOptions): Promise<{ success: boolean; error?: string }> {
   const transporter = getTransporter();
 
@@ -55,7 +57,7 @@ export async function sendEmail({
     `Chapterhouse <${process.env.NCHO_EMAIL_USER ?? "scott@nextchapterhomeschool.com"}>`;
 
   try {
-    await transporter.sendMail({ from: fromAddress, to, subject, html, text });
+    await transporter.sendMail({ from: fromAddress, to, subject, html, text, headers });
     const recipient = Array.isArray(to) ? to.join(", ") : to;
     console.log(`[smtp] Email sent → ${recipient}: ${subject}`);
     return { success: true };

@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // imapflow and nodemailer use native Node.js net/tls — must not be bundled by Next.js
-  serverExternalPackages: ["imapflow", "nodemailer"],
+  // imapflow, nodemailer, and mailparser use native Node.js — must not be bundled by Next.js
+  serverExternalPackages: ["imapflow", "nodemailer", "mailparser"],
 };
 
 export default nextConfig;
