@@ -30,8 +30,6 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
   });
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [tooltipRect, setTooltipRect] = useState<DOMRect | null>(null);
-  const [hoveredRailItem, setHoveredRailItem] = useState<string | null>(null);
-  const [railTooltipRect, setRailTooltipRect] = useState<DOMRect | null>(null);
   const [mounted, setMounted] = useState(false);
   const [statusCollapsed, setStatusCollapsed] = useState(true);
 
@@ -128,7 +126,7 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
 
   return (
     <div className="h-screen overflow-hidden bg-background">
-      <div className="grid h-full lg:grid-cols-[280px_minmax(0,1fr)_320px]">
+      <div className="grid h-full lg:grid-cols-[280px_minmax(0,1fr)]">
           <aside className="overflow-y-auto border-b border-border bg-sidebar/90 px-4 py-6 lg:border-b-0 lg:border-r lg:px-5">
           <div className="mx-auto flex h-full max-w-sm flex-col gap-6">
             <div className="rounded-3xl border border-border bg-card/80 p-5">
@@ -234,6 +232,38 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
               <span className="font-medium">Help Guide</span>
             </Link>
 
+            {/* System Status — collapsible at bottom of sidebar */}
+            <div className="rounded-2xl border border-border/50 bg-card/60 overflow-hidden">
+              <button
+                onClick={() => setStatusCollapsed((prev) => !prev)}
+                className="flex w-full items-center justify-between px-4 py-3 text-xs font-semibold uppercase tracking-[0.15em] text-muted hover:text-foreground transition-colors"
+              >
+                <span>System Status</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${statusCollapsed ? "" : "rotate-180"}`} />
+              </button>
+              {!statusCollapsed && (
+                <div className="px-3 pb-3 space-y-1">
+                  {navigationGroups.flatMap((g) => g.items).map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-xs text-muted hover:text-foreground transition-colors"
+                    >
+                      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                        item.status === "live" ? "bg-success" : item.status === "partial" ? "bg-amber-400" : "bg-blue-400"
+                      }`} />
+                      <span className="truncate flex-1">{item.label}</span>
+                      {item.status !== "live" && (
+                        <span className={`text-[10px] font-medium ${
+                          item.status === "partial" ? "text-amber-400" : "text-blue-400"
+                        }`}>{item.status}</span>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div
               className="mt-auto space-y-3 rounded-3xl border border-border bg-card/80 p-5 text-sm text-muted"
               title="Your Chapterhouse workspace identity and connection status. Green dot = Supabase connected and ready."
@@ -336,44 +366,7 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
           </div>
         </main>
 
-        <aside className="hidden overflow-y-auto bg-rail/70 px-5 py-6 lg:block">
-          <div className="space-y-4">
-            <div className="glass-panel rounded-3xl p-5">
-              <button
-                onClick={() => setStatusCollapsed((prev) => !prev)}
-                className="flex w-full items-center justify-between"
-              >
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">System Status</p>
-                <ChevronDown className={`w-3.5 h-3.5 text-muted transition-transform duration-200 ${statusCollapsed ? "-rotate-90" : ""}`} />
-              </button>
-              {!statusCollapsed && <div className="mt-4 space-y-2 text-sm">
-                {navigationGroups.flatMap((g) => g.items).map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onMouseEnter={(e) => {
-                      setHoveredRailItem(item.href);
-                      setRailTooltipRect(e.currentTarget.getBoundingClientRect());
-                    }}
-                    onMouseLeave={() => {
-                      setHoveredRailItem(null);
-                      setRailTooltipRect(null);
-                    }}
-                    className="flex items-center gap-3 rounded-xl border border-border/50 bg-muted-surface/50 px-3 py-2 transition hover:border-accent/40 hover:text-accent"
-                  >
-                    <span className={`h-2 w-2 shrink-0 rounded-full ${
-                      item.status === "live" ? "bg-success" : item.status === "partial" ? "bg-amber-400" : "bg-blue-400"
-                    }`} />
-                    <span className="truncate">{item.label}</span>
-                    <span className={`ml-auto text-[10px] font-medium ${
-                      item.status === "live" ? "text-success" : item.status === "partial" ? "text-amber-400" : "text-blue-400"
-                    }`}>{item.status}</span>
-                  </Link>
-                ))}
-              </div>}
-            </div>
-          </div>
-        </aside>
+
       </div>
 
       {/* Tooltip portal — renders outside sidebar overflow context */}
@@ -421,50 +414,7 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
         );
       })()}
 
-      {/* Right rail tooltip portal — positioned to the left of the rail items */}
-      {mounted && hoveredRailItem && railTooltipRect && (() => {
-        const item = navigationGroups.flatMap(g => g.items).find(i => i.href === hoveredRailItem);
-        if (!item?.tooltip) return null;
-        return createPortal(
-          <div
-            className="pointer-events-none fixed z-[9999] w-80 rounded-2xl border border-border bg-card p-4 text-xs leading-5 text-muted shadow-xl shadow-black/30"
-            style={{
-              top: railTooltipRect.top,
-              left: railTooltipRect.left - 320 - 12,
-            }}
-          >
-            <p className="mb-2 font-semibold text-foreground">{item.label}</p>
-            <p className="mb-3 leading-relaxed">{item.tooltip.summary}</p>
-            {item.tooltip.features.length > 0 && (
-              <>
-                <p className="mb-1 font-semibold text-foreground/80 text-[10px] uppercase tracking-wider">What it does</p>
-                <ul className="mb-3 space-y-0.5">
-                  {item.tooltip.features.map((f, i) => (
-                    <li key={i} className="flex gap-1.5">
-                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-accent/60" />
-                      <span>{f}</span>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-            {item.tooltip.tips.length > 0 && (
-              <>
-                <p className="mb-1 font-semibold text-amber-400/80 text-[10px] uppercase tracking-wider">Testing tips</p>
-                <ul className="space-y-0.5">
-                  {item.tooltip.tips.map((t, i) => (
-                    <li key={i} className="flex gap-1.5">
-                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-amber-400/60" />
-                      <span>{t}</span>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-          </div>,
-          document.body
-        );
-      })()}
+
 
       <DebugPanel />
     </div>
