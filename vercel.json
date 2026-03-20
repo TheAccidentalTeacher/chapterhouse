@@ -15,19 +15,19 @@
   ],
   "functions": {
     "src/app/api/intel/route.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "src/app/api/intel/run-fetch/route.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "src/app/api/intel/process/route.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "src/app/api/intel/publishers-weekly/route.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "src/app/api/cron/intel-fetch/route.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "src/app/api/cron/daily-brief/route.ts": {
       "maxDuration": 60

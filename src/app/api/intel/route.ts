@@ -270,9 +270,18 @@ ${JSON.stringify(firstPass, null, 2)}`,
 // ── Route handlers ────────────────────────────────────────────────────────────
 
 // GET /api/intel — list Intel sessions, newest first
+// Also auto-recovers any sessions stuck in pending/fetching/processing for > 3 minutes
 export async function GET() {
   const supabase = getSupabaseServiceRoleClient();
   if (!supabase) return Response.json({ error: "Database not available" }, { status: 503 });
+
+  // Auto-recover stuck sessions (Vercel timeout left them in a non-terminal state)
+  const staleThreshold = new Date(Date.now() - 3 * 60 * 1000).toISOString(); // 3 minutes ago
+  await supabase
+    .from("intel_sessions")
+    .update({ status: "failed", error: "Processing timed out (Vercel function limit). Click Retry to run again." })
+    .in("status", ["pending", "fetching", "processing"])
+    .lt("updated_at", staleThreshold);
 
   const { data, error } = await supabase
     .from("intel_sessions")

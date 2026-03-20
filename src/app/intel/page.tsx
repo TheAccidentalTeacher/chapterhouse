@@ -248,9 +248,11 @@ function IntelItemCard({ item }: { item: IntelItem }) {
 function IntelReportViewer({
   session,
   onSeedAction,
+  onRetry,
 }: {
   session: IntelSession;
   onSeedAction: (sessionId: string, seedIndex: number, action: "add" | "dismiss") => void;
+  onRetry?: (session: IntelSession) => void;
 }) {
   const output = session.processed_output;
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
@@ -262,6 +264,15 @@ function IntelReportViewer({
           <AlertTriangle className="w-8 h-8 text-red-400 mb-3" />
           <p className="text-sm font-medium text-zinc-200">Processing Failed</p>
           <p className="text-xs text-zinc-400 mt-1 max-w-xs">{session.error ?? "Unknown error."}</p>
+          {session.urls.length > 0 && onRetry && (
+            <button
+              onClick={() => onRetry(session)}
+              className="mt-4 flex items-center gap-1.5 text-sm text-white bg-blue-600 hover:bg-blue-500 rounded-lg px-4 py-2 font-medium transition-colors"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Retry
+            </button>
+          )}
         </div>
       );
     }
@@ -665,6 +676,27 @@ export default function IntelPage() {
     finally { setFetchingAuto(false); }
   };
 
+  const handleRetry = async (session: IntelSession) => {
+    if (session.urls.length === 0) return;
+    setFetchingAuto(true);
+    try {
+      const res = await fetch("/api/intel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          urls: session.urls,
+          session_label: session.session_label ? `${session.session_label} (retry)` : undefined,
+          source_type: session.source_type,
+        }),
+      });
+      const data = await res.json();
+      if (data.session) {
+        handleSessionCreated(data.session);
+      }
+    } catch { /* ignore */ }
+    finally { setFetchingAuto(false); }
+  };
+
   const handleSeedAction = async (sessionId: string, seedIndex: number, action: "add" | "dismiss") => {
     const session = sessions.find((s) => s.id === sessionId);
     if (!session?.processed_output) return;
@@ -789,7 +821,7 @@ export default function IntelPage() {
               <p className="text-xs text-zinc-500 mt-1">Or click "New Session" to analyze URLs.</p>
             </div>
           ) : (
-            <IntelReportViewer session={selectedSession} onSeedAction={handleSeedAction} />
+            <IntelReportViewer session={selectedSession} onSeedAction={handleSeedAction} onRetry={handleRetry} />
           )}
         </div>
       </div>
