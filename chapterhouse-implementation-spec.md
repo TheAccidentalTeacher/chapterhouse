@@ -6,6 +6,26 @@
 
 ---
 
+## BUILD STATUS — Updated March 19, 2026 (Session 16)
+
+| Phase | Status | Migration(s) | Notes |
+|---|---|---|---|
+| PRE-FLIGHT | ✅ COMPLETE | — | Context files copied, codebase read |
+| Phase 0 — Multi-Tenant | ✅ COMPLETE | 014, backfill | user_id on all tables, RLS updated |
+| Phase 1 — Context Layer | ✅ COMPLETE | 015, 016 | Extended to multi-document (see Phase 1.1) |
+| Phase 1.1 — Multi-Doc Brain | ✅ COMPLETE | 016 | document_type + inject_order, push API, pill UI |
+| Phase 2 — Dreamer | 🔴 NOT STARTED | — | Next phase |
+| Phase 3 — Intel Workflow | 🔴 NOT STARTED | — | After Phase 2 |
+| Phase 4 — Council of Unserious | 🔴 NOT STARTED | — | personas + council_sessions tables not built |
+| Phase 5 — Tool Call Cards | 🔴 NOT STARTED | — | After Phase 4 |
+| Phase 6 — Background Jobs Ext. | 🟡 PARTIAL | — | Curriculum/social/youtube jobs exist; intel/brief/seed/condense not built |
+| Phase 7 — Self-Aware Debug | 🔴 NOT STARTED | — | debug_logs table not built |
+| Phase 8 — Email Integration | 🟡 PARTIAL | — | Inbox UI + IMAP/SMTP routes built; not wired to brief/seed pipeline |
+
+**Also already built (pre-spec, in production):** Job Runner, Curriculum Factory (now LEGACY/moved to CoursePlatform), n8n Panel, Social Media Automation, YouTube Intelligence, Brief Intelligence, daily.dev source, Context Brain push API.
+
+---
+
 ## PRE-FLIGHT: READ THESE FIRST
 
 Before touching a single file, the code bot must read all of the following. Do not skip any of them. Do not skim.
@@ -32,16 +52,18 @@ Then read the Chapterhouse codebase itself:
 
 ## KNOWN ISSUES — FIX, IGNORE, OR TRIAGE
 
+### ✅ RESOLVED:
+- `jobs` table `type` constraint was hardcoded — **fixed in production**, now open text with app-level validation
+- No `user_id` on any table — **fixed by migration 014**, backfill complete
+
 ### Fix immediately (these block other work):
-- The `jobs` table `type` constraint is `IN ('curriculum_factory', 'research_batch', 'council_session')` — this hardcoded list must become an open text field with application-level validation, OR migrate to add all new job types before using them
-- No `user_id` column exists on any table — multi-tenant requires adding this before any other user-facing feature ships
 
 ### Known broken (triage):
 - **N8N integration**: Half-finished. Leave it. Don't touch N8N routes until the core phases are done. Note in a comment that the N8N integration is deferred.
 - **Deep research / multi-agent dispatch**: `/api/research/route.ts` does not currently dispatch multiple visible agents. This spec does not fix it — that's a future phase. Leave it alone.
 
 ### Working but untested:
-- **Email integration**: `scott@NextChapterHomeschool` is wired. Needs a validation pass (Phase 8). Don't rebuild — test and document.
+- ~~**Email integration**: `scott@NextChapterHomeschool` is wired. Needs a validation pass (Phase 8). Don't rebuild — test and document.~~ **→ INBOX IS BUILT AND WORKING.** Full IMAP inbox at `/inbox`, send/reply/compose all wired. Missing: not yet feeding into brief context or seed extraction (that's Phase 8 completion). Env vars: `NCHO_EMAIL_HOST` + `NCHO_EMAIL_USER` + `NCHO_EMAIL_PASSWORD` all set in Vercel and `.env.local`.
 
 ### Working and solid:
 - QStash → Railway worker pipeline (keep, extend)
@@ -126,6 +148,8 @@ This is what the DB looks like after all phases are complete. Migrations are wri
 ---
 
 ## PHASE 0 — Multi-Tenant Foundation
+✅ **COMPLETE** — Migrations 014 (`20260319_014_add_user_id_to_all_tables.sql`) and backfill applied. All tables have `user_id`. RLS policies updated. Committed `38ce345`.
+
 *This is a prerequisite for everything else. Do this first.*
 
 **Goal**: Add `user_id` to all existing tables and update RLS policies. This must be done before any new features are built.
@@ -233,6 +257,11 @@ export async function getAuthenticatedUserId(): Promise<string> {
 ---
 
 ## PHASE 1 — The Context Layer
+✅ **COMPLETE** — Migration 015 applied. `/settings/context` UI built. `getSystemPrompt()` loads from DB. Committed `38ce345`.
+
+### Phase 1.1 — Multi-Document Context Brain ✅ COMPLETE (March 19, 2026, Session 16)
+Extended beyond the original single-file spec. Migration 016 adds `document_type` and `inject_order` to `context_files`. `getSystemPrompt()` now assembles ALL active docs in inject_order. Four named slots: `copilot_instructions` (1), `dreamer` (2), `extended_context` (3), `intel` (4). Push API at `/api/context/push` (Bearer token, `CHAPTERHOUSE_PUSH_KEY`). Two-click push from email workspace via `PUSH-DREAMER.bat` or `node tools/push_to_chapterhouse.mjs`. Context Brain UI has pill selector. Committed `c7d3413`.
+
 *Goal: Replace the hardcoded system prompt with a DB-resident, user-editable context file that loads dynamically.*
 
 **This is the foundational upgrade.** Right now Scott's context lives in a 700-line hardcoded string in `chat/route.ts`. That string cannot be updated without a deploy. This phase makes it live in Supabase so Scott can edit it from the app UI without touching VS Code.
@@ -384,6 +413,8 @@ Do NOT auto-migrate the hardcoded `SYSTEM_PROMPT` — Scott needs to consciously
 ---
 
 ## PHASE 2 — The Dreamer System
+🔴 **NOT STARTED — THIS IS THE NEXT PHASE.**
+
 *Goal: Build the full Dreamer seed/dream management system inside Chapterhouse.*
 
 **Context**: Scott currently has `dreamer.md` in the email repo — a flat markdown file with dream seeds, status tracking, and a daily log. This phase brings that into Chapterhouse as a first-class DB-backed UI with auto-seeding from chat and Intel sessions.
@@ -2031,6 +2062,8 @@ Real-time updates via Supabase Realtime on `debug_logs` table.
 ---
 
 ## PHASE 8 — Email Integration Validation
+🟡 **PARTIALLY COMPLETE** — Full IMAP inbox (`/inbox`), send, reply, compose all built and working. `NCHO_EMAIL_HOST`, `NCHO_EMAIL_USER`, `NCHO_EMAIL_PASSWORD` set in Vercel. TLS + timeout fixes deployed (commit `43b7790`). **Remaining:** wire recent emails into `buildLiveContext()` and trigger seed extraction on incoming email content.
+
 *Goal: Test and validate the existing email integration, then wire it into the brief and seed pipelines.*
 
 **Current state**: `scott@NextChapterHomeschool` is connected. Email routing is wired but untested.

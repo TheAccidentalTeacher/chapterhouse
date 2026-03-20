@@ -16,7 +16,7 @@ This document is your complete technical brief. Read all of it before touching a
 
 ---
 
-## What Chapterhouse Already Is (Current State — Updated March 17, 2026, Session 14)
+## What Chapterhouse Already Is (Current State — Updated March 19, 2026, Session 16)
 
 **Stack:** Next.js 16.1.6 (App Router), React 19, TypeScript, Tailwind 4, Supabase (auth + DB + realtime), Anthropic SDK, OpenAI SDK, Zod
 
@@ -1201,10 +1201,27 @@ Effort: 2–3 days.
 | `jobs` | 008 | Background AI job queue |
 | `social_accounts` | 010 | Buffer channel mappings per brand |
 | `social_posts` | 011 | AI-generated social posts + lifecycle |
+| `context_files` | 015 | User-editable context documents (copilot_instructions, dreamer, extended_context, intel) |
+
+**Migration numbering note:** The `chapterhouse-implementation-spec.md` uses phase-prefixed migration names (011, 012, 013...); actual production migrations are sequenced differently. Check `supabase/migrations/` for canonical list.
+
+**The Build Bible:** `chapterhouse-implementation-spec.md` in the repo root is the phase-by-phase build plan. CLAUDE.md is the living technical reference. Spec = where to go. CLAUDE.md = where you are. Always read both.
+
+**Spec Phase Status (as of Session 16):**
+- Phase 0 (Multi-tenant): ✅ COMPLETE
+- Phase 1 (Context Layer): ✅ COMPLETE + extended to Phase 1.1 (multi-document brain)
+- Phase 2 (Dreamer): 🔴 NOT STARTED — **NEXT PHASE**
+- Phase 3 (Intel): 🔴 NOT STARTED
+- Phase 4 (Council personas): 🔴 NOT STARTED
+- Phase 5 (Tool cards): 🔴 NOT STARTED
+- Phase 6 (Jobs extension): 🟡 PARTIAL (curriculum/social/youtube exist; intel/seed/condense not built)
+- Phase 7 (Debug loop): 🔴 NOT STARTED
+- Phase 8 (Email wiring): 🟡 PARTIAL (inbox built; not wired to brief/seed pipeline)
 
 ---
 
-*Document version: March 18, 2026 (Session 15)*
+*Document version: March 19, 2026 (Session 16)*
+*Session 16 additions: Multi-document Context Brain (Phase 1.1). Migration 016: `document_type` + `inject_order` on `context_files`. `getSystemPrompt()` assembles all active docs in inject_order. Four named slots: copilot_instructions (1), dreamer (2), extended_context (3), intel (4). `/api/context/push` push endpoint (Bearer token, `CHAPTERHOUSE_PUSH_KEY`). `/api/context/export` supports `?type=` param. Context Brain UI redesigned: pill selector, per-doc editor state, Push API docs box. Navigation updated to “Context Brain”. Push tools in email workspace: `PUSH-DREAMER.bat`, `PUSH-ALL.bat`, `tools/push_to_chapterhouse.mjs`. Email inbox fix: added `NCHO_EMAIL_HOST` + `NCHO_EMAIL_USER` to Vercel env vars; TLS `rejectUnauthorized: false` + socket timeout reduced to 8s to fit Vercel serverless limit. `chapterhouse-implementation-spec.md` updated with BUILD STATUS table, phase completion banners. Commits: `c7d3413` (Context Brain), `43b7790` (IMAP fix).*
 *Session 15 additions: Documentation review + index update. `[new commit]` placeholder replaced with real hash `119279a`. Build History item 41 updated with Railway TS build fix explanation (TS18048, `unit.lessons.length` → `lessonCount` const); item 42 added (commit hashes). Missing files added to workspace index in both copilot-instructions.md files: `CLAUDE.md`, `scope-sequence-handoff.md`, `somersschool-curriculum-factory-handoff.md`, `chapterhouse-evolution-handoff.md`, `jobs-test-prompts.md`, `social-media-automation-brain.md`. Document version updated to March 18, 2026 (Session 15).*
 *Session 14 additions: Contract-clean Pipeline Handoff JSON + code audit. `CANONICAL_SUBJECT_LABELS` (`ela→"Language Arts"` etc.), `schema_version` + `generated_by` guaranteed in post-extraction fixup. Earl (Pass 4) → GPT-5.4, Beavis (Pass 5) → `gpt-5-mini` via new `callWithOpenAI()` — `openai` dep added to worker. `scope-sequence/ela-g1.json` sample. `CCSS-M` → `CCSS-Math` throughout docs (spec-canonical). Railway TS build fix: forEach callback narrowing (TS18048). Commits: `b35246e` + `119279a`.*
 *Session 13 additions: Phase 7 Brief Intelligence Upgrade (full context injection + collision scoring + track impact badges). Phase 7.1 daily.dev source integration (3-feed parallel fetch, dedup, 30-post cap). Turbopack build fix for council-chamber-viewer.tsx (3 attempts → final fix: parseOutput() module-level function as opaque type boundary + !! JSX guards + Job.output typed as unknown). Evolution roadmap added from chapterhouse-evolution-handoff.md. Supabase tables registry added.*
