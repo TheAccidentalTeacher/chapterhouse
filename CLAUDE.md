@@ -1205,16 +1205,18 @@ Effort: 2–3 days.
 | `context_files` | 015 | User-editable context documents (copilot_instructions, dreamer, extended_context, intel) |
 | `dreams` | 017 | Dreamer board items — seeds, active, building, shipped, archived, dismissed |
 | `dream_log` | 017 | Daily dream journal (one entry per user per day, mood field) |
+| `intel_categories` | 018 | Display config for Intel report categories (emoji, color, sort_order) |
+| `intel_sessions` | 018 | Intel analysis sessions — urls, raw content, Claude output, proposed seeds |
 
 **Migration numbering note:** The `chapterhouse-implementation-spec.md` uses phase-prefixed migration names (011, 012, 013...); actual production migrations are sequenced differently. Check `supabase/migrations/` for canonical list.
 
 **The Build Bible:** `chapterhouse-implementation-spec.md` in the repo root is the phase-by-phase build plan. CLAUDE.md is the living technical reference. Spec = where to go. CLAUDE.md = where you are. Always read both.
 
-**Spec Phase Status (as of Session 16):**
+**Spec Phase Status (as of Session 18):**
 - Phase 0 (Multi-tenant): ✅ COMPLETE
 - Phase 1 (Context Layer): ✅ COMPLETE + extended to Phase 1.1 (multi-document brain)
 - Phase 2 (Dreamer): ✅ COMPLETE — Kanban UI, 6 API routes, migration 017, Earl AI review, 48 seeds imported
-- Phase 3 (Intel): 🔴 NOT STARTED — **NEXT PHASE**
+- Phase 3 (Intel): ✅ COMPLETE — migration 018, 5 API routes, `/intel` page, nav + cron. **Run migration 018 in Supabase.**
 - Phase 4 (Council personas): 🔴 NOT STARTED
 - Phase 5 (Tool cards): 🔴 NOT STARTED
 - Phase 6 (Jobs extension): 🟡 PARTIAL (curriculum/social/youtube exist; intel/seed/condense not built)
@@ -1223,7 +1225,8 @@ Effort: 2–3 days.
 
 ---
 
-*Document version: March 19, 2026 (Session 17)*
+*Document version: March 19, 2026 (Session 18)*
+*Session 18 additions: Phase 3 Intel complete. Migration 018: `intel_sessions` (status CHECK pending|fetching|processing|complete|failed, source_type CHECK manual|cron|publishers_weekly, RLS, Realtime) + `intel_categories`. 5 API routes: `/api/intel/` (GET list + POST create+process inline with maxDuration:60), `/api/intel/[id]/` (GET/PATCH/DELETE), `/api/intel/process/` (CRON_SECRET-protected re-trigger), `/api/intel/publishers-weekly/` (PW .txt paste path), `/api/cron/intel-fetch/` (daily 04:00 UTC, 5 watch sources, duplicate check). Intel page `/intel`: split layout — session list left, full report viewer right. Two modals: New Session (1–20 URLs) + PW Report (paste textarea). Report sections color-coded by category (🔴 Direct Impact/🟡 Ecosystem Signal/🟠 Community Signal/🔵 Background). Impact scores A+ to C with affected-repo tags. Proposed seeds with Add to Dreamer / Dismiss buttons. Supabase Realtime live status updates. Claude Sonnet 4.6 (primary analysis) + Claude Haiku 4.5 (verification pass). Auto-seeds extracted to `dreams` table with `source_type: 'intel'`. Navigation: Globe icon added to Intelligence group (first item). vercel.json: intel-fetch cron 0 4 * * * + maxDuration:60 on all 4 intel routes. TypeScript clean. Commit: `5bd251d`. **ACTION REQUIRED: Run migration 018 in Supabase Dashboard.**
 *Session 17 additions: Phase 2 — Dreamer System complete. Migration 017: `dream_status` enum, `dreams` table (RLS + Realtime), `dream_log` table (unique-per-day constraint). 6 API routes: `/api/dreams/` (GET + POST), `/api/dreams/[id]/` (GET/PATCH/DELETE with lifecycle timestamps), `/api/dreams/bulk/` (batch status), `/api/dreams/reorder/` (drag sort), `/api/dreams/ai-review/` (Earl via Claude Sonnet 4.6 — suggests promote/dismiss/hold/merge, never auto-applies), `/api/dream-log/` (daily journal upsert). `/dreamer` page: Kanban board (Seeds/Active/Building/Shipped columns), ArchiveDrawer, AddDreamForm, Earl suggestion cards with Apply button. Navigation: Star icon, "live" status. 48 seeds bulk-imported from dreamer.md + 4 Building repos + 9 Active repos inserted from dreamer registry. Commit: `e0cde31`.*
 *Session 16 additions: Multi-document Context Brain (Phase 1.1). Migration 016: `document_type` + `inject_order` on `context_files`. `getSystemPrompt()` assembles all active docs in inject_order. Four named slots: copilot_instructions (1), dreamer (2), extended_context (3), intel (4). `/api/context/push` push endpoint (Bearer token, `CHAPTERHOUSE_PUSH_KEY`). `/api/context/export` supports `?type=` param. Context Brain UI redesigned: pill selector, per-doc editor state, Push API docs box. Navigation updated to “Context Brain”. Push tools in email workspace: `PUSH-DREAMER.bat`, `PUSH-ALL.bat`, `tools/push_to_chapterhouse.mjs`. Email inbox fix: added `NCHO_EMAIL_HOST` + `NCHO_EMAIL_USER` to Vercel env vars; TLS `rejectUnauthorized: false` + socket timeout reduced to 8s to fit Vercel serverless limit. `chapterhouse-implementation-spec.md` updated with BUILD STATUS table, phase completion banners. Commits: `c7d3413` (Context Brain), `43b7790` (IMAP fix).*
 *Session 15 additions: Documentation review + index update. `[new commit]` placeholder replaced with real hash `119279a`. Build History item 41 updated with Railway TS build fix explanation (TS18048, `unit.lessons.length` → `lessonCount` const); item 42 added (commit hashes). Missing files added to workspace index in both copilot-instructions.md files: `CLAUDE.md`, `scope-sequence-handoff.md`, `somersschool-curriculum-factory-handoff.md`, `chapterhouse-evolution-handoff.md`, `jobs-test-prompts.md`, `social-media-automation-brain.md`. Document version updated to March 18, 2026 (Session 15).*
