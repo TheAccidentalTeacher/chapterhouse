@@ -17,6 +17,9 @@
     "src/app/api/intel/route.ts": {
       "maxDuration": 60
     },
+    "src/app/api/intel/run-fetch/route.ts": {
+      "maxDuration": 60
+    },
     "src/app/api/intel/process/route.ts": {
       "maxDuration": 60
     },

@@ -6,6 +6,7 @@ import {
   Plus,
   Newspaper,
   Loader2,
+  Rss,
   ChevronDown,
   ChevronRight,
   ExternalLink,
@@ -585,6 +586,7 @@ export default function IntelPage() {
   const [loading, setLoading] = useState(true);
   const [showNewModal, setShowNewModal] = useState(false);
   const [showPWModal, setShowPWModal] = useState(false);
+  const [fetchingAuto, setFetchingAuto] = useState(false);
 
   const supabase = getSupabaseBrowserClient();
 
@@ -650,6 +652,19 @@ export default function IntelPage() {
     if (selectedId === id) setSelectedId(sessions[1]?.id ?? null);
   };
 
+  const handleRunAutoFetch = async () => {
+    setFetchingAuto(true);
+    try {
+      const res = await fetch("/api/intel/run-fetch", { method: "POST" });
+      const data = await res.json();
+      if (data.session_id) {
+        await loadSessions();
+        setSelectedId(data.session_id);
+      }
+    } catch { /* ignore */ }
+    finally { setFetchingAuto(false); }
+  };
+
   const handleSeedAction = async (sessionId: string, seedIndex: number, action: "add" | "dismiss") => {
     const session = sessions.find((s) => s.id === sessionId);
     if (!session?.processed_output) return;
@@ -701,6 +716,15 @@ export default function IntelPage() {
             aria-label="Refresh"
           >
             <RefreshCw className="w-4 h-4" />
+          </button>
+          <button
+            onClick={handleRunAutoFetch}
+            disabled={fetchingAuto}
+            className="flex items-center gap-1.5 text-sm text-zinc-300 hover:text-zinc-100 bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50"
+            title="Run the 5 watch-source auto-fetch now"
+          >
+            {fetchingAuto ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Rss className="w-3.5 h-3.5" />}
+            {fetchingAuto ? "Fetching…" : "Auto-Fetch"}
           </button>
           <button
             onClick={() => setShowPWModal(true)}
