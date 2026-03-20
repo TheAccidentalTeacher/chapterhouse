@@ -16,7 +16,7 @@ This document is your complete technical brief. Read all of it before touching a
 
 ---
 
-## What Chapterhouse Already Is (Current State — Updated March 19, 2026, Session 16)
+## What Chapterhouse Already Is (Current State — Updated March 19, 2026, Session 17)
 
 **Stack:** Next.js 16.1.6 (App Router), React 19, TypeScript, Tailwind 4, Supabase (auth + DB + realtime), Anthropic SDK, OpenAI SDK, Zod
 
@@ -44,6 +44,7 @@ This document is your complete technical brief. Read all of it before touching a
 - `/curriculum-factory` — 6-pass Council of the Unserious (Gandalf → Data → Polgara → Earl → Beavis & Butthead → Extract JSON). National standards auto-aligned (CCSS-ELA/CCSS-Math/NGSS/C3 auto-detected from subject). Produces BOTH `finalScopeAndSequence` (Polgara's markdown) AND `structuredOutput` (validated SomersSchool pipeline JSON — drop into `scope-sequence/`). HTML/PDF/DOCX export. Batch mode (parent + child jobs).
 - `/pipelines` — n8n workflow control panel. Status, execution history, manual triggers. Proxies to Railway-hosted n8n.
 - `/council` — 6-pass Council Chamber as background job. Same pipeline as curriculum-factory. Output: Final Scope & Sequence → Pipeline Handoff JSON (emerald card, copy/download/preview) → Earl (open by default) → B&B → Working Papers accordion (Gandalf draft + Data critique, closed) → Download full session transcript (includes JSON fenced block).
+- `/dreamer` — The Dreamer System (Phase 2). Kanban board: Seeds → Active → Building → Shipped. Archive drawer for dismissed/archived items. Full CRUD via 6 API routes. Earl AI review: Claude Sonnet 4.6 analyzes all seeds and returns prioritized suggestions (promote/dismiss/hold/merge) — never auto-applies, Scott approves each. Daily dream log (one entry per day, mood field). 48 seeds pre-loaded from dreamer.md on launch. Supabase Realtime. Source tracking (dreamer_md, chat, brief, manual, ai_review, push_api).
 - `/social` — Social media automation (replaces Sintra, $49/mo). 3-tab UI: **Review Queue** (Supabase Realtime live updates, inline text edit, datetime picker, Buffer channel selector, approve/reject, full edit history tracking in JSONB), **Generate** (Claude Sonnet 4.6, 3 brands × 3 platforms, topic seed, brand voice enforced per brand), **Accounts** (Buffer GraphQL sync via GetOrganizations + GetChannels, manual brand→channel mapping). Weekly cron: Monday 05:00 UTC. Shopify webhook: new product → NCHO launch posts auto-generated (HMAC-verified).
 
 ### System
@@ -1202,6 +1203,8 @@ Effort: 2–3 days.
 | `social_accounts` | 010 | Buffer channel mappings per brand |
 | `social_posts` | 011 | AI-generated social posts + lifecycle |
 | `context_files` | 015 | User-editable context documents (copilot_instructions, dreamer, extended_context, intel) |
+| `dreams` | 017 | Dreamer board items — seeds, active, building, shipped, archived, dismissed |
+| `dream_log` | 017 | Daily dream journal (one entry per user per day, mood field) |
 
 **Migration numbering note:** The `chapterhouse-implementation-spec.md` uses phase-prefixed migration names (011, 012, 013...); actual production migrations are sequenced differently. Check `supabase/migrations/` for canonical list.
 
@@ -1210,8 +1213,8 @@ Effort: 2–3 days.
 **Spec Phase Status (as of Session 16):**
 - Phase 0 (Multi-tenant): ✅ COMPLETE
 - Phase 1 (Context Layer): ✅ COMPLETE + extended to Phase 1.1 (multi-document brain)
-- Phase 2 (Dreamer): 🔴 NOT STARTED — **NEXT PHASE**
-- Phase 3 (Intel): 🔴 NOT STARTED
+- Phase 2 (Dreamer): ✅ COMPLETE — Kanban UI, 6 API routes, migration 017, Earl AI review, 48 seeds imported
+- Phase 3 (Intel): 🔴 NOT STARTED — **NEXT PHASE**
 - Phase 4 (Council personas): 🔴 NOT STARTED
 - Phase 5 (Tool cards): 🔴 NOT STARTED
 - Phase 6 (Jobs extension): 🟡 PARTIAL (curriculum/social/youtube exist; intel/seed/condense not built)
@@ -1220,7 +1223,8 @@ Effort: 2–3 days.
 
 ---
 
-*Document version: March 19, 2026 (Session 16)*
+*Document version: March 19, 2026 (Session 17)*
+*Session 17 additions: Phase 2 — Dreamer System complete. Migration 017: `dream_status` enum, `dreams` table (RLS + Realtime), `dream_log` table (unique-per-day constraint). 6 API routes: `/api/dreams/` (GET + POST), `/api/dreams/[id]/` (GET/PATCH/DELETE with lifecycle timestamps), `/api/dreams/bulk/` (batch status), `/api/dreams/reorder/` (drag sort), `/api/dreams/ai-review/` (Earl via Claude Sonnet 4.6 — suggests promote/dismiss/hold/merge, never auto-applies), `/api/dream-log/` (daily journal upsert). `/dreamer` page: Kanban board (Seeds/Active/Building/Shipped columns), ArchiveDrawer, AddDreamForm, Earl suggestion cards with Apply button. Navigation: Star icon, "live" status. 48 seeds bulk-imported from dreamer.md + 4 Building repos + 9 Active repos inserted from dreamer registry. Commit: `e0cde31`.*
 *Session 16 additions: Multi-document Context Brain (Phase 1.1). Migration 016: `document_type` + `inject_order` on `context_files`. `getSystemPrompt()` assembles all active docs in inject_order. Four named slots: copilot_instructions (1), dreamer (2), extended_context (3), intel (4). `/api/context/push` push endpoint (Bearer token, `CHAPTERHOUSE_PUSH_KEY`). `/api/context/export` supports `?type=` param. Context Brain UI redesigned: pill selector, per-doc editor state, Push API docs box. Navigation updated to “Context Brain”. Push tools in email workspace: `PUSH-DREAMER.bat`, `PUSH-ALL.bat`, `tools/push_to_chapterhouse.mjs`. Email inbox fix: added `NCHO_EMAIL_HOST` + `NCHO_EMAIL_USER` to Vercel env vars; TLS `rejectUnauthorized: false` + socket timeout reduced to 8s to fit Vercel serverless limit. `chapterhouse-implementation-spec.md` updated with BUILD STATUS table, phase completion banners. Commits: `c7d3413` (Context Brain), `43b7790` (IMAP fix).*
 *Session 15 additions: Documentation review + index update. `[new commit]` placeholder replaced with real hash `119279a`. Build History item 41 updated with Railway TS build fix explanation (TS18048, `unit.lessons.length` → `lessonCount` const); item 42 added (commit hashes). Missing files added to workspace index in both copilot-instructions.md files: `CLAUDE.md`, `scope-sequence-handoff.md`, `somersschool-curriculum-factory-handoff.md`, `chapterhouse-evolution-handoff.md`, `jobs-test-prompts.md`, `social-media-automation-brain.md`. Document version updated to March 18, 2026 (Session 15).*
 *Session 14 additions: Contract-clean Pipeline Handoff JSON + code audit. `CANONICAL_SUBJECT_LABELS` (`ela→"Language Arts"` etc.), `schema_version` + `generated_by` guaranteed in post-extraction fixup. Earl (Pass 4) → GPT-5.4, Beavis (Pass 5) → `gpt-5-mini` via new `callWithOpenAI()` — `openai` dep added to worker. `scope-sequence/ela-g1.json` sample. `CCSS-M` → `CCSS-Math` throughout docs (spec-canonical). Railway TS build fix: forEach callback narrowing (TS18048). Commits: `b35246e` + `119279a`.*
