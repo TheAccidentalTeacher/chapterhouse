@@ -56,8 +56,9 @@ function getImapClient(): ImapFlow | null {
     secure: true,
     auth: { user, pass: password },
     logger: false,
-    socketTimeout: 15000,
-    greetingTimeout: 8000,
+    tls: { rejectUnauthorized: false },
+    socketTimeout: 8000,   // keep under Vercel's 10s serverless limit
+    greetingTimeout: 5000,
   });
 }
 

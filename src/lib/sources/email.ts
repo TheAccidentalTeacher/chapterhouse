@@ -40,7 +40,8 @@ export async function fetchInboxMessages(): Promise<EmailSourceResult> {
     secure: true, // IMAP SSL — port 993
     auth: { user, pass: password },
     logger: false, // suppress verbose imapflow wire logs
-    socketTimeout: 10000,
+    tls: { rejectUnauthorized: false },
+    socketTimeout: 8000,
     greetingTimeout: 5000,
   });
 
