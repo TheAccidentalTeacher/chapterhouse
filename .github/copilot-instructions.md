@@ -830,6 +830,10 @@ Month 7–12: Compound
 ---
 
 ## Last Updated
+March 19, 2026 (Session 19) — **UI cleanup + gold color scheme.** System Status collapsible in sidebar (`d873472`). Right column removed, layout is now `[280px_minmax(0,1fr)]` 2-column (`a3a0658`). Full gold/amber scheme across 19 files: dark bg `#0e0b02`, accent `#D4A80E` dark / `#8B5E00` light. All purple/blue hardcoded classes → amber. B&B persona dot + thread badge intentionally left purple. Action buttons on amber use `text-zinc-900`. Commits: `d873472`, `a3a0658`, `375de6e`. Phase 4 (Council Personas) is next.
+
+March 19, 2026 (Session 18) — **Phase 3 Intel complete.** Migration 018 (`intel_sessions` + `intel_categories` tables). 5 API routes. `/intel` page: split layout, two modals (New Session + PW Report), Realtime status updates, auto-seeds to `dreams` table. Daily cron 04:00 UTC fetching 5 watch sources. Globe icon added to nav. Two confirmed production runs ("9 items +3 seeds"). Commit `5bd251d`. ⚠️ Run migration 018 in Supabase Dashboard.
+
 March 19, 2026 (Session 17) — **Phase 2 Dreamer System complete.** Migration 017 (`dreams` + `dream_log` tables, RLS, Realtime). 6 API routes. Kanban UI at `/dreamer` (Seeds/Active/Building/Shipped). Earl AI review (suggest-only, never auto-applies). 48 seeds imported from dreamer.md. 4 Building + 9 Active repos inserted from registry. Commit `e0cde31`. Phase 3 (Intel) is next.
 
 March 18, 2026 (Session 15) — **Documentation Review + Index Update.** `[new commit]` placeholder replaced with real hash `119279a`. CLAUDE.md Build History item 41 updated with Railway TS build fix (TS18048, `unit.lessons.length` → `lessonCount` const); item 42 added (commit hashes). Missing files added to workspace index in both copilot-instructions.md files: `CLAUDE.md`, `scope-sequence-handoff.md`, `somersschool-curriculum-factory-handoff.md`, `chapterhouse-evolution-handoff.md`, `jobs-test-prompts.md`, `social-media-automation-brain.md`. Document version updated to March 18, 2026 (Session 15).
