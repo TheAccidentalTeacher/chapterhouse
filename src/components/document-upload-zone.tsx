@@ -179,8 +179,8 @@ interface UploadedDocCardProps {
 export function UploadedDocCard({ doc, onAnalyze }: UploadedDocCardProps) {
   const typeColors: Record<string, string> = {
     pdf: "bg-red-500/20 text-red-400",
-    docx: "bg-blue-500/20 text-blue-400",
-    epub: "bg-purple-500/20 text-purple-400",
+    docx: "bg-amber-500/20 text-amber-400",
+    epub: "bg-amber-500/20 text-amber-400",
     txt: "bg-gray-500/20 text-gray-400",
     md: "bg-green-500/20 text-green-400",
   };

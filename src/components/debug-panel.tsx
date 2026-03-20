@@ -66,7 +66,7 @@ const ALL_LEVELS: LogLevel[] = ["click", "api", "success", "error", "brain", "in
 
 const LEVEL_STYLES: Record<LogLevel, string> = {
   click:    "text-sky-400",
-  api:      "text-violet-400",
+  api:      "text-amber-400",
   success:  "text-emerald-400",
   error:    "text-red-400",
   brain:    "text-amber-400",
@@ -78,7 +78,7 @@ const LEVEL_STYLES: Record<LogLevel, string> = {
 
 const LEVEL_BADGE: Record<LogLevel, string> = {
   click:    "bg-sky-500/20 text-sky-300 border-sky-500/30",
-  api:      "bg-violet-500/20 text-violet-300 border-violet-500/30",
+  api:      "bg-amber-500/20 text-amber-300 border-amber-500/30",
   success:  "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
   error:    "bg-red-500/20 text-red-300 border-red-500/30",
   brain:    "bg-amber-500/20 text-amber-300 border-amber-500/30",
@@ -129,7 +129,7 @@ function JsonTree({ data, depth = 0 }: { data: unknown; depth?: number }) {
           <div className="ml-4 border-l border-border/30 pl-2 space-y-0.5">
             {keys.map((k) => (
               <div key={k} className="flex gap-1 flex-wrap">
-                <span className="text-violet-300 shrink-0">{k}:</span>
+                <span className="text-amber-300 shrink-0">{k}:</span>
                 <JsonTree data={(data as Record<string, unknown>)[k]} depth={depth + 1} />
               </div>
             ))}
@@ -154,7 +154,7 @@ function PerfTab({ entries }: { entries: LogEntry[] }) {
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-2">
         <div className="rounded-lg border border-border/30 bg-muted-surface/40 p-2 text-center">
-          <div className="text-lg font-bold text-violet-400">{sessionStats.apiCalls}</div>
+          <div className="text-lg font-bold text-amber-400">{sessionStats.apiCalls}</div>
           <div className="text-[10px] text-muted">API Calls</div>
         </div>
         <div className="rounded-lg border border-border/30 bg-muted-surface/40 p-2 text-center">
@@ -277,7 +277,7 @@ export function DebugPanel() {
         Debug
         <span className="text-[10px] text-muted font-mono">{formatUptime(sessionStats.startedAt)}</span>
         {sessionStats.apiCalls > 0 && (
-          <span className="rounded-full bg-violet-500/20 border border-violet-500/30 px-1.5 py-0.5 text-[10px] text-violet-300 font-bold leading-none">
+          <span className="rounded-full bg-amber-500/20 border border-amber-500/30 px-1.5 py-0.5 text-[10px] text-amber-300 font-bold leading-none">
             {sessionStats.apiCalls}
           </span>
         )}

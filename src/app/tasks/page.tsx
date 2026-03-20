@@ -22,7 +22,7 @@ type StatusKey = "open" | "in-progress" | "blocked" | "done" | "canceled";
 
 const STATUS_META: Record<StatusKey, { label: string; color: string }> = {
   "open":       { label: "Open",        color: "bg-accent/10 text-accent" },
-  "in-progress":{ label: "In progress", color: "bg-blue-500/10 text-blue-400" },
+  "in-progress":{ label: "In progress", color: "bg-amber-500/10 text-amber-400" },
   "blocked":    { label: "Blocked",     color: "bg-orange-500/10 text-orange-400" },
   "done":       { label: "Done",        color: "bg-emerald-500/10 text-emerald-400" },
   "canceled":   { label: "Canceled",    color: "bg-muted/10 text-muted" },
@@ -105,7 +105,7 @@ function TaskCard({
           <button
             onClick={() => setStatus("in-progress")}
             disabled={busy}
-            className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/40 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-400 transition hover:bg-blue-500/20 disabled:opacity-40"
+            className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-400 transition hover:bg-amber-500/20 disabled:opacity-40"
           >
             Start
           </button>

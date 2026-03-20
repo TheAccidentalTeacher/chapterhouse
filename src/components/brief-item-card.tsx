@@ -18,7 +18,7 @@ function TrackBadge({ label, score }: { label: string; score: number }) {
   const styles = [
     "",
     "border-border/70 text-muted/70",
-    "border-blue-500/40 bg-blue-500/10 text-blue-400",
+    "border-amber-500/40 bg-amber-500/10 text-amber-400",
     "border-emerald-500/40 bg-emerald-500/15 text-emerald-300 font-semibold",
   ];
   return (

@@ -74,13 +74,13 @@ function MessageRow({
     <button
       onClick={onClick}
       className={`w-full text-left px-4 py-3 border-b border-white/5 hover:bg-white/5 transition-colors ${
-        selected ? "bg-blue-600/20 border-l-2 border-l-blue-500" : ""
+        selected ? "bg-amber-600/20 border-l-2 border-l-amber-500" : ""
       }`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           {!msg.isRead && (
-            <span className="w-2 h-2 rounded-full bg-blue-400 shrink-0 mt-1" />
+            <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0 mt-1" />
           )}
           {msg.isRead && <span className="w-2 h-2 shrink-0" />}
           <span
@@ -175,7 +175,7 @@ function ComposePanel({
         <button
           onClick={onSend}
           disabled={sending || !compose.to || !compose.subject || !compose.body}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-zinc-900 text-sm rounded-lg transition-colors"
         >
           {sending ? (
             <Loader2 className="w-4 h-4 animate-spin" />

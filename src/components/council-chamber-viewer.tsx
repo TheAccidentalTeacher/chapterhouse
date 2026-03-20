@@ -219,7 +219,7 @@ export function CouncilChamberViewer({ job }: Props) {
         {isRunning && (
           <div className="flex items-center gap-1.5 pt-1">
             {[0, 1, 2].map((i) => (
-              <span key={i} className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"
+              <span key={i} className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-bounce"
                 style={{ animationDelay: `${i * 0.15}s` }} />
             ))}
           </div>
@@ -315,12 +315,12 @@ export function CouncilChamberViewer({ job }: Props) {
           {!!output.engagementReport && (
             <details className="group">
               <summary className="cursor-pointer list-none flex items-center gap-2 hover:opacity-80 transition-opacity select-none">
-                <span className="group-open:rotate-90 transition-transform inline-block text-purple-500 text-xs">▶</span>
-                <span className="text-xs font-semibold text-purple-700 uppercase tracking-wide">
+                <span className="group-open:rotate-90 transition-transform inline-block text-amber-500 text-xs">▶</span>
+                <span className="text-xs font-semibold text-amber-700 uppercase tracking-wide">
                   Beavis &amp; Butthead&apos;s Engagement Report
                 </span>
               </summary>
-              <pre className="mt-2 bg-purple-50 border border-purple-100 rounded-xl p-4 text-xs leading-relaxed overflow-auto max-h-64 whitespace-pre-wrap">
+              <pre className="mt-2 bg-amber-50 border border-amber-100 rounded-xl p-4 text-xs leading-relaxed overflow-auto max-h-64 whitespace-pre-wrap">
                 {output.engagementReport}
               </pre>
             </details>

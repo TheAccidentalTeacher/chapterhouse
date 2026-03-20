@@ -99,7 +99,7 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
   };
 
   const typeColors: Record<string, string> = {
-    task: "bg-blue-500/20 text-blue-400",
+    task: "bg-sky-500/20 text-sky-400",
     research: "bg-emerald-500/20 text-emerald-400",
     opportunity: "bg-amber-500/20 text-amber-400",
     thread: "bg-purple-500/20 text-purple-400",
@@ -199,7 +199,7 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
                                         </span>
                                       )}
                                       {item.status === "planned" && (
-                                        <span className="rounded-full bg-blue-500/15 px-1.5 py-0.5 text-[10px] font-medium text-blue-400">
+                                        <span className="rounded-full bg-sky-500/15 px-1.5 py-0.5 text-[10px] font-medium text-sky-400">
                                           soon
                                         </span>
                                       )}
@@ -250,12 +250,12 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
                       className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-xs text-muted hover:text-foreground transition-colors"
                     >
                       <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                        item.status === "live" ? "bg-success" : item.status === "partial" ? "bg-amber-400" : "bg-blue-400"
+                        item.status === "live" ? "bg-success" : item.status === "partial" ? "bg-amber-400" : "bg-sky-400"
                       }`} />
                       <span className="truncate flex-1">{item.label}</span>
                       {item.status !== "live" && (
                         <span className={`text-[10px] font-medium ${
-                          item.status === "partial" ? "text-amber-400" : "text-blue-400"
+                          item.status === "partial" ? "text-amber-400" : "text-sky-400"
                         }`}>{item.status}</span>
                       )}
                     </Link>

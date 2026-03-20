@@ -92,20 +92,20 @@ const CATEGORY_COLORS: Record<string, string> = {
   "🔴 Direct Impact":     "border-red-500/40 bg-red-500/5",
   "🟡 Ecosystem Signal":  "border-yellow-500/40 bg-yellow-500/5",
   "🟠 Community Signal":  "border-orange-500/40 bg-orange-500/5",
-  "🔵 Background":        "border-blue-500/40 bg-blue-500/5",
+  "🔵 Background":        "border-amber-500/40 bg-amber-500/5",
 };
 
 const REPO_BADGE: Record<string, string> = {
   "NCHO":         "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-  "SomersSchool": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+  "SomersSchool": "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
   "BibleSaaS":    "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
-  "Chapterhouse": "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
+  "Chapterhouse": "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
 };
 
 const SOURCE_BADGE: Record<string, string> = {
   manual:            "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
-  cron:              "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-  publishers_weekly: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
+  cron:              "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+  publishers_weekly: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
 };
 
 function formatDate(iso: string) {
@@ -137,7 +137,7 @@ function SessionCard({
       onClick={onClick}
       className={`group relative p-3 rounded-lg border cursor-pointer transition-all ${
         selected
-          ? "border-blue-500 bg-blue-500/10"
+          ? "border-amber-500 bg-amber-500/10"
           : "border-zinc-700 bg-zinc-800/50 hover:border-zinc-600"
       }`}
     >
@@ -211,7 +211,7 @@ function IntelItemCard({ item }: { item: IntelItem }) {
                 href={item.source_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                className="text-[10px] text-amber-400 hover:text-amber-300 flex items-center gap-1"
               >
                 <ExternalLink className="w-3 h-3" />
                 {item.source_title ?? new URL(item.source_url).hostname}
@@ -267,7 +267,7 @@ function IntelReportViewer({
           {session.urls.length > 0 && onRetry && (
             <button
               onClick={() => onRetry(session)}
-              className="mt-4 flex items-center gap-1.5 text-sm text-white bg-blue-600 hover:bg-blue-500 rounded-lg px-4 py-2 font-medium transition-colors"
+              className="mt-4 flex items-center gap-1.5 text-sm text-zinc-900 bg-amber-500 hover:bg-amber-400 rounded-lg px-4 py-2 font-medium transition-colors"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               Retry
@@ -278,7 +278,7 @@ function IntelReportViewer({
     }
     return (
       <div className="flex flex-col items-center justify-center h-64">
-        <Loader2 className="w-6 h-6 text-blue-400 animate-spin mb-3" />
+        <Loader2 className="w-6 h-6 text-amber-400 animate-spin mb-3" />
         <p className="text-sm text-zinc-400">
           {session.status === "fetching" ? "Fetching URLs…" : session.status === "processing" ? "Analyzing content…" : "Waiting…"}
         </p>
@@ -297,7 +297,7 @@ function IntelReportViewer({
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 mb-2">
-          <Globe className="w-4 h-4 text-blue-400" />
+          <Globe className="w-4 h-4 text-amber-400" />
           <h2 className="text-base font-semibold text-zinc-100">{session.session_label}</h2>
           <span className="text-xs text-zinc-500">{formatDate(session.created_at)}</span>
         </div>
@@ -474,7 +474,7 @@ function NewSessionModal({
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder="e.g., PW 0319 — March 19"
-              className="w-full bg-zinc-800 border border-zinc-600 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-blue-500"
+              className="w-full bg-zinc-800 border border-zinc-600 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500"
             />
           </div>
           <div>
@@ -484,7 +484,7 @@ function NewSessionModal({
               onChange={(e) => setUrlsText(e.target.value)}
               rows={6}
               placeholder={"https://www.publishersweekly.com/...\nhttps://techcrunch.com/..."}
-              className="w-full bg-zinc-800 border border-zinc-600 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-blue-500 font-mono resize-none"
+              className="w-full bg-zinc-800 border border-zinc-600 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500 font-mono resize-none"
             />
             <p className="text-xs text-zinc-500 mt-1">
               {urlsText.split("\n").filter((l) => l.trim().startsWith("http")).length} URL(s) detected
@@ -497,7 +497,7 @@ function NewSessionModal({
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm px-4 py-2 rounded-lg font-medium transition-colors"
+            className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-zinc-900 text-sm px-4 py-2 rounded-lg font-medium transition-colors"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4" />}
             {loading ? "Processing…" : "Analyze"}
@@ -557,7 +557,7 @@ function PWReportModal({
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder="e.g., PW 0316 — March 16 2026"
-              className="w-full bg-zinc-800 border border-zinc-600 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-purple-500"
+              className="w-full bg-zinc-800 border border-zinc-600 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500"
             />
           </div>
           <div>
@@ -567,7 +567,7 @@ function PWReportModal({
               onChange={(e) => setContent(e.target.value)}
               rows={8}
               placeholder="Paste the full Publishers Weekly report here…"
-              className="w-full bg-zinc-800 border border-zinc-600 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-purple-500 resize-none"
+              className="w-full bg-zinc-800 border border-zinc-600 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500 resize-none"
             />
             <p className="text-xs text-zinc-500 mt-1">{content.length.toLocaleString()} chars</p>
           </div>
@@ -578,7 +578,7 @@ function PWReportModal({
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-sm px-4 py-2 rounded-lg font-medium transition-colors"
+            className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-zinc-900 text-sm px-4 py-2 rounded-lg font-medium transition-colors"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Newspaper className="w-4 h-4" />}
             {loading ? "Analyzing…" : "Run Intel"}
@@ -768,7 +768,7 @@ export default function IntelPage() {
           </button>
           <button
             onClick={() => setShowNewModal(true)}
-            className="flex items-center gap-1.5 text-sm text-white bg-blue-600 hover:bg-blue-500 rounded-lg px-3 py-1.5 font-medium transition-colors"
+            className="flex items-center gap-1.5 text-sm text-zinc-900 bg-amber-600 hover:bg-amber-500 rounded-lg px-3 py-1.5 font-medium transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
             New Session
@@ -792,7 +792,7 @@ export default function IntelPage() {
         <div className="w-64 shrink-0 flex flex-col gap-2 overflow-y-auto pr-1">
           {loading ? (
             <div className="flex items-center justify-center h-32">
-              <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
+              <Loader2 className="w-5 h-5 text-amber-400 animate-spin" />
             </div>
           ) : sessions.length === 0 ? (
             <div className="text-center py-12">

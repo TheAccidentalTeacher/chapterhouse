@@ -269,7 +269,7 @@ export function JobDetailDrawer({
             <div className="w-full bg-zinc-800 rounded-full h-2">
               <div
                 className={`h-2 rounded-full transition-all duration-500 ${
-                  job.status === "running" ? "bg-blue-500" : "bg-zinc-600"
+                  job.status === "running" ? "bg-amber-500" : "bg-zinc-600"
                 }`}
                 style={{ width: `${job.progress}%` }}
               />

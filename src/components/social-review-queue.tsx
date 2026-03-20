@@ -31,12 +31,12 @@ const BRAND_LABEL: Record<string, string> = {
 const BRAND_COLOR: Record<string, string> = {
   ncho: "bg-amber-500/20 text-amber-300",
   somersschool: "bg-red-500/20 text-red-300",
-  alana_terry: "bg-purple-500/20 text-purple-300",
+  alana_terry: "bg-zinc-500/20 text-zinc-300",
   scott_personal: "bg-slate-500/20 text-slate-300",
 };
 
 const PLATFORM_COLOR: Record<string, string> = {
-  facebook: "bg-blue-500/20 text-blue-300",
+  facebook: "bg-sky-500/20 text-sky-300",
   instagram: "bg-pink-500/20 text-pink-300",
   linkedin: "bg-sky-500/20 text-sky-300",
 };
@@ -181,7 +181,7 @@ export function SocialReviewQueue() {
 
                   {/* Hashtags */}
                   {post.hashtags?.length > 0 && (
-                    <div className="text-xs text-blue-400/70">
+                    <div className="text-xs text-amber-400/70">
                       {post.hashtags.join(" ")}
                     </div>
                   )}

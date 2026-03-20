@@ -53,7 +53,7 @@ type AISuggestion = {
 
 const COLUMNS: { status: DreamStatus; label: string; color: string; dotColor: string }[] = [
   { status: "seed",     label: "Seeds",    color: "border-yellow-500/30 bg-yellow-500/5",  dotColor: "bg-yellow-400" },
-  { status: "active",   label: "Active",   color: "border-blue-500/30 bg-blue-500/5",      dotColor: "bg-blue-400" },
+  { status: "active",   label: "Active",   color: "border-amber-500/30 bg-amber-500/5",      dotColor: "bg-amber-400" },
   { status: "building", label: "Building", color: "border-orange-500/30 bg-orange-500/5",  dotColor: "bg-orange-400" },
   { status: "shipped",  label: "Shipped",  color: "border-emerald-500/30 bg-emerald-500/5",dotColor: "bg-emerald-400" },
 ];
@@ -68,7 +68,7 @@ const CATEGORIES = [
 const URGENCY_COLOR: Record<string, string> = {
   now:   "text-red-400 bg-red-500/10",
   soon:  "text-orange-400 bg-orange-500/10",
-  later: "text-blue-400 bg-blue-500/10",
+  later: "text-amber-400 bg-amber-500/10",
   never: "text-muted-foreground bg-muted/10",
 };
 
@@ -76,7 +76,7 @@ const ACTION_COLOR: Record<string, string> = {
   promote: "text-emerald-400",
   dismiss: "text-red-400",
   hold:    "text-yellow-400",
-  merge:   "text-blue-400",
+  merge:   "text-amber-400",
 };
 
 // ── Dream Card ─────────────────────────────────────────────────────────────────
@@ -245,7 +245,7 @@ function DreamCard({
           {dream.status !== "active" && !ARCHIVE_STATUSES.includes(dream.status) && (
             <button
               onClick={() => moveTo("active")}
-              className="text-xs text-muted-foreground hover:text-blue-400 border border-border/40 px-1.5 py-0.5 rounded hover:border-blue-500/50 transition-colors"
+              className="text-xs text-muted-foreground hover:text-amber-400 border border-border/40 px-1.5 py-0.5 rounded hover:border-amber-500/50 transition-colors"
             >
               → Active
             </button>

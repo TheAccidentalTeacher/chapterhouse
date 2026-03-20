@@ -725,10 +725,10 @@ export default function ResearchPage() {
                     {deepResult.sources.map((s, i) => (
                       <div key={i} className="flex items-start gap-3 rounded-xl border border-border/30 bg-muted-surface/30 p-3">
                         <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${
-                          s.source === "tavily" ? "bg-blue-500/20 text-blue-400" :
+                          s.source === "tavily" ? "bg-amber-500/20 text-amber-400" :
                           s.source === "serpapi" ? "bg-green-500/20 text-green-400" :
                           s.source === "reddit" ? "bg-orange-500/20 text-orange-400" :
-                          s.source === "newsapi" ? "bg-purple-500/20 text-purple-400" :
+                          s.source === "newsapi" ? "bg-zinc-500/20 text-zinc-400" :
                           "bg-amber-500/20 text-amber-400"
                         }`}>
                           {s.source === "internet-archive" ? "archive" : s.source}

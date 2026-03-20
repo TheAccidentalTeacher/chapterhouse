@@ -25,7 +25,7 @@ function StatusBadge({ status }: { status: N8nExecution["status"] }) {
     success: "text-green-600 bg-green-50",
     error: "text-red-600 bg-red-50",
     crashed: "text-red-600 bg-red-50",
-    running: "text-blue-600 bg-blue-50 animate-pulse",
+    running: "text-amber-600 bg-amber-50 animate-pulse",
     waiting: "text-yellow-600 bg-yellow-50",
   };
   const icons: Record<N8nExecution["status"], React.ReactNode> = {

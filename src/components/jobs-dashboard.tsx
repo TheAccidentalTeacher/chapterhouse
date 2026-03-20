@@ -8,7 +8,7 @@ import { logEvent } from "@/lib/debug-log";
 
 const STATUS_STYLES: Record<Job["status"], string> = {
   queued: "bg-zinc-800 text-zinc-400",
-  running: "bg-blue-900/60 text-blue-300 animate-pulse",
+  running: "bg-amber-900/60 text-amber-300 animate-pulse",
   completed: "bg-green-900/60 text-green-300",
   failed: "bg-red-900/60 text-red-300",
   cancelled: "bg-zinc-800 text-zinc-500",
@@ -25,7 +25,7 @@ function ProgressBar({ progress, status }: { progress: number; status: Job["stat
     status === "completed" ? "bg-green-500" :
     status === "failed" ? "bg-red-500" :
     status === "cancelled" ? "bg-zinc-600" :
-    "bg-blue-500";
+    "bg-amber-500";
 
   return (
     <div className="w-full bg-zinc-800 rounded-full h-1.5 mt-1">

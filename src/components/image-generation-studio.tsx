@@ -78,8 +78,8 @@ const SIZE_PRESETS = [
 
 const SOURCE_COLORS: Record<string, string> = {
   pexels: "bg-green-500/20 text-green-400",
-  pixabay: "bg-blue-500/20 text-blue-400",
-  unsplash: "bg-purple-500/20 text-purple-400",
+  pixabay: "bg-amber-500/20 text-amber-400",
+  unsplash: "bg-zinc-500/20 text-zinc-400",
 };
 
 // ── Small Helpers ──────────────────────────────────────────────────────────────

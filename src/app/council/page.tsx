@@ -81,7 +81,7 @@ function CouncilContent() {
               },
               {
                 agent: "Beavis & Butthead",
-                color: "bg-purple-100 text-purple-700",
+                color: "bg-amber-100 text-amber-700",
                 time: "~1 min",
                 desc: "Engagement stress test. Would a real kid give a crap about this? COOL/SUCKS/MEH per unit.",
               },

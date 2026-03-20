@@ -1,20 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f3f0f5;
-  --foreground: #1a1520;
-  --card: rgba(255, 252, 255, 0.74);
-  --card-foreground: #1a1520;
-  --border: rgba(88, 52, 110, 0.16);
-  --muted: #6e5a7a;
-  --muted-surface: rgba(100, 60, 130, 0.07);
-  --accent: #7b2d8e;
-  --accent-foreground: #faf5ff;
+  --background: #faf4e2;
+  --foreground: #1a1200;
+  --card: rgba(255, 250, 234, 0.78);
+  --card-foreground: #1a1200;
+  --border: rgba(140, 96, 4, 0.18);
+  --muted: #7a6428;
+  --muted-surface: rgba(140, 96, 4, 0.07);
+  --accent: #8B5E00;
+  --accent-foreground: #fffbf0;
   --success: #2d8659;
   --warning: #a76516;
   --danger: #c4233c;
-  --sidebar: rgba(248, 242, 252, 0.85);
-  --rail: rgba(252, 248, 255, 0.58);
+  --sidebar: rgba(250, 240, 218, 0.90);
+  --rail: rgba(250, 243, 224, 0.65);
 }
 
 @theme inline {
@@ -38,20 +38,20 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0d0a11;
-    --foreground: #ede6f2;
-    --card: rgba(22, 16, 30, 0.82);
-    --card-foreground: #ede6f2;
-    --border: rgba(160, 120, 200, 0.12);
-    --muted: #a898b4;
-    --muted-surface: rgba(160, 120, 200, 0.06);
-    --accent: #b44dcc;
-    --accent-foreground: #faf5ff;
+    --background: #0e0b02;
+    --foreground: #f0e8cc;
+    --card: rgba(22, 18, 4, 0.85);
+    --card-foreground: #f0e8cc;
+    --border: rgba(210, 168, 18, 0.14);
+    --muted: #a89868;
+    --muted-surface: rgba(210, 168, 18, 0.07);
+    --accent: #D4A80E;
+    --accent-foreground: #0f0b00;
     --success: #54c59d;
     --warning: #ffbf70;
     --danger: #ef4458;
-    --sidebar: rgba(14, 10, 20, 0.88);
-    --rail: rgba(16, 12, 22, 0.72);
+    --sidebar: rgba(12, 9, 2, 0.92);
+    --rail: rgba(14, 11, 2, 0.75);
   }
 }
 
@@ -81,8 +81,8 @@ a {
 
 .chapterhouse-grid {
   background-image:
-    linear-gradient(to right, rgba(160, 120, 200, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(160, 120, 200, 0.04) 1px, transparent 1px);
+    linear-gradient(to right, rgba(210, 168, 18, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(210, 168, 18, 0.04) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 
@@ -92,18 +92,18 @@ a {
   border: 1px solid var(--border);
   box-shadow:
     0 18px 48px rgba(0, 0, 0, 0.12),
-    inset 0 1px 0 rgba(200, 160, 240, 0.06);
+    inset 0 1px 0 rgba(240, 200, 50, 0.08);
 }
 
-/* Metallic purple shimmer for accent surfaces */
+/* Metallic gold shimmer for accent surfaces */
 .metallic-accent {
-  background: linear-gradient(135deg, #7b2d8e 0%, #a855c7 40%, #c084e0 55%, #a855c7 70%, #7b2d8e 100%);
+  background: linear-gradient(135deg, #7A5200 0%, #C9920C 40%, #F0C840 55%, #C9920C 70%, #7A5200 100%);
   background-size: 200% 200%;
 }
 
 @media (prefers-color-scheme: dark) {
   .metallic-accent {
-    background: linear-gradient(135deg, #6a1f80 0%, #b44dcc 35%, #d4a0e8 50%, #b44dcc 65%, #6a1f80 100%);
+    background: linear-gradient(135deg, #6B4600 0%, #C9920C 35%, #F0C840 50%, #C9920C 65%, #6B4600 100%);
     background-size: 200% 200%;
   }
 }

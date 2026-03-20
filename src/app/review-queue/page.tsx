@@ -37,8 +37,8 @@ const SCORE_COLOR: Record<string, string> = {
   "A+": "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
   "A":  "bg-emerald-500/15 text-emerald-400 border-emerald-500/25",
   "A-": "bg-green-500/15 text-green-400 border-green-500/25",
-  "B+": "bg-blue-500/15 text-blue-400 border-blue-500/25",
-  "B":  "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  "B+": "bg-amber-500/15 text-amber-400 border-amber-500/25",
+  "B":  "bg-amber-500/10 text-amber-400 border-amber-500/20",
   "B-": "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
   "C":  "bg-muted/10 text-muted border-border/50",
 };
