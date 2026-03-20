@@ -69,16 +69,23 @@ async function getSystemPrompt(userId: string): Promise<string> {
     const supabase = getSupabaseServiceRoleClient();
     if (!supabase) return FALLBACK_SYSTEM_PROMPT;
 
+    // Fetch ALL active context documents for this user, ordered by inject_order.
+    // Multiple named documents (copilot_instructions, dreamer, extended_context, intel, custom)
+    // are concatenated in order to form the full system prompt.
     const { data } = await supabase
       .from("context_files")
-      .select("content")
+      .select("content, document_type, inject_order")
       .eq("user_id", userId)
       .eq("is_active", true)
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .order("inject_order", { ascending: true });
 
-    return data?.content || FALLBACK_SYSTEM_PROMPT;
+    if (!data || data.length === 0) return FALLBACK_SYSTEM_PROMPT;
+
+    const combined = data
+      .map((doc) => doc.content)
+      .join("\n\n---\n\n");
+
+    return combined || FALLBACK_SYSTEM_PROMPT;
   } catch {
     return FALLBACK_SYSTEM_PROMPT;
   }

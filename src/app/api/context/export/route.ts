@@ -2,42 +2,57 @@ import { NextResponse } from "next/server";
 import { getAuthenticatedUserId } from "@/lib/auth-context";
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
 
-// GET /api/context/export
-// Downloads the user's active context file as a plain text .md file.
-// Use this to pull the latest context back into VS Code as copilot-instructions.md.
-export async function GET() {
+// GET /api/context/export?type=<document_type>
+// Downloads the active document of the given type as a plain .md file.
+// Omit ?type to export ALL active docs concatenated.
+export async function GET(request: Request) {
   try {
     const userId = await getAuthenticatedUserId();
     const supabase = getSupabaseServiceRoleClient();
     if (!supabase) return NextResponse.json({ error: "DB unavailable" }, { status: 503 });
 
-    const { data, error } = await supabase
+    const { searchParams } = new URL(request.url);
+    const type = searchParams.get("type");
+
+    let query = supabase
       .from("context_files")
-      .select("id, name, content")
+      .select("id, name, content, document_type")
       .eq("user_id", userId)
       .eq("is_active", true)
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .order("inject_order", { ascending: true });
+
+    if (type) {
+      query = query.eq("document_type", type).limit(1);
+    }
+
+    const { data, error } = await query;
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    if (!data) return NextResponse.json({ error: "No active context file" }, { status: 404 });
+    if (!data || data.length === 0) {
+      return NextResponse.json({ error: "No active context document found" }, { status: 404 });
+    }
 
-    // Stamp last_exported_at
-    await supabase
-      .from("context_files")
-      .update({ last_exported_at: new Date().toISOString() })
-      .eq("id", data.id);
+    // Stamp last_exported_at on all returned docs
+    await Promise.all(
+      data.map((doc) =>
+        supabase
+          .from("context_files")
+          .update({ last_exported_at: new Date().toISOString() })
+          .eq("id", doc.id)
+      )
+    );
 
-    const filename = data.name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
+    // Build combined content
+    const combined = data.map((doc) => doc.content).join("\n\n---\n\n");
 
-    return new Response(data.content, {
+    const filenameBase = type
+      ? type.replace(/_/g, "-")
+      : "chapterhouse-brain";
+
+    return new Response(combined, {
       headers: {
         "Content-Type": "text/markdown; charset=utf-8",
-        "Content-Disposition": `attachment; filename="${filename || "chapterhouse-context"}.md"`,
+        "Content-Disposition": `attachment; filename="${filenameBase}.md"`,
         "Cache-Control": "no-store",
       },
     });

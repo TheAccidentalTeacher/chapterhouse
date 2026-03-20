@@ -5,8 +5,8 @@ export default function ContextSettingsPage() {
   return (
     <PageFrame
       eyebrow="Settings → Context"
-      title="Your context file."
-      description="The full copilot-instructions.md lives here. Every chat session loads it as the base system prompt — edit it once, it's live immediately. No deploy, no restart."
+      title="Context Brain."
+      description="Multiple named documents — copilot-instructions, dreamer, extended context, intel — all assembled into one system prompt on every chat request. Edit any doc here, push updates from other workspaces via the API."
     >
       <ContextFilePanel />
     </PageFrame>

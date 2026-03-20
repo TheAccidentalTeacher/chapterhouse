@@ -502,14 +502,14 @@ export const navigationGroups: NavigationGroup[] = [
         status: "partial",
       },
       {
-        label: "Context File",
+        label: "Context Brain",
         href: "/settings/context",
-        description: "The brain behind every chat. Your full copilot-instructions.md lives here.",
+        description: "The brain behind every chat. Multiple named docs assembled into every system prompt.",
         icon: BookOpen,
         tooltip: {
           summary: "Stores your full copilot-instructions.md (85KB+) as the base system prompt for every chat session. Edit it directly in the UI, import a new version from file, or export it back to VS Code. Changes go live on the next chat request — no deploy needed.",
           features: [
-            "Large editable textarea — full content of your context file",
+            "Pill selector: Copilot Instructions | Dreamer | Extended Context | Intel",
             "Word and character count displayed live",
             "Save: creates a new active version (prior versions preserved)",
             "Import: drag or select a .md file to load it into the editor",
@@ -517,9 +517,9 @@ export const navigationGroups: NavigationGroup[] = [
             "Auto-loaded as the base system prompt on every chat request",
           ],
           tips: [
-            "Start by importing your current copilot-instructions.md from VS Code",
+            "Start by importing copilot-instructions.md, then import dreamer.md into the Dreamer pill",
             "After saving, go to Chat and ask 'who is Scott Somers' — the AI should answer from context",
-            "Export periodically to keep your VS Code workspace in sync",
+            "Push API: POST /api/context/push lets the email workspace push dreamer updates automatically",
           ],
         },
         status: "live",
