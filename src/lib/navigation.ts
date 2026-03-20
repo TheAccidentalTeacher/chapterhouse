@@ -5,6 +5,7 @@ import {
   Cpu,
   FileText,
   GitBranch,
+  Globe,
   Home,
   Layers3,
   Lightbulb,
@@ -125,6 +126,30 @@ export const navigationGroups: NavigationGroup[] = [
     label: "Intelligence",
     defaultOpen: true,
     items: [
+      {
+        label: "Intel",
+        href: "/intel",
+        description: "Structured intelligence analysis from curated sources.",
+        icon: Globe,
+        tooltip: {
+          summary: "Paste URLs, drop in a Publishers Weekly report, or let the daily cron fetch your 5 watch sources automatically. Claude analyses every item against all three business tracks (NCHO, SomersSchool, BibleSaaS), scores impact A+ to C, verifies claims, and proposes Dreamer seeds. Color-coded categories: 🔴 Direct Impact, 🟡 Ecosystem Signal, 🟠 Community Signal, 🔵 Background.",
+          features: [
+            "New Session: paste 1–20 URLs for on-demand analysis",
+            "PW Report: paste raw Publishers Weekly text — no URL needed",
+            "Daily auto-fetch: cron runs at 4:00 UTC across 5 watch sources",
+            "Two-pass Claude: Sonnet 4.6 analysis + Haiku 4.5 fact-check",
+            "Impact scores A+ to C with affected-repo tagging",
+            "Proposed seeds auto-populate Dreamer with one click",
+            "Supabase Realtime — live status updates as processing runs",
+          ],
+          tips: [
+            "Run a New Session with 2–3 PW or EdTech URLs to see the full report",
+            "Paste a PW weekly digest using the PW Report button",
+            "Check ⚡ Collisions in Daily Brief — Intel feeds that section",
+          ],
+        },
+        status: "live",
+      },
       {
         label: "Research",
         href: "/research",
