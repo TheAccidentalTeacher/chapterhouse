@@ -33,6 +33,7 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
   const [hoveredRailItem, setHoveredRailItem] = useState<string | null>(null);
   const [railTooltipRect, setRailTooltipRect] = useState<DOMRect | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [statusCollapsed, setStatusCollapsed] = useState(true);
 
   useEffect(() => {
     setMounted(true);
@@ -338,8 +339,14 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
         <aside className="hidden overflow-y-auto bg-rail/70 px-5 py-6 lg:block">
           <div className="space-y-4">
             <div className="glass-panel rounded-3xl p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">System Status</p>
-              <div className="mt-4 space-y-2 text-sm">
+              <button
+                onClick={() => setStatusCollapsed((prev) => !prev)}
+                className="flex w-full items-center justify-between"
+              >
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">System Status</p>
+                <ChevronDown className={`w-3.5 h-3.5 text-muted transition-transform duration-200 ${statusCollapsed ? "-rotate-90" : ""}`} />
+              </button>
+              {!statusCollapsed && <div className="mt-4 space-y-2 text-sm">
                 {navigationGroups.flatMap((g) => g.items).map((item) => (
                   <Link
                     key={item.href}
@@ -363,7 +370,7 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
                     }`}>{item.status}</span>
                   </Link>
                 ))}
-              </div>
+              </div>}
             </div>
           </div>
         </aside>

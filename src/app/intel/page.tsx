@@ -593,6 +593,7 @@ function PWReportModal({
 
 export default function IntelPage() {
   const [sessions, setSessions] = useState<IntelSession[]>([]);
+  const [showAllSessions, setShowAllSessions] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showNewModal, setShowNewModal] = useState(false);
@@ -799,17 +800,47 @@ export default function IntelPage() {
               <p className="text-sm text-zinc-400">No Intel sessions yet.</p>
               <p className="text-xs text-zinc-500 mt-1">Click "New Session" to analyze URLs.</p>
             </div>
-          ) : (
-            sessions.map((session) => (
-              <SessionCard
-                key={session.id}
-                session={session}
-                selected={session.id === selectedId}
-                onClick={() => setSelectedId(session.id)}
-                onDelete={handleDelete}
-              />
-            ))
-          )}
+          ) : (() => {
+            const cutoffMs = Date.now() - 24 * 60 * 60 * 1000;
+            const visibleSessions = showAllSessions
+              ? sessions
+              : sessions.filter((s) => {
+                  const isRecent = new Date(s.created_at).getTime() > cutoffMs;
+                  const isActive = ["pending", "fetching", "processing"].includes(s.status);
+                  const isSelected = s.id === selectedId;
+                  return (isRecent && s.status !== "failed") || isActive || isSelected;
+                });
+            const hiddenCount = sessions.length - visibleSessions.length;
+            return (
+              <>
+                {visibleSessions.map((session) => (
+                  <SessionCard
+                    key={session.id}
+                    session={session}
+                    selected={session.id === selectedId}
+                    onClick={() => setSelectedId(session.id)}
+                    onDelete={handleDelete}
+                  />
+                ))}
+                {hiddenCount > 0 && (
+                  <button
+                    onClick={() => setShowAllSessions(true)}
+                    className="w-full text-center text-xs text-zinc-500 hover:text-zinc-300 py-2 transition-colors"
+                  >
+                    Show {hiddenCount} older / failed
+                  </button>
+                )}
+                {showAllSessions && sessions.length > 0 && (
+                  <button
+                    onClick={() => setShowAllSessions(false)}
+                    className="w-full text-center text-xs text-zinc-500 hover:text-zinc-300 py-2 transition-colors"
+                  >
+                    Show fewer
+                  </button>
+                )}
+              </>
+            );
+          })()}
         </div>
 
         {/* Report viewer */}
