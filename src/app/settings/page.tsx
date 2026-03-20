@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PageFrame } from "@/components/page-frame";
 import { getEnvironmentStatus } from "@/lib/env";
 import { hasSupabasePublicEnv } from "@/lib/env";
@@ -13,6 +14,20 @@ export default function SettingsPage() {
       description="Secrets stay outside the repo. This screen only reports whether the app-level environment contract has been satisfied, without exposing any values."
     >
       <div className="space-y-6">
+        {/* Context File shortcut */}
+        <Link
+          href="/settings/context"
+          className="flex items-center justify-between rounded-3xl border border-amber-500/30 bg-amber-500/8 px-6 py-4 transition-colors hover:border-amber-500/50 hover:bg-amber-500/12"
+        >
+          <div>
+            <p className="font-semibold text-amber-300">Context File</p>
+            <p className="text-xs text-amber-400/80 mt-0.5">
+              Load your full copilot-instructions.md here — it becomes the brain behind every chat.
+            </p>
+          </div>
+          <span className="text-amber-400 text-sm font-semibold">→</span>
+        </Link>
+
         <FounderMemoryPanel />
 
         <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">

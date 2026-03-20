@@ -501,6 +501,29 @@ export const navigationGroups: NavigationGroup[] = [
         },
         status: "partial",
       },
+      {
+        label: "Context File",
+        href: "/settings/context",
+        description: "The brain behind every chat. Your full copilot-instructions.md lives here.",
+        icon: BookOpen,
+        tooltip: {
+          summary: "Stores your full copilot-instructions.md (85KB+) as the base system prompt for every chat session. Edit it directly in the UI, import a new version from file, or export it back to VS Code. Changes go live on the next chat request — no deploy needed.",
+          features: [
+            "Large editable textarea — full content of your context file",
+            "Word and character count displayed live",
+            "Save: creates a new active version (prior versions preserved)",
+            "Import: drag or select a .md file to load it into the editor",
+            "Export: downloads the current context as copilot-instructions.md",
+            "Auto-loaded as the base system prompt on every chat request",
+          ],
+          tips: [
+            "Start by importing your current copilot-instructions.md from VS Code",
+            "After saving, go to Chat and ask 'who is Scott Somers' — the AI should answer from context",
+            "Export periodically to keep your VS Code workspace in sync",
+          ],
+        },
+        status: "live",
+      },
     ],
   },
 ];

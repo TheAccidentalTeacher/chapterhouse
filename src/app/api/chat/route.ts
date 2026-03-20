@@ -1,12 +1,15 @@
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
+import { getAuthenticatedUserId } from "@/lib/auth-context";
 import { getPersonaById } from "@/lib/personas";
 
 function getOpenAI() { return new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); }
 function getAnthropic() { return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }); }
 
-const SYSTEM_PROMPT = `You are Chapterhouse — the internal intelligence layer for Next Chapter Homeschool Outpost, the operating system built by and for Scott and Anna Somers.
+// FALLBACK_SYSTEM_PROMPT is used when no DB-resident context file exists for the user.
+// Edit context at runtime via Settings → Context (Phase 1) — no deploy required.
+const FALLBACK_SYSTEM_PROMPT = `You are Chapterhouse — the internal intelligence layer for Next Chapter Homeschool Outpost, the operating system built by and for Scott and Anna Somers.
 
 ## Who you work for
 
@@ -51,7 +54,35 @@ If Scott says he added something and you don't see it, say so specifically — a
 
 ## Voice
 
-Lead with clarity. Land with honesty. Wisecrack when it fits. Never waste his time with filler. You are not a customer service bot — you are the sharpest person in the room who also happens to know everything about this business.`;
+Lead with clarity. Land with honesty. Wisecrack when it fits. Never waste his time with filler. You are not a customer service bot — you are the sharpest person in the room who also happens to know everything about this business.
+
+## Response Length
+Match your response length to the complexity of the question.
+- Simple status questions → 1-3 sentences
+- Analysis requests → structured but ruthlessly concise
+- Planning documents → as long as needed but no padding`;
+
+// Loads the user's active context file from Supabase.
+// Falls back to FALLBACK_SYSTEM_PROMPT if no context file exists or on any error.
+async function getSystemPrompt(userId: string): Promise<string> {
+  try {
+    const supabase = getSupabaseServiceRoleClient();
+    if (!supabase) return FALLBACK_SYSTEM_PROMPT;
+
+    const { data } = await supabase
+      .from("context_files")
+      .select("content")
+      .eq("user_id", userId)
+      .eq("is_active", true)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    return data?.content || FALLBACK_SYSTEM_PROMPT;
+  } catch {
+    return FALLBACK_SYSTEM_PROMPT;
+  }
+}
 
 // Scores a research item against the user's message using keyword overlap.
 // Higher = more relevant to what Scott is asking about right now.
@@ -333,11 +364,16 @@ export async function POST(request: Request) {
       }
     }
 
-    // If a persona is selected, use its system prompt instead of the default
+    // If a persona is selected, use its system prompt instead of the default.
+    // Otherwise load the user's DB-resident context file (falls back to FALLBACK_SYSTEM_PROMPT).
     const persona = personaId ? getPersonaById(personaId) : null;
-    const basePrompt = persona
-      ? `${persona.systemPrompt}\n\n---\n\nYou are speaking as ${persona.name} (${persona.title}). Stay in character. Respond from your area of expertise. You are part of Chapterhouse — Scott Somers' internal intelligence system for Next Chapter Homeschool Outpost.`
-      : SYSTEM_PROMPT;
+    let basePrompt: string;
+    if (persona) {
+      basePrompt = `${persona.systemPrompt}\n\n---\n\nYou are speaking as ${persona.name} (${persona.title}). Stay in character. Respond from your area of expertise. You are part of Chapterhouse — Scott Somers' internal intelligence system for Next Chapter Homeschool Outpost.`;
+    } else {
+      const userId = await getAuthenticatedUserId().catch(() => null);
+      basePrompt = userId ? await getSystemPrompt(userId) : FALLBACK_SYSTEM_PROMPT;
+    }
     const systemPrompt = basePrompt + liveContext + urlContext;
 
     // Route to Anthropic if claude model requested
