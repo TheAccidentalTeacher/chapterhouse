@@ -52,6 +52,14 @@ const environmentSchema = z.object({
   AZURE_TRANSLATOR_REGION: z.string().min(1).optional(),
   // Video Generation (M9)
   HEYGEN_API_KEY: z.string().min(1).optional(),
+  // Email Accounts
+  NCHO_EMAIL_HOST: z.string().min(1).optional(),
+  NCHO_EMAIL_USER: z.string().min(1).optional(),
+  NCHO_EMAIL_PASSWORD: z.string().min(1).optional(),
+  GMAIL_PERSONAL_USER: z.string().min(1).optional(),
+  GMAIL_PERSONAL_APP_PASSWORD: z.string().min(1).optional(),
+  GMAIL_NCHO_USER: z.string().min(1).optional(),
+  GMAIL_NCHO_APP_PASSWORD: z.string().min(1).optional(),
 });
 
 const envSource = {
@@ -107,6 +115,14 @@ const envSource = {
   AZURE_TRANSLATOR_REGION: process.env.AZURE_TRANSLATOR_REGION,
   // Video Generation (M9)
   HEYGEN_API_KEY: process.env.HEYGEN_API_KEY,
+  // Email Accounts
+  NCHO_EMAIL_HOST: process.env.NCHO_EMAIL_HOST,
+  NCHO_EMAIL_USER: process.env.NCHO_EMAIL_USER,
+  NCHO_EMAIL_PASSWORD: process.env.NCHO_EMAIL_PASSWORD,
+  GMAIL_PERSONAL_USER: process.env.GMAIL_PERSONAL_USER,
+  GMAIL_PERSONAL_APP_PASSWORD: process.env.GMAIL_PERSONAL_APP_PASSWORD,
+  GMAIL_NCHO_USER: process.env.GMAIL_NCHO_USER,
+  GMAIL_NCHO_APP_PASSWORD: process.env.GMAIL_NCHO_APP_PASSWORD,
 };
 
 export function getEnvironmentStatus() {
@@ -141,6 +157,8 @@ export function getEnvironmentStatus() {
         ? "translation"
         : key === "HEYGEN_API_KEY"
         ? "video"
+        : key === "NCHO_EMAIL_HOST" || key === "NCHO_EMAIL_USER" || key === "NCHO_EMAIL_PASSWORD" || key === "GMAIL_PERSONAL_USER" || key === "GMAIL_PERSONAL_APP_PASSWORD" || key === "GMAIL_NCHO_USER" || key === "GMAIL_NCHO_APP_PASSWORD"
+        ? "email-accounts"
         : "ai",
     })),
   };
