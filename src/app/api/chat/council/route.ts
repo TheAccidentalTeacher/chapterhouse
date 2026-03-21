@@ -329,11 +329,73 @@ export async function POST(request: Request) {
 
 // ── Build Live Context (reused from chat route) ────────────────────────────────
 
+// Static architecture block — same as solo chat route so Council members can also
+// answer "where does X live?" questions about the app.
+const APP_ARCHITECTURE_BLOCK_COUNCIL = `## Chapterhouse — App Self-Reference
+
+You ARE Chapterhouse. When asked about routes, features, or code location — use this map.
+
+### Pages → Features
+/ — Home: Chat (Solo + Council Mode). SSE streaming. Thread persistence. Auto-learn (/remember). URL detection + fetch.
+/daily-brief — Daily Brief: RSS+GitHub+daily.dev → Claude Sonnet analysis → track impact scoring → collision detection. Vercel cron 3:00 UTC.
+/intel — Intel: URL analysis sessions. 4-step pipeline: fetch → Sonnet structured analysis → Haiku verification → Council synthesis. PW report paste path. Daily cron 04:00 UTC.
+/inbox — Email Inbox: IMAP persistence, Haiku categorization (11 categories), TSVECTOR full-text search, AI summary. Daily digest cron midnight UTC.
+/research — Research Library: URL ingest, agentic auto-research (Tavily→GPT-5.4), Deep Research (Tavily+SerpAPI+Reddit+NewsAPI). AI extraction + tagging.
+/product-intelligence — Product Intel: Scored opportunity cards (A+–C). Triple-scored NCHO/SomersSchool/Content. Status tracking.
+/youtube — YouTube Intelligence: transcript (captions npm → innertube → Gemini 2.5 Flash via Railway ~77s) → 8 curriculum tools via Claude Sonnet.
+/content-studio — Content Studio: AI content generation (newsletter, curriculum guide, product description). Claude Sonnet 4.6.
+/creative-studio — Creative Studio: Multi-provider image gen (GPT Image 1, Stability, Leonardo, Flux). Stock search. Cloudinary CDN. Freesound SFX. HeyGen avatar video.
+/voice-studio — Voice Studio: ElevenLabs TTS + Azure Speech TTS/STT. Speed control 0.5×–2.0×. MP3 download.
+/review-queue — Review Queue: Combined research + opportunity approval queue. Task creation.
+/tasks — Tasks: Status board (open/in-progress/blocked/done/canceled). CRUD.
+/documents — Documents: Workspace markdown files rendered + searchable.
+/jobs — Job Runner: QStash→Railway background jobs. Supabase Realtime progress. 6-step PassStepper.
+/curriculum-factory — Curriculum Factory: 6-pass Council (Gandalf→Data→Polgara→Earl→B&B→Extract JSON). CCSS/NGSS/C3 aligned. SomersSchool pipeline JSON export.
+/pipelines — Pipelines: n8n workflow panel (status, execution history, manual trigger).
+/council — Council Chamber: 6-pass curriculum generation as a background job. Same pipeline as Curriculum Factory.
+/dreamer — Dreamer: Kanban board (Seeds→Active→Building→Shipped). Earl AI review. Daily dream log. 48 seeds from dreamer.md.
+/social — Social Media: 3-tab (Review Queue, Generate, Accounts). Buffer GraphQL. 3 brands × 3 platforms. Weekly cron + Shopify product webhook.
+/settings — Settings: Env status. Founder memory. /settings/context = Context Brain (context_files, inject_order 1-5).
+/help — Help: Static guide from chapterhouse-help-guide.md.
+/login — Auth page (Supabase email/password).
+
+### API Routes
+Chat: /api/chat (solo), /api/chat/council (SSE multi-member streaming)
+Briefs: /api/briefs, /api/briefs/generate, /api/cron/daily-brief
+Intel: /api/intel, /api/intel/[id], /api/intel/process, /api/intel/publishers-weekly, /api/cron/intel-fetch
+Email: /api/email/sync, /api/email/categorize, /api/email/search, /api/cron/email-digest
+Research: /api/research, /api/research/auto
+YouTube: /api/youtube/transcript, /api/youtube/search, /api/youtube/batch, /api/youtube/analyze
+Social: /api/social/accounts (+/sync), /api/social/posts (+/[id] +/[id]/approve), /api/social/generate, /api/social/analytics, /api/cron/social-weekly, /api/webhooks/shopify-product
+Jobs: /api/jobs, /api/jobs/[id], /api/jobs/[id]/cancel, /api/jobs/[id]/run
+Dreams: /api/dreams, /api/dreams/[id], /api/dreams/bulk, /api/dreams/reorder, /api/dreams/ai-review, /api/dream-log
+Context: /api/context/push, /api/context/export
+n8n: /api/n8n/workflows, /api/n8n/executions
+Misc: /api/content-studio, /api/founder-notes, /api/opportunities, /api/tasks, /api/threads, /api/extract-learnings, /api/search, /api/summarize, /api/images, /api/sounds, /api/translate, /api/voice/synthesize, /api/voice/transcribe, /api/video/generate, /api/video/status
+Debug: /api/debug (health check), /api/debug/context (brain state), /api/debug/app-map (feature map + availability)
+
+### Key Source Files
+Solo chat system prompt: src/app/api/chat/route.ts → getSystemPrompt() + buildLiveContext()
+Council system prompts: src/app/api/chat/council/route.ts → COUNCIL[] array (Gandalf, Data, Polgara, Earl, B&B)
+Intel processing: src/app/api/intel/route.ts → processIntelUrls() (4-step pipeline)
+Navigation: src/lib/navigation.ts
+Debug panel: src/components/debug-panel.tsx (4 tabs: log/perf/brain/appmap)
+Auth: src/lib/auth-context.ts | Supabase browser: src/lib/supabase.ts | server: src/lib/supabase-server.ts
+
+### Supabase Tables
+briefs, research_items, opportunities, tasks, chat_threads, knowledge_summaries, founder_notes, jobs, social_accounts, social_posts, context_files, dreams, dream_log, intel_categories, intel_sessions, emails
+
+### Railway Worker
+URL: RAILWAY_WORKER_URL env var. Job types: curriculum_factory, social_batch, youtube_transcript. QStash signs each message; worker verifies signature before processing.`;
+
 async function buildLiveContext(userMessage: string): Promise<string> {
   const supabase = getSupabaseServiceRoleClient();
   if (!supabase) return "";
 
   const blocks: string[] = [];
+
+  // App self-knowledge — always first so Council members can answer "where does X live?"
+  blocks.push(APP_ARCHITECTURE_BLOCK_COUNCIL);
 
   try {
     const { data: founderNotes } = await supabase

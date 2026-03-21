@@ -88,6 +88,67 @@ export async function GET(request: Request) {
     }
   }
 
+  // QStash — job queue
+  const hasQStash = Boolean(process.env.QSTASH_TOKEN);
+  results.qstash = {
+    configured: hasQStash,
+    signingKeysConfigured: Boolean(process.env.QSTASH_CURRENT_SIGNING_KEY),
+  };
+  if (hasQStash) {
+    try {
+      const res = await fetch("https://qstash.upstash.io/v2/queues", {
+        headers: { Authorization: `Bearer ${process.env.QSTASH_TOKEN}` },
+        signal: AbortSignal.timeout(5000),
+      });
+      (results.qstash as Record<string, unknown>).apiReachable = res.ok;
+      (results.qstash as Record<string, unknown>).httpStatus = res.status;
+    } catch (e) {
+      (results.qstash as Record<string, unknown>).apiReachable = false;
+      (results.qstash as Record<string, unknown>).error = String(e);
+    }
+  }
+
+  // Railway worker — background job processor
+  const hasRailway = Boolean(process.env.RAILWAY_WORKER_URL);
+  results.railway = {
+    configured: hasRailway,
+    url: hasRailway ? process.env.RAILWAY_WORKER_URL : null,
+  };
+  if (hasRailway) {
+    try {
+      const res = await fetch(`${process.env.RAILWAY_WORKER_URL}/health`, {
+        signal: AbortSignal.timeout(5000),
+      });
+      (results.railway as Record<string, unknown>).reachable = res.ok;
+      (results.railway as Record<string, unknown>).httpStatus = res.status;
+    } catch (e) {
+      (results.railway as Record<string, unknown>).reachable = false;
+      (results.railway as Record<string, unknown>).error = String(e);
+    }
+  }
+
+  // Additional services — env var presence only (no live calls to keep this fast)
+  results.services = {
+    youtube: Boolean(process.env.YOUTUBE_API_KEY),
+    gemini: Boolean(process.env.GEMINI_API_KEY),
+    elevenlabs: Boolean(process.env.ELEVENLABS_GENERAL_KEY),
+    azureSpeech: Boolean(process.env.AZURE_SPEECH_KEY),
+    azureTranslator: Boolean(process.env.AZURE_TRANSLATOR_KEY),
+    buffer: Boolean(process.env.BUFFER_ACCESS_TOKEN),
+    shopifyWebhook: Boolean(process.env.SHOPIFY_WEBHOOK_SECRET),
+    heygen: Boolean(process.env.HEYGEN_API_KEY),
+    stabilityAi: Boolean(process.env.STABILITY_AI_KEY),
+    replicate: Boolean(process.env.REPLICATE_TOKEN),
+    cloudinary: Boolean(process.env.CLOUDINARY_URL),
+    tavily: Boolean(process.env.TAVILY_API_KEY),
+    dailydev: Boolean(process.env.DAILYDEV_TOKEN),
+    nChoEmail: Boolean(process.env.NCHO_EMAIL_HOST) && Boolean(process.env.NCHO_EMAIL_USER),
+    n8n: Boolean(process.env.N8N_BASE_URL),
+    resend: Boolean(process.env.RESEND_API_KEY),
+    upstashRedis: Boolean(process.env.UPSTASH_REDIS_REST_URL),
+    cronSecret: Boolean(process.env.CRON_SECRET),
+  };
+
   return Response.json(results, {
     headers: { "Cache-Control": "no-store" },
   });

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { X, ChevronUp, ChevronDown, Trash2, RefreshCw, Bug, Download, MessageSquare, Search, Activity, Clipboard, Check } from "lucide-react";
+import { X, ChevronUp, ChevronDown, Trash2, RefreshCw, Bug, Download, MessageSquare, Search, Activity, Clipboard, Check, Network } from "lucide-react";
 import { getEntries, clearLog, subscribe, sessionStats, type LogEntry, type LogLevel } from "@/lib/debug-log";
 
 function exportLog(entries: LogEntry[]) {
@@ -242,9 +242,180 @@ function BrainTab() {
   );
 }
 
+// ── App Map Tab ────────────────────────────────────────────────────────────────
+
+interface AppMapFeature {
+  id: string;
+  name: string;
+  description: string;
+  page?: string;
+  apiRoutes: string[];
+  envVars: { key: string; required: boolean }[];
+  available: boolean;
+  missingRequired: string[];
+  missingOptional: string[];
+  phase?: string;
+}
+
+interface AppMapData {
+  features: AppMapFeature[];
+  summary: { total: number; available: number; partial: number; unavailable: number };
+}
+
+function AppMapTab() {
+  const [data, setData] = useState<AppMapData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<"all" | "available" | "partial" | "unavailable">("all");
+
+  async function load() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/debug/app-map");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setData(await res.json());
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { load(); }, []);
+
+  const features = (data?.features ?? []).filter((f) => {
+    const matchesSearch = !search ||
+      f.name.toLowerCase().includes(search.toLowerCase()) ||
+      f.description.toLowerCase().includes(search.toLowerCase()) ||
+      (f.page ?? "").toLowerCase().includes(search.toLowerCase());
+    const matchesFilter = filter === "all" ||
+      (filter === "available" && f.available) ||
+      (filter === "unavailable" && !f.available && f.missingRequired.length > 0) ||
+      (filter === "partial" && !f.available && f.missingOptional.length > 0 && f.missingRequired.length === 0);
+    return matchesSearch && matchesFilter;
+  });
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted">Every feature, its route, and its env var availability.</p>
+        <button onClick={load} disabled={loading} className="flex items-center gap-1 rounded-lg border border-border/50 px-2 py-1 text-xs text-muted hover:text-foreground transition disabled:opacity-40">
+          <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} /> Refresh
+        </button>
+      </div>
+
+      {data && (
+        <div className="flex items-center gap-2 text-[11px] font-mono">
+          <span className="text-emerald-400">{data.summary.available} ready</span>
+          <span className="text-muted">/</span>
+          <span className="text-amber-400">{data.summary.partial} partial</span>
+          <span className="text-muted">/</span>
+          <span className="text-red-400">{data.summary.unavailable} missing</span>
+          <span className="text-muted">/</span>
+          <span className="text-muted">{data.summary.total} total</span>
+        </div>
+      )}
+
+      {/* Search + filter */}
+      <div className="space-y-1.5">
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted/50" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search features..."
+            className="w-full rounded-lg border border-border/40 bg-muted-surface/30 pl-7 pr-3 py-1.5 text-[11px] text-foreground placeholder:text-muted/40 focus:outline-none focus:border-accent/50"
+          />
+        </div>
+        <div className="flex gap-1">
+          {(["all", "available", "partial", "unavailable"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`rounded-full border px-2 py-0.5 text-[11px] transition ${
+                filter === f ? "border-accent/60 bg-accent/15 text-accent" : "border-border/40 text-muted hover:text-foreground"
+              }`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {error && <p className="text-xs text-red-400">{error}</p>}
+
+      <div className="space-y-2">
+        {features.map((f) => (
+          <div
+            key={f.id}
+            className={`rounded-xl border p-2.5 text-xs space-y-1 ${
+              f.available
+                ? "border-emerald-500/30 bg-emerald-500/5"
+                : f.missingRequired.length > 0
+                ? "border-red-500/30 bg-red-500/5"
+                : "border-amber-500/30 bg-amber-500/5"
+            }`}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5">
+                <span
+                  className={`h-1.5 w-1.5 rounded-full shrink-0 ${
+                    f.available ? "bg-emerald-400" : f.missingRequired.length > 0 ? "bg-red-400" : "bg-amber-400"
+                  }`}
+                />
+                <span className="font-semibold text-foreground">{f.name}</span>
+                {f.phase && <span className="text-muted font-mono text-[10px]">({f.phase})</span>}
+              </div>
+              {f.page && (
+                <span className="font-mono text-[10px] text-muted shrink-0">{f.page}</span>
+              )}
+            </div>
+
+            <p className="text-muted leading-snug">{f.description}</p>
+
+            {f.apiRoutes.length > 0 && (
+              <div className="flex flex-wrap gap-1 pt-0.5">
+                {f.apiRoutes.slice(0, 4).map((r) => (
+                  <span key={r} className="font-mono text-[10px] rounded bg-muted-surface/60 border border-border/30 px-1.5 py-0.5 text-muted">
+                    {r}
+                  </span>
+                ))}
+                {f.apiRoutes.length > 4 && (
+                  <span className="font-mono text-[10px] text-muted">+{f.apiRoutes.length - 4} more</span>
+                )}
+              </div>
+            )}
+
+            {f.missingRequired.length > 0 && (
+              <div className="pt-0.5">
+                <span className="text-red-400 font-semibold text-[10px]">Missing required: </span>
+                <span className="font-mono text-[10px] text-red-300">{f.missingRequired.join(", ")}</span>
+              </div>
+            )}
+
+            {f.missingOptional.length > 0 && (
+              <div>
+                <span className="text-amber-400 font-semibold text-[10px]">Missing optional: </span>
+                <span className="font-mono text-[10px] text-amber-300">{f.missingOptional.join(", ")}</span>
+              </div>
+            )}
+          </div>
+        ))}
+
+        {!loading && features.length === 0 && data && (
+          <p className="text-xs text-muted/60 py-4 text-center">No features match.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main Panel ─────────────────────────────────────────────────────────────────
 
-type Tab = "log" | "perf" | "brain";
+type Tab = "log" | "perf" | "brain" | "appmap";
 
 export function DebugPanel() {
   const [open, setOpen] = useState(false);
@@ -324,6 +495,7 @@ export function DebugPanel() {
               { key: "log" as Tab, label: `Event Log (${entries.length})` },
               { key: "perf" as Tab, label: "Performance" },
               { key: "brain" as Tab, label: "Brain Context" },
+              { key: "appmap" as Tab, label: "App Map" },
             ]).map((t) => (
               <button
                 key={t.key}
@@ -331,6 +503,7 @@ export function DebugPanel() {
                 className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-t transition ${tab === t.key ? "bg-muted-surface text-foreground" : "text-muted hover:text-foreground"}`}
               >
                 {t.key === "perf" && <Activity className="h-3 w-3" />}
+                {t.key === "appmap" && <Network className="h-3 w-3" />}
                 {t.label}
               </button>
             ))}
@@ -426,6 +599,8 @@ export function DebugPanel() {
             {tab === "perf" && <PerfTab entries={entries} />}
 
             {tab === "brain" && <BrainTab />}
+
+            {tab === "appmap" && <AppMapTab />}
           </div>
         </>
       )}
