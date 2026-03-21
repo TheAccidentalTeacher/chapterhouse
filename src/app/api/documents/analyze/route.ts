@@ -146,7 +146,7 @@ Identify:
 - Suggested grade level range
 - How this content could be integrated into a lesson sequence
 - Prerequisite knowledge needed`,
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-6",
       maxTokens: 4096,
     },
     "chapter-outline": {
@@ -157,7 +157,7 @@ For each chapter/section include:
 - Key points and arguments
 - Important terms introduced
 - Notable quotes or data points`,
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-6",
       maxTokens: 4096,
     },
     vocabulary: {
@@ -168,7 +168,7 @@ For each term provide:
 - A clear definition in context
 - How it's used in the document
 - Grade-level appropriateness if relevant`,
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-6",
       maxTokens: 4096,
     },
     "discussion-guide": {
@@ -180,7 +180,7 @@ Include:
 - Post-reading discussion questions (mix of literal, inferential, and evaluative)
 - Extension activities or writing prompts
 - Connections to real-world applications`,
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-6",
       maxTokens: 4096,
     },
     critique: {
@@ -192,7 +192,7 @@ Cover:
 - Quality of evidence and sourcing
 - Writing quality and accessibility
 - Overall assessment and recommendations`,
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-6",
       maxTokens: 4096,
     },
     "full-analysis": {
@@ -222,7 +222,7 @@ How this content could be used in education.
 Next steps, related resources, follow-up research.
 
 Be thorough and detailed.`,
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-6",
       maxTokens: 8192,
     },
   };

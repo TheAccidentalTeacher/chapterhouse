@@ -52,7 +52,7 @@ If there is nothing worth remembering, return an empty array: []
 No markdown. No explanation. Just the JSON array.`;
 
     const aiResponse = await getOpenAI().responses.create({
-      model: "gpt-5.4",
+      model: "gpt-5-mini",
       instructions: "You output only valid JSON arrays. No markdown fences. No explanation.",
       input: prompt,
       max_output_tokens: 512,

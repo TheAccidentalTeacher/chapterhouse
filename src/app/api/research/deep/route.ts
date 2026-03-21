@@ -200,7 +200,7 @@ ${depthInstructions[depth]}`;
       // Claude Sonnet for standard/deep
       const anthropic = getAnthropic();
       const response = await anthropic.messages.create({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-6",
         max_tokens: depth === "deep" ? 4096 : 2048,
         system: systemPrompt,
         messages: [{ role: "user", content: sourceSummaries }],
@@ -214,7 +214,7 @@ ${depthInstructions[depth]}`;
         tokensUsed:
           (response.usage?.input_tokens || 0) +
           (response.usage?.output_tokens || 0),
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-6",
       };
     }
   } catch (error) {

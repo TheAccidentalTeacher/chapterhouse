@@ -269,7 +269,7 @@ ${contentBlock}`,
   // ── Step 3: Verification pass ──────────────────────────────────────────────
   const verification = await anthropic.messages.create({
     model: "claude-haiku-4-5",
-    max_tokens: 4000,
+    max_tokens: 1500,
     system: VERIFICATION_SYSTEM_PROMPT,
     messages: [
       {

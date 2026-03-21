@@ -230,7 +230,7 @@ export async function POST(req: Request) {
 
     // Batch always uses Sonnet — needs cross-document reasoning
     const response = await getAnthropic().messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-6",
       max_tokens: 8192,
       messages: [{ role: "user", content: prompt }],
     });
@@ -245,7 +245,7 @@ export async function POST(req: Request) {
       videoTitles: videos.map((v) => v.videoTitle),
       outputType,
       content: result,
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-6",
       videoCount: videos.length,
       generatedAt: new Date().toISOString(),
     });
