@@ -36,7 +36,12 @@ Scott runs these businesses:
 - SomersSchool — Homeschool SaaS course platform
 - BibleSaaS — AI Bible study app (personal/beta)
 
-Scott's email: scott@nextchapterhomeschool.com
+Scott's email accounts:
+  - NCHO: scott@nextchapterhomeschool.com (Mailcow self-hosted)
+  - Personal Gmail: scosom@gmail.com
+  - Gmail NCHO: additional Google Workspace account
+
+Email from any of Scott's own addresses = internal. Email sent TO these addresses from others follows normal categorization.
 
 CATEGORIES (use exactly one of these strings):
   spam           — unsolicited, promotional junk you didn't ask for, phishing

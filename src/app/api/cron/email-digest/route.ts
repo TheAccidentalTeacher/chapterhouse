@@ -46,6 +46,9 @@ FORMAT:
 ## 📬 Today's Summary
 [2-3 sentence plain-English summary of what hit the inbox today. Lead with revenue signals.]
 
+## 📰 TLDR Intelligence (if newsletter content provided)
+[Numbered bullet points — one per key insight relevant to Scott's products. Focus on: AI tools/models, EdTech developments, homeschool market signals, publishing industry moves, SaaS growth tactics. Skip pure consumer news. 5-8 bullets max. Format: "1. [topic]: [insight in one sentence]."]
+
 ## By Category
 
 ### Sales & Customer ([N] emails)
@@ -64,10 +67,11 @@ FORMAT:
 [Just the count — no details]
 
 ## Full Log
-[Compact list: one line per email, format: "- [CATEGORY] from_name: subject — ai_summary"]
+[Compact list: one line per email, format: "- [ACCOUNT] [CATEGORY] from_name: subject — ai_summary"]
 
 RULES:
 - If Action Required is empty, omit that section.
+- If no TLDR newsletter content was provided, omit the TLDR Intelligence section entirely.
 - Be specific in summaries — name the actual person/company/product.
 - Flag any potential revenue signals or time-sensitive items with ⚡.
 - Keep the full digest under 2000 tokens.`;
@@ -142,6 +146,29 @@ export async function GET(request: Request): Promise<Response> {
     return Response.json({ ok: true, emails: 0, digestGenerated: false });
   }
 
+  // ── Step 3.5: Fetch TLDR newsletter body content (last 48h) ────────────────
+  // TLDR newsletters arrive at scott@ncho and contain dense AI/tech intelligence.
+  // We extract the full text_body and pass it to Claude for structured extraction.
+  const since48h = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+  const { data: tldrEmails } = await supabase
+    .from("emails")
+    .select("subject, from_name, received_at, text_body")
+    .eq("user_id", userId)
+    .gte("received_at", since48h)
+    .or("from_address.ilike.%tldr%,subject.ilike.%TLDR%")
+    .not("text_body", "is", null)
+    .order("received_at", { ascending: false })
+    .limit(3);
+
+  const tldrContent = tldrEmails && tldrEmails.length > 0
+    ? (tldrEmails as Array<{ subject: string; from_name: string | null; received_at: string; text_body: string | null }>)
+        .map((e) =>
+          `### ${e.subject} (${new Date(e.received_at).toLocaleDateString()})
+${(e.text_body ?? "").slice(0, 3000)}`
+        )
+        .join("\n\n---\n\n")
+    : null;
+
   // ── Step 4: Generate the digest with Claude Sonnet ────────────────────────
   // Group by category for the prompt
   type EmailDigestRow = {
@@ -185,7 +212,7 @@ export async function GET(request: Request): Promise<Response> {
       messages: [
         {
           role: "user",
-          content: `Today is ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.\n\nHere are today's ${todayEmails.length} emails:\n\n${emailSummaryText}`,
+          content: `Today is ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.\n\nHere are today's ${todayEmails.length} emails:\n\n${emailSummaryText}${tldrContent ? `\n\n---\n\n## TLDR NEWSLETTER RAW CONTENT (extract key intelligence for the TLDR Intelligence section):\n\n${tldrContent}` : ""}`,
         },
       ],
     });

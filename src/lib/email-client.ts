@@ -1,14 +1,18 @@
 /**
  * IMAP email client utilities for the Chapterhouse inbox.
- * Handles listing messages, fetching full bodies, and marking as read.
+ * Supports multiple accounts: NCHO (Mailcow), Gmail personal, Gmail NCHO.
  *
  * Server-side only — never import into client components.
  * Uses imapflow for IMAP and mailparser for RFC822/MIME body parsing.
  *
- * Required env vars:
- *   NCHO_EMAIL_HOST      mail.nextchapterhomeschool.com
- *   NCHO_EMAIL_USER      scott@nextchapterhomeschool.com
- *   NCHO_EMAIL_PASSWORD  <mailbox password>
+ * Required env vars per account:
+ *   NCHO:           NCHO_EMAIL_HOST, NCHO_EMAIL_USER, NCHO_EMAIL_PASSWORD
+ *   Gmail personal: GMAIL_PERSONAL_USER, GMAIL_PERSONAL_APP_PASSWORD
+ *   Gmail NCHO:     GMAIL_NCHO_USER, GMAIL_NCHO_APP_PASSWORD
+ *
+ * Gmail uses imap.gmail.com:993 with App Passwords (2FA required).
+ * App Passwords are revocable per-app — revoking one never affects normal
+ * Gmail login on Scott's phone or other browsers.
  */
 import { ImapFlow } from "imapflow";
 import { simpleParser } from "mailparser";
@@ -47,12 +51,30 @@ export type InboxResult = {
   limit: number;
 };
 
-// ── Client factory ────────────────────────────────────────────────────────────
+// ── Account type & client factory ─────────────────────────────────────────────
 
-function getImapClient(): ImapFlow | null {
-  const host = process.env.NCHO_EMAIL_HOST;
-  const user = process.env.NCHO_EMAIL_USER;
-  const password = process.env.NCHO_EMAIL_PASSWORD;
+export type EmailAccount = 'ncho' | 'gmail_personal' | 'gmail_ncho';
+
+export function getImapClient(account: EmailAccount = 'ncho'): ImapFlow | null {
+  let host: string | undefined;
+  let user: string | undefined;
+  let password: string | undefined;
+
+  if (account === 'ncho') {
+    host = process.env.NCHO_EMAIL_HOST;
+    user = process.env.NCHO_EMAIL_USER;
+    password = process.env.NCHO_EMAIL_PASSWORD;
+  } else if (account === 'gmail_personal') {
+    host = 'imap.gmail.com';
+    user = process.env.GMAIL_PERSONAL_USER;
+    password = process.env.GMAIL_PERSONAL_APP_PASSWORD;
+  } else {
+    // gmail_ncho
+    host = 'imap.gmail.com';
+    user = process.env.GMAIL_NCHO_USER;
+    password = process.env.GMAIL_NCHO_APP_PASSWORD;
+  }
+
   if (!host || !user || !password) return null;
 
   return new ImapFlow({
@@ -65,6 +87,21 @@ function getImapClient(): ImapFlow | null {
     socketTimeout: 8000,   // keep under Vercel's 10s serverless limit
     greetingTimeout: 5000,
   });
+}
+
+/** Returns all accounts that have credentials set in env vars. */
+export function getConfiguredAccounts(): EmailAccount[] {
+  const accounts: EmailAccount[] = [];
+  if (process.env.NCHO_EMAIL_HOST && process.env.NCHO_EMAIL_USER && process.env.NCHO_EMAIL_PASSWORD) {
+    accounts.push('ncho');
+  }
+  if (process.env.GMAIL_PERSONAL_USER && process.env.GMAIL_PERSONAL_APP_PASSWORD) {
+    accounts.push('gmail_personal');
+  }
+  if (process.env.GMAIL_NCHO_USER && process.env.GMAIL_NCHO_APP_PASSWORD) {
+    accounts.push('gmail_ncho');
+  }
+  return accounts;
 }
 
 // ── List messages (envelope only — fast) ─────────────────────────────────────
