@@ -1,5 +1,5 @@
 """Frodo — Mission Anchor. Final sign-off. Does this serve the child?"""
-from crewai import Agent
+from crewai import Agent, LLM
 
 
 def create_frodo() -> Agent:
@@ -23,5 +23,6 @@ def create_frodo() -> Agent:
         tools=[],
         memory=False,
         verbose=True,
+        llm=LLM(model="gpt-4o-mini"),
         allow_delegation=False,
     )

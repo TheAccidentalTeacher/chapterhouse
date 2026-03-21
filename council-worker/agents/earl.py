@@ -1,5 +1,5 @@
 """Earl Harbinger — Operations Commander (Pass 4). What ships first and how it makes money."""
-from crewai import Agent
+from crewai import Agent, LLM
 from tools.supabase_read import SupabaseReadTool
 from tools.curriculum_context import CurriculumContextTool
 
@@ -32,5 +32,6 @@ def create_earl() -> Agent:
         tools=[CurriculumContextTool(), SupabaseReadTool()],
         memory=True,
         verbose=True,
+        llm=LLM(model="gpt-4o-mini"),
         allow_delegation=False,
     )

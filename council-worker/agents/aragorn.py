@@ -1,5 +1,5 @@
 """Aragorn — Curriculum Director. Makes the final call. Ships."""
-from crewai import Agent
+from crewai import Agent, LLM
 
 
 def create_aragorn() -> Agent:
@@ -22,5 +22,6 @@ def create_aragorn() -> Agent:
         tools=[],
         memory=True,
         verbose=True,
+        llm=LLM(model="gpt-4o-mini"),
         allow_delegation=False,
     )

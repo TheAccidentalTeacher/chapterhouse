@@ -1,5 +1,5 @@
 """Beavis & Butthead — Engagement Stress Test (Pass 5). Will a real kid give a crap about this?"""
-from crewai import Agent
+from crewai import Agent, LLM
 
 
 def create_beavis() -> Agent:
@@ -38,5 +38,6 @@ def create_beavis() -> Agent:
         tools=[],
         memory=False,
         verbose=True,
+        llm=LLM(model="gpt-4o-mini"),
         allow_delegation=False,
     )

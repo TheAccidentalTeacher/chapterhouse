@@ -1,5 +1,5 @@
 """Lt. Commander Data — Auditor / Analyst (Pass 2). Systematic, exhaustive, ego-free critique."""
-from crewai import Agent
+from crewai import Agent, LLM
 from tools.search import SearchTool
 from tools.supabase_read import SupabaseReadTool
 
@@ -48,5 +48,6 @@ def create_data_officer() -> Agent:
         tools=[SearchTool(), SupabaseReadTool()],
         memory=True,
         verbose=True,
+        llm=LLM(model="anthropic/claude-sonnet-4-6"),
         allow_delegation=False,
     )

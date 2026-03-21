@@ -1,5 +1,5 @@
 """Legolas — Curriculum Auditor. Finds every flaw, gap, and missequence."""
-from crewai import Agent
+from crewai import Agent, LLM
 from tools.search import SearchTool
 from tools.supabase_read import SupabaseReadTool
 
@@ -25,5 +25,6 @@ def create_legolas() -> Agent:
         tools=[SearchTool(), SupabaseReadTool()],
         memory=True,
         verbose=True,
+        llm=LLM(model="gpt-4o-mini"),
         allow_delegation=False,
     )

@@ -1,5 +1,5 @@
 """Gimli — Classroom Reality Tester. Stress tests against real conditions."""
-from crewai import Agent
+from crewai import Agent, LLM
 from tools.supabase_read import SupabaseReadTool
 from tools.curriculum_context import CurriculumContextTool
 
@@ -27,5 +27,6 @@ def create_gimli() -> Agent:
         tools=[CurriculumContextTool(), SupabaseReadTool()],
         memory=True,
         verbose=True,
+        llm=LLM(model="gpt-4o-mini"),
         allow_delegation=False,
     )

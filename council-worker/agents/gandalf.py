@@ -1,5 +1,5 @@
 """Gandalf the Grey — Creator / Architect (Pass 1). Drafts the scope & sequence from zero."""
-from crewai import Agent
+from crewai import Agent, LLM
 from tools.search import SearchTool
 from tools.supabase_read import SupabaseReadTool
 from tools.curriculum_context import CurriculumContextTool
@@ -54,5 +54,6 @@ def create_gandalf() -> Agent:
         tools=[SearchTool(), CurriculumContextTool(), SupabaseReadTool()],
         memory=True,
         verbose=True,
+        llm=LLM(model="anthropic/claude-sonnet-4-6"),
         allow_delegation=False,
     )

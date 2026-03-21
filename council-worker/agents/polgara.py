@@ -1,5 +1,5 @@
 """Polgara the Sorceress — Content Director / Editor (Pass 3). Does this serve the child?"""
-from crewai import Agent
+from crewai import Agent, LLM
 
 
 def create_polgara() -> Agent:
@@ -47,5 +47,6 @@ def create_polgara() -> Agent:
         tools=[],
         memory=True,
         verbose=True,
+        llm=LLM(model="anthropic/claude-sonnet-4-6"),
         allow_delegation=False,
     )
