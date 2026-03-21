@@ -31,6 +31,7 @@ Extract ONLY facts that are genuinely new and useful to remember long-term:
 - Personal context revealed (goals, constraints, timelines, feelings about something)
 - Things about Scott or Anna's character, taste, or working style
 - Specific product, content, or strategy directions confirmed
+- DISMISS SIGNALS: If Scott explicitly says to ignore, dismiss, skip, or stop worrying about something ("ignore X", "not relevant to my schedule", "I don't care about X right now", "we're not doing X", "skip X", "irrelevant to me"), extract that as a dismissed signal.
 
 Do NOT extract:
 - General knowledge or facts about the market/competitors (that's Research, not Memory)
@@ -43,8 +44,8 @@ ${conversationText}
 
 Respond with ONLY a valid JSON array. Each item has:
 {
-  "content": "the fact, written as a clear declarative statement",
-  "category": one of: "scott" | "anna" | "business" | "preference" | "decision" | "general"
+  "content": "the fact, written as a clear declarative statement. For dismissed signals use format: 'DISMISSED: [topic] — [reason if given]'",
+  "category": one of: "scott" | "anna" | "business" | "preference" | "decision" | "general" | "dismissed"
 }
 
 If there is nothing worth remembering, return an empty array: []

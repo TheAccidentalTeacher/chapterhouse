@@ -191,10 +191,22 @@ export async function POST(request: Request) {
     }
 
     // Build internal context blocks
+    // Extract dismissed signals separately — these are topics Scott has explicitly told the system to skip
+    const dismissedSignals = founderNotes.filter((n) => n.category === "dismissed");
+    const activeFnounderNotes = founderNotes.filter((n) => n.category !== "dismissed");
+
+    let dismissedBlock = "";
+    if (dismissedSignals.length > 0) {
+      const signals = dismissedSignals.map((n) =>
+        n.content.replace(/^DISMISSED:\s*/i, "")
+      );
+      dismissedBlock = `\n---\n## DISMISSED SIGNALS — DO NOT SURFACE\nScott has explicitly dismissed the following topics. Do NOT include them in any section. If a signal strongly matches one of these, route it to ⚫ Filtered Out with the note "Dismissed by Scott":\n${signals.map((s) => `  - ${s}`).join("\n")}`;
+    }
+
     let founderMemoryBlock = "";
-    if (founderNotes.length > 0) {
+    if (activeFnounderNotes.length > 0) {
       const byCategory = new Map<string, string[]>();
-      for (const note of founderNotes) {
+      for (const note of activeFnounderNotes) {
         const cat = note.category || "general";
         if (!byCategory.has(cat)) byCategory.set(cat, []);
         byCategory.get(cat)!.push(note.content);
@@ -250,6 +262,7 @@ export async function POST(request: Request) {
       githubSection,
       knowledgeSummaryBlock,
       founderMemoryBlock,
+      dismissedBlock,
       researchBlock,
       opportunitiesBlock,
       "\n---",

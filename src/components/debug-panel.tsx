@@ -269,6 +269,11 @@ function AppMapTab() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "available" | "partial" | "unavailable">("all");
 
+  // Dismissed signals state
+  interface DismissedSignal { id: string; signal: string; created_at: string; source?: string }
+  const [dismissed, setDismissed] = useState<DismissedSignal[]>([]);
+  const [dismissLoading, setDismissLoading] = useState(false);
+
   async function load() {
     setLoading(true);
     setError(null);
@@ -283,7 +288,25 @@ function AppMapTab() {
     }
   }
 
-  useEffect(() => { load(); }, []);
+  async function loadDismissed() {
+    setDismissLoading(true);
+    try {
+      const res = await fetch("/api/dismiss-signal");
+      if (res.ok) {
+        const json = await res.json();
+        setDismissed(json.signals ?? []);
+      }
+    } catch { /* ignore */ } finally {
+      setDismissLoading(false);
+    }
+  }
+
+  async function undismiss(id: string) {
+    await fetch(`/api/dismiss-signal?id=${id}`, { method: "DELETE" });
+    setDismissed((prev) => prev.filter((s) => s.id !== id));
+  }
+
+  useEffect(() => { load(); loadDismissed(); }, []);
 
   const features = (data?.features ?? []).filter((f) => {
     const matchesSearch = !search ||
@@ -407,6 +430,38 @@ function AppMapTab() {
 
         {!loading && features.length === 0 && data && (
           <p className="text-xs text-muted/60 py-4 text-center">No features match.</p>
+        )}
+      </div>
+
+      {/* Dismissed Signals */}
+      <div className="border-t border-border/30 pt-3 mt-1">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs font-semibold text-amber-400">Dismissed Signals</p>
+          <button onClick={loadDismissed} disabled={dismissLoading} className="text-[10px] text-muted hover:text-foreground transition">
+            {dismissLoading ? "Loading..." : "Refresh"}
+          </button>
+        </div>
+        {dismissed.length === 0 ? (
+          <p className="text-[11px] text-muted/60">
+            No dismissed signals. Use <span className="font-mono bg-muted-surface/50 px-1 rounded">/dismiss [topic]</span> in chat to suppress topics from briefs and context.
+          </p>
+        ) : (
+          <div className="space-y-1">
+            {dismissed.map((s) => (
+              <div key={s.id} className="flex items-center justify-between gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-2.5 py-1.5">
+                <div>
+                  <p className="text-[11px] text-foreground leading-snug">{s.signal}</p>
+                  <p className="text-[10px] text-muted">{new Date(s.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} via {s.source ?? "chat"}</p>
+                </div>
+                <button
+                  onClick={() => undismiss(s.id)}
+                  className="shrink-0 text-[10px] border border-border/40 rounded px-1.5 py-0.5 text-muted hover:text-foreground hover:border-accent/50 transition"
+                >
+                  Un-dismiss
+                </button>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>

@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
+import { PUSH_LOG } from "@/lib/push-log";
 
 function getAnthropic() { return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }); }
 function getOpenAI() { return new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); }
@@ -371,6 +372,7 @@ Jobs: /api/jobs, /api/jobs/[id], /api/jobs/[id]/cancel, /api/jobs/[id]/run
 Dreams: /api/dreams, /api/dreams/[id], /api/dreams/bulk, /api/dreams/reorder, /api/dreams/ai-review, /api/dream-log
 Context: /api/context/push, /api/context/export
 n8n: /api/n8n/workflows, /api/n8n/executions
+Dismiss: /api/dismiss-signal (POST store, GET list, DELETE un-dismiss — chat commands /dismiss and /undismiss)
 Misc: /api/content-studio, /api/founder-notes, /api/opportunities, /api/tasks, /api/threads, /api/extract-learnings, /api/search, /api/summarize, /api/images, /api/sounds, /api/translate, /api/voice/synthesize, /api/voice/transcribe, /api/video/generate, /api/video/status
 Debug: /api/debug (health check), /api/debug/context (brain state), /api/debug/app-map (feature map + availability)
 
@@ -379,8 +381,13 @@ Solo chat system prompt: src/app/api/chat/route.ts → getSystemPrompt() + build
 Council system prompts: src/app/api/chat/council/route.ts → COUNCIL[] array (Gandalf, Data, Polgara, Earl, B&B)
 Intel processing: src/app/api/intel/route.ts → processIntelUrls() (4-step pipeline)
 Navigation: src/lib/navigation.ts
-Debug panel: src/components/debug-panel.tsx (4 tabs: log/perf/brain/appmap)
+Debug panel: src/components/debug-panel.tsx (4 tabs: log/perf/brain/appmap — App Map tab has Dismissed Signals panel)
+Push log (session history): src/lib/push-log.ts — updated each session, injected into buildLiveContext()
 Auth: src/lib/auth-context.ts | Supabase browser: src/lib/supabase.ts | server: src/lib/supabase-server.ts
+
+### Chat Commands
+/dismiss [topic] — [optional reason] → stores to founder_notes (category: dismissed). Propagates to briefs + context.
+/undismiss [keyword] → removes matching dismissed signals.
 
 ### Supabase Tables
 briefs, research_items, opportunities, tasks, chat_threads, knowledge_summaries, founder_notes, jobs, social_accounts, social_posts, context_files, dreams, dream_log, intel_categories, intel_sessions, emails
@@ -397,10 +404,60 @@ async function buildLiveContext(userMessage: string): Promise<string> {
   // App self-knowledge — always first so Council members can answer "where does X live?"
   blocks.push(APP_ARCHITECTURE_BLOCK_COUNCIL);
 
+  // Session history — always current (committed with the code each session)
+  blocks.push(PUSH_LOG);
+
+  // Dismissed signals — always inject so Council knows what NOT to surface
+  try {
+    const { data: dismissedNotes } = await supabase
+      .from("founder_notes")
+      .select("content")
+      .eq("category", "dismissed")
+      .order("created_at", { ascending: false });
+    if (dismissedNotes && dismissedNotes.length > 0) {
+      const signals = dismissedNotes.map((n) =>
+        (n.content as string).replace(/^DISMISSED:\s*/i, "")
+      );
+      blocks.push(
+        `## Dismissed Signals — Do Not Surface\n\nScott has dismissed these topics. Do NOT raise them unless asked directly:\n\n` +
+        signals.map((s) => `- ${s}`).join("\n")
+      );
+    }
+  } catch { /* dismissed notes may not exist — ignore */ }
+
+  // Email intent detection — if the user is asking about emails, query live
+  const emailIntentPattern = /\b(email|emails|inbox|unread|mail|messages?|got\s+mail|new\s+mail)\b/i;
+  if (emailIntentPattern.test(userMessage)) {
+    try {
+      const { data: emails } = await supabase
+        .from("emails")
+        .select("subject, from_name, from_address, received_at, category, ai_summary, action_required, urgency, is_read, snippet")
+        .order("received_at", { ascending: false })
+        .limit(20);
+      if (emails && emails.length > 0) {
+        const unread = emails.filter((e) => !e.is_read);
+        const actionRequired = emails.filter((e) => e.action_required);
+        const emailLines = emails.map((e) => {
+          const flags = [
+            !e.is_read ? "UNREAD" : null,
+            e.action_required ? "ACTION REQUIRED" : null,
+            (e.urgency ?? 0) >= 4 ? `URGENT(${e.urgency})` : null,
+            e.category && e.category !== "other" ? (e.category as string).toUpperCase() : null,
+          ].filter(Boolean).join(", ");
+          const dateStr = new Date(e.received_at as string).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+          return `- [${dateStr}]${flags ? ` [${flags}]` : ""} **${e.from_name || e.from_address}**: ${e.subject}\n  ${e.ai_summary || e.snippet || ""}`.trimEnd();
+        }).join("\n");
+        const summary = `${emails.length} recent / ${unread.length} unread / ${actionRequired.length} need action`;
+        blocks.push(`## Live Context: Inbox (queried now)\n\n${summary}\n\n${emailLines}`);
+      }
+    } catch { /* emails table may not exist — ignore */ }
+  }
+
   try {
     const { data: founderNotes } = await supabase
       .from("founder_notes")
       .select("content, category, created_at")
+      .neq("category", "dismissed")
       .order("created_at", { ascending: false });
     if (founderNotes?.length) {
       blocks.push(`## Founder Memory\n${founderNotes.map((n) => `- [${n.category}] ${n.content}`).join("\n")}`);
