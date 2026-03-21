@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/intel-fetch",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/email-digest",
+      "schedule": "0 0 * * *"
     }
   ],
   "functions": {
@@ -54,6 +58,15 @@
       "maxDuration": 60
     },
     "src/app/api/youtube/batch/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/email/sync/route.ts": {
+      "maxDuration": 30
+    },
+    "src/app/api/email/categorize/route.ts": {
+      "maxDuration": 30
+    },
+    "src/app/api/cron/email-digest/route.ts": {
       "maxDuration": 60
     }
   }

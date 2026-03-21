@@ -61,6 +61,7 @@ interface IntelOutput {
   sections: IntelSection[];
   proposed_seeds: ProposedSeed[];
   verification_warnings: VerificationWarning[];
+  council_synthesis?: string;
 }
 
 interface IntelSession {
@@ -243,6 +244,54 @@ function IntelItemCard({ item }: { item: IntelItem }) {
   );
 }
 
+// ── Council Synthesis Block ───────────────────────────────────────────────────
+
+const COUNCIL_MEMBERS = [
+  { name: "Gandalf",            color: "text-amber-300",   border: "border-amber-500/30",   bg: "bg-amber-500/5"   },
+  { name: "Data",               color: "text-blue-300",    border: "border-blue-500/30",    bg: "bg-blue-500/5"    },
+  { name: "Polgara",            color: "text-emerald-300", border: "border-emerald-500/30", bg: "bg-emerald-500/5" },
+  { name: "Earl",               color: "text-orange-300",  border: "border-orange-500/30",  bg: "bg-orange-500/5"  },
+  { name: "Beavis & Butthead",  color: "text-zinc-300",    border: "border-zinc-600/40",    bg: "bg-zinc-800/50"   },
+];
+
+function CouncilSynthesisBlock({ synthesis }: { synthesis: string }) {
+  // Parse by member markers: **Name:** text
+  const positions: { name: string; start: number; end: number }[] = [];
+  for (const { name } of COUNCIL_MEMBERS) {
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const re = new RegExp(`\\*\\*${escaped}:\\*\\*`, "g");
+    let m;
+    while ((m = re.exec(synthesis)) !== null) {
+      positions.push({ name, start: m.index, end: m.index + m[0].length });
+    }
+  }
+  positions.sort((a, b) => a.start - b.start);
+
+  if (positions.length === 0) {
+    // Fallback: plain render
+    return <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{synthesis}</p>;
+  }
+
+  const sections = positions.map((pos, i) => {
+    const textStart = pos.end;
+    const textEnd = i + 1 < positions.length ? positions[i + 1].start : synthesis.length;
+    const text = synthesis.slice(textStart, textEnd).trim();
+    const member = COUNCIL_MEMBERS.find((m) => m.name === pos.name) ?? COUNCIL_MEMBERS[0];
+    return { name: pos.name, text, color: member.color, border: member.border, bg: member.bg };
+  });
+
+  return (
+    <div className="space-y-2">
+      {sections.map(({ name, text, color, border, bg }) => (
+        <div key={name} className={`rounded-lg border ${border} ${bg} px-3 py-2.5`}>
+          <p className={`text-[11px] font-bold uppercase tracking-wide ${color} mb-1`}>{name}</p>
+          <p className="text-sm text-zinc-200 leading-relaxed whitespace-pre-wrap">{text}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── Report viewer ──────────────────────────────────────────────────────────────
 
 function IntelReportViewer({
@@ -316,6 +365,19 @@ function IntelReportViewer({
           )}
         </div>
       </div>
+
+      {/* Council of the Unserious synthesis */}
+      {output.council_synthesis && (
+        <div className="rounded-lg border border-amber-500/30 bg-zinc-900/60 overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-amber-500/20 bg-amber-500/5">
+            <span className="text-sm">⚔</span>
+            <span className="text-xs font-semibold text-amber-300 uppercase tracking-wide">Council Briefing</span>
+          </div>
+          <div className="p-4">
+            <CouncilSynthesisBlock synthesis={output.council_synthesis} />
+          </div>
+        </div>
+      )}
 
       {/* Sections */}
       {output.sections.map((section) => {

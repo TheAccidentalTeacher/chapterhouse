@@ -10,8 +10,10 @@ import {
   PenLine,
   RefreshCw,
   Reply,
+  Search,
   Send,
   X,
+  Zap,
 } from "lucide-react";
 import type { FullMessage, MessageListItem } from "@/lib/email-client";
 
@@ -59,6 +61,35 @@ const EMPTY_COMPOSE: ComposeState = {
   body: "",
 };
 
+// ── Category UI helpers ──────────────────────────────────────────────────────
+
+const CATEGORY_COLORS: Record<string, string> = {
+  spam: "bg-zinc-700/80 text-zinc-400",
+  newsletter: "bg-slate-700/80 text-slate-300",
+  notification: "bg-slate-700/80 text-slate-300",
+  vendor: "bg-amber-900/60 text-amber-400",
+  media: "bg-purple-900/60 text-purple-400",
+  sales_inquiry: "bg-green-900/60 text-green-400",
+  customer: "bg-green-800/60 text-green-300",
+  order: "bg-emerald-900/60 text-emerald-400",
+  internal: "bg-blue-900/60 text-blue-300",
+  other: "bg-zinc-700/80 text-zinc-400",
+};
+
+const CATEGORY_TABS = [
+  { key: "", label: "All" },
+  { key: "customer", label: "Customer" },
+  { key: "sales_inquiry", label: "Sales" },
+  { key: "order", label: "Orders" },
+  { key: "vendor", label: "Vendor" },
+  { key: "newsletter", label: "Newsletter" },
+  { key: "notification", label: "Notify" },
+  { key: "internal", label: "Internal" },
+  { key: "media", label: "Media" },
+  { key: "spam", label: "Spam" },
+  { key: "other", label: "Other" },
+];
+
 // ── Message list item ─────────────────────────────────────────────────────────
 
 function MessageRow({
@@ -79,10 +110,13 @@ function MessageRow({
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          {!msg.isRead && (
+          {msg.action_required ? (
+            <span className="w-2 h-2 rounded-full bg-red-400 shrink-0 mt-1 animate-pulse" title="Action required" />
+          ) : !msg.isRead ? (
             <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0 mt-1" />
+          ) : (
+            <span className="w-2 h-2 shrink-0" />
           )}
-          {msg.isRead && <span className="w-2 h-2 shrink-0" />}
           <span
             className={`text-sm truncate ${
               msg.isRead ? "text-gray-400 font-normal" : "text-white font-semibold"
@@ -103,8 +137,27 @@ function MessageRow({
         >
           {msg.subject}
         </p>
-        {msg.hasAttachment && (
-          <Paperclip className="inline w-3 h-3 text-gray-500 mt-0.5" />
+        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+          {msg.category && (
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wide ${
+                CATEGORY_COLORS[msg.category] ?? "bg-zinc-700/80 text-zinc-400"
+              }`}
+            >
+              {msg.category.replace("_", " ")}
+            </span>
+          )}
+          {msg.hasAttachment && (
+            <Paperclip className="w-3 h-3 text-gray-500" />
+          )}
+          {(msg.urgency ?? 0) >= 4 && (
+            <span className="text-[10px] text-red-400 font-semibold tracking-wide">
+              urgent
+            </span>
+          )}
+        </div>
+        {msg.ai_summary && (
+          <p className="text-xs text-gray-600 truncate mt-0.5">{msg.ai_summary}</p>
         )}
       </div>
     </button>
@@ -278,6 +331,16 @@ export function EmailInbox() {
   const [sendStatus, setSendStatus] = useState<"idle" | "success" | string>("idle");
   const [mobileView, setMobileView] = useState<"list" | "message">("list");
   const limit = 30;
+  // Categorized / search view state
+  const [view, setView] = useState<"live" | "categorized">("live");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState("");
+  const [searchResults, setSearchResults] = useState<MessageListItem[]>([]);
+  const [searchTotal, setSearchTotal] = useState(0);
+  const [searchPage, setSearchPage] = useState(1);
+  const [searching, setSearching] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMounted = useRef(true);
 
   useEffect(() => {
@@ -312,6 +375,90 @@ export function EmailInbox() {
   useEffect(() => {
     fetchMessages(1);
   }, [fetchMessages]);
+
+  const fetchCategorized = useCallback(
+    async (query: string, category: string, p: number) => {
+      setSearching(true);
+      try {
+        const params = new URLSearchParams({ page: String(p), limit: String(limit) });
+        if (query.trim()) params.set("q", query.trim());
+        if (category) params.set("category", category);
+        const res = await fetch(`/api/email/search?${params}`);
+        if (!res.ok) throw new Error("Search failed");
+        const data = await res.json();
+        if (isMounted.current) {
+          const mapped: MessageListItem[] = (data.emails ?? []).map(
+            (row: Record<string, unknown>) => ({
+              uid: row.uid as number,
+              subject: (row.subject as string) || "(no subject)",
+              from: (row.from_name as string) || (row.from_address as string) || "",
+              fromAddress: (row.from_address as string) || "",
+              to: (row.to_address as string) || "",
+              date: (row.received_at as string) || new Date().toISOString(),
+              isRead: Boolean(row.is_read),
+              hasAttachment: Boolean(row.has_attachment),
+              category: row.category as string | undefined,
+              ai_summary: row.ai_summary as string | undefined,
+              action_required: Boolean(row.action_required),
+              urgency: row.urgency as number | undefined,
+            })
+          );
+          setSearchResults(mapped);
+          setSearchTotal(data.total ?? 0);
+          setSearchPage(p);
+        }
+      } catch (err) {
+        console.error("[inbox] fetchCategorized:", err);
+      } finally {
+        if (isMounted.current) setSearching(false);
+      }
+    },
+    [limit]
+  );
+
+  const handleSearchChange = useCallback(
+    (query: string) => {
+      setSearchQuery(query);
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+      searchTimerRef.current = setTimeout(() => {
+        fetchCategorized(query, activeCategory, 1);
+      }, 400);
+    },
+    [activeCategory, fetchCategorized]
+  );
+
+  const handleCategoryChange = useCallback(
+    (cat: string) => {
+      setActiveCategory(cat);
+      fetchCategorized(searchQuery, cat, 1);
+    },
+    [searchQuery, fetchCategorized]
+  );
+
+  const handleSyncCategorize = useCallback(async () => {
+    setSyncing(true);
+    try {
+      await fetch("/api/email/sync", { method: "POST" });
+      await fetch("/api/email/categorize", { method: "POST" });
+      if (view === "categorized") {
+        await fetchCategorized(searchQuery, activeCategory, searchPage);
+      } else {
+        fetchMessages(page, true);
+      }
+    } catch (err) {
+      console.error("[inbox] handleSyncCategorize:", err);
+    } finally {
+      if (isMounted.current) setSyncing(false);
+    }
+  }, [view, searchQuery, activeCategory, searchPage, fetchCategorized, fetchMessages, page]);
+
+  // Load categorized view when switching to it
+  useEffect(() => {
+    if (view === "categorized") {
+      fetchCategorized("", "", 1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view]);
 
   const selectMessage = useCallback(async (uid: number) => {
     setSelectedUid(uid);
@@ -406,7 +553,7 @@ export function EmailInbox() {
     setMobileView("list");
   }, []);
 
-  const totalPages = Math.ceil(total / limit);
+  const totalPages = Math.ceil((view === "live" ? total : searchTotal) / limit);
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
@@ -433,14 +580,39 @@ export function EmailInbox() {
         >
           {/* Toolbar */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <Mail className="w-4 h-4 text-gray-400" />
-              <span className="text-sm font-semibold text-white">Inbox</span>
-              {total > 0 && (
-                <span className="text-xs text-gray-500">({total})</span>
-              )}
+              <button
+                onClick={() => setView("live")}
+                className={`text-xs px-2 py-1 rounded transition-colors ${
+                  view === "live"
+                    ? "bg-amber-600/30 text-amber-400 font-semibold"
+                    : "text-gray-400 hover:text-white"
+                }`}
+              >
+                Live
+              </button>
+              <button
+                onClick={() => setView("categorized")}
+                className={`text-xs px-2 py-1 rounded transition-colors ${
+                  view === "categorized"
+                    ? "bg-amber-600/30 text-amber-400 font-semibold"
+                    : "text-gray-400 hover:text-white"
+                }`}
+              >
+                AI
+              </button>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={handleSyncCategorize}
+                disabled={syncing}
+                title="Sync & categorize emails"
+                className="flex items-center gap-1 px-2 py-1 text-xs bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 rounded transition-colors disabled:opacity-40"
+              >
+                <Zap className={`w-3 h-3 ${syncing ? "animate-pulse" : ""}`} />
+                {syncing ? "Syncing…" : "Sync"}
+              </button>
               <button
                 onClick={() => fetchMessages(1, true)}
                 disabled={refreshing}
@@ -459,20 +631,59 @@ export function EmailInbox() {
             </div>
           </div>
 
+          {/* Search + category filter — AI view only */}
+          {view === "categorized" && (
+            <>
+              <div className="px-3 py-2 border-b border-white/5">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+                  <input
+                    type="text"
+                    placeholder="Search emails…"
+                    value={searchQuery}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 text-sm bg-white/5 border border-white/10 rounded-md text-white placeholder-gray-600 focus:outline-none focus:border-amber-500/50"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-1 px-3 py-1.5 overflow-x-auto border-b border-white/5">
+                {CATEGORY_TABS.map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => handleCategoryChange(tab.key)}
+                    className={`shrink-0 text-[10px] px-2 py-1 rounded-full font-medium transition-colors ${
+                      activeCategory === tab.key
+                        ? "bg-amber-600/40 text-amber-300"
+                        : "bg-white/5 text-gray-400 hover:text-white hover:bg-white/10"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
           {/* Message list */}
           <div className="flex-1 overflow-y-auto">
-            {loading ? (
+            {(view === "live" ? loading : searching) ? (
               <div className="flex items-center justify-center py-12 text-gray-500">
                 <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                <span className="text-sm">Loading inbox…</span>
+                <span className="text-sm">
+                  {view === "live" ? "Loading inbox…" : "Searching…"}
+                </span>
               </div>
-            ) : messages.length === 0 ? (
+            ) : (view === "live" ? messages : searchResults).length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-gray-500">
                 <AtSign className="w-8 h-8 mb-3 text-gray-700" />
-                <p className="text-sm">No messages found</p>
+                <p className="text-sm">
+                  {view === "live" ? "No messages found" : "No emails found"}
+                </p>
+                {view === "categorized" && (
+                  <p className="text-xs text-gray-600 mt-1">Try syncing first</p>
+                )}
               </div>
             ) : (
-              messages.map((msg) => (
+              (view === "live" ? messages : searchResults).map((msg) => (
                 <MessageRow
                   key={msg.uid}
                   msg={msg}
@@ -487,18 +698,26 @@ export function EmailInbox() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-2 border-t border-white/10 text-xs text-gray-500">
               <button
-                onClick={() => fetchMessages(page - 1)}
-                disabled={page <= 1}
+                onClick={() =>
+                  view === "live"
+                    ? fetchMessages(page - 1)
+                    : fetchCategorized(searchQuery, activeCategory, searchPage - 1)
+                }
+                disabled={view === "live" ? page <= 1 : searchPage <= 1}
                 className="disabled:opacity-30 hover:text-white transition-colors"
               >
                 ← Newer
               </button>
               <span>
-                {page} / {totalPages}
+                {view === "live" ? page : searchPage} / {totalPages}
               </span>
               <button
-                onClick={() => fetchMessages(page + 1)}
-                disabled={page >= totalPages}
+                onClick={() =>
+                  view === "live"
+                    ? fetchMessages(page + 1)
+                    : fetchCategorized(searchQuery, activeCategory, searchPage + 1)
+                }
+                disabled={view === "live" ? page >= totalPages : searchPage >= totalPages}
                 className="disabled:opacity-30 hover:text-white transition-colors"
               >
                 Older →

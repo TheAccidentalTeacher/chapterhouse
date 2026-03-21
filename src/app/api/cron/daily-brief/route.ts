@@ -81,7 +81,49 @@ export async function GET(request: Request) {
       }
     }
 
-    // Stage 3: after brief generates, run the summarization pass to keep
+    // Stage 3: Create an Intel session with the brief content so chat gets deep analysis.
+    // This is how the Intel system "replaces" the brief — same daily data, full Intel scoring.
+    // Fire-and-forget — brief cron response is already committed before this runs.
+    {
+      const briefForIntel = result.brief;
+      if (briefForIntel?.sections) {
+        type BriefItem = { headline: string; whyItMatters: string; score: string; collision_note?: string };
+        type BriefSection = { title: string; items: BriefItem[] };
+        const briefAsText = [
+          `DAILY BRIEF — ${briefForIntel.title ?? new Date().toLocaleDateString()}`,
+          "",
+          briefForIntel.summary ?? "",
+          "",
+          ...(briefForIntel.sections as BriefSection[]).map((s) =>
+            `## ${s.title}\n` +
+            s.items.map((item) =>
+              `[${item.score}] ${item.headline}\n${item.whyItMatters}` +
+              (item.collision_note ? `\nCross-track signal: ${item.collision_note}` : "")
+            ).join("\n\n")
+          ),
+        ].join("\n");
+
+        fetch(`${origin}/api/intel`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            urls: [],
+            extra_content: briefAsText,
+            source_type: "manual", // avoids conflicting with intel-fetch cron dedup
+            session_label: `Brief Intel — ${new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`,
+          }),
+        })
+          .then((r) => r.json())
+          .then((s: { session?: { id?: string } }) =>
+            console.log("[cron/daily-brief] Intel session created:", s.session?.id ?? "unknown")
+          )
+          .catch((e: unknown) =>
+            console.warn("[cron/daily-brief] Intel session creation failed (non-fatal):", e)
+          );
+      }
+    }
+
+    // Stage 4: after brief generates, run the summarization pass to keep
     // the knowledge base current. Fire-and-forget — don't block this response.
     fetch(`${origin}/api/summarize`, {
       method: "POST",

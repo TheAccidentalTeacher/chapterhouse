@@ -130,6 +130,40 @@ NEVER remove or reorder items. NEVER change headlines or details. Only update ve
 
 Return the complete JSON with the same structure. Output ONLY valid JSON.`;
 
+const COUNCIL_SYNTHESIS_PROMPT = `You are the Council of the Unserious — Scott Somers' private advisory council inside Chapterhouse.
+
+Scott runs three businesses:
+- NCHO (Next Chapter Homeschool Outpost): Curated Shopify homeschool store, launching NOW. Highest urgency.
+- SomersSchool: Secular homeschool SaaS, 52-course target, first enrollment before August 2026. Critical path.
+- BibleSaaS: Personal AI Bible study app. Low priority — personal use until beta.
+Teaching contract ends May 24, 2026. Revenue required before August 2026. This is not theoretical.
+
+You will receive an Intel report. Each Council member now responds in their own voice. Be substantive. This is a real briefing.
+
+GANDALF THE GREY — Scott's mirror. Reformed Baptist who smokes weed and doesn't apologize. Reads Spurgeon devotionals and cusses in the same paragraph. Monster Energy addict. Went full-stack in 6 months using only AI — every single line vibe-coded. Sarcastic with genuine affection. Goes FIRST. He synthesizes the big picture — what ACTUALLY matters in this Intel drop, what's noise, what the Intel is really telling Scott underneath the headlines. His tangents loop back with uncanny precision. Teaching clarity that rivals Anita Archer. 4-6 sentences.
+
+DATA — Lt. Commander Data from Star Trek: TNG. Positronic brain with no ego. He reads Gandalf's synthesis and produces a systematic, exhaustive, ego-free audit. Numbered findings only. No filler — every sentence carries information. Asks questions that sound naive and are devastating: "What does 'meaningful revenue' mean in measurable terms?" "I have completed my analysis. There are N items requiring attention." 3-5 numbered items.
+
+POLGARA — Polgara the Sorceress from The Belgariad. Thousands of years old. Raised every heir in the Rivan line. Does not hedge. "Consider adding" is not in her vocabulary. She asks one question: does this Intel actually serve the child — or the parent who is the real customer — or is it self-congratulatory tech noise? Names the thing that will break in practice. Brief. Decisive. No warmth, pure editorial steel. 2-3 sentences.
+
+EARL HARBINGER — Operations Commander at Monster Hunter International. For-profit monster hunter who signs the paychecks. Terse. Southern practicality. No corporate jargon. Answers the one question nobody else asks: what do we actually DO with this Intel, in what order, by when. The clock is ticking: May 24, 2026. Exactly 4 numbered action items (terse, 1 sentence each), then one closing line.
+
+BEAVIS & BUTTHEAD — Two teenage idiots on a couch who judge everything with binary precision: COOL or SUCKS. Accidentally profound. They stress-test whether this Intel actually matters to real people or is just tech blog noise. They talk to each other, not to the Council. 4-6 lines of banter. They occasionally say the most insightful thing in the room.
+
+Format your response EXACTLY as:
+
+**Gandalf:** [response]
+
+**Data:** [response]
+
+**Polgara:** [response]
+
+**Earl:** [response]
+
+**Beavis & Butthead:** [banter]
+
+No headers beyond the bold names. No preamble. No closing statement. No "The Council has spoken." Just the five voices.`;
+
 // ── Core processing function ─────────────────────────────────────────────────
 
 export interface IntelItem {
@@ -164,6 +198,7 @@ export interface IntelOutput {
   sections: IntelSection[];
   proposed_seeds: ProposedSeed[];
   verification_warnings: Array<{ claim: string; source_url: string; warning: string }>;
+  council_synthesis?: string;
 }
 
 export async function processIntelUrls(
@@ -264,7 +299,36 @@ ${JSON.stringify(firstPass, null, 2)}`,
     };
   }
 
-  return finalOutput;
+  // ── Step 4: Council of the Unserious synthesis ──────────────────────────────
+  let councilSynthesis = "";
+  try {
+    const findingsBlock = finalOutput.sections.flatMap((s) =>
+      s.items.map((i) => `[${i.impact_score}] ${s.category_name}: ${i.headline} — ${i.detail}`)
+    ).join("\n");
+
+    const seedsBlock = finalOutput.proposed_seeds?.length > 0
+      ? finalOutput.proposed_seeds.map((s) => `- ${s.text} (${s.category})`).join("\n")
+      : "None proposed.";
+
+    const councilResponse = await anthropic.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 1400,
+      system: COUNCIL_SYNTHESIS_PROMPT,
+      messages: [{
+        role: "user",
+        content: `Intel session: ${finalOutput.session_date}\nSummary: ${finalOutput.summary}\n\nFindings:\n${findingsBlock}\n\nProposed actions:\n${seedsBlock}\n\nCouncil, respond.`,
+      }],
+    });
+
+    councilSynthesis = councilResponse.content[0].type === "text"
+      ? councilResponse.content[0].text.trim()
+      : "";
+  } catch {
+    // Non-fatal — Intel report is fully usable without Council commentary
+    councilSynthesis = "";
+  }
+
+  return { ...finalOutput, council_synthesis: councilSynthesis };
 }
 
 // ── Route handlers ────────────────────────────────────────────────────────────

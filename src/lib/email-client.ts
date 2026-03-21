@@ -24,6 +24,11 @@ export type MessageListItem = {
   date: string;        // ISO 8601
   isRead: boolean;
   hasAttachment: boolean;
+  // Optional: populated when fetched from Supabase (persisted + categorized)
+  category?: string;
+  ai_summary?: string;
+  action_required?: boolean;
+  urgency?: number;
 };
 
 export type FullMessage = MessageListItem & {

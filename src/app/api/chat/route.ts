@@ -235,6 +235,56 @@ async function buildLiveContext(userMessage: string = ""): Promise<string> {
     // opportunities table may not exist yet — ignore
   }
 
+  try {
+    // Recent intel sessions (last 48h) — curated business signals, market intelligence
+    const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+    const { data: intelSessions } = await supabase
+      .from("intel_sessions")
+      .select("created_at, session_label, processed_output, seeds_extracted, source_type")
+      .eq("status", "complete")
+      .gte("created_at", cutoff)
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    if (intelSessions && intelSessions.length > 0) {
+      type LocalIntelItem = { headline: string; detail: string; impact_score: string; affected_repos: string[] };
+      type LocalIntelOutput = { summary?: string; sections?: Array<{ items: LocalIntelItem[] }>; proposed_seeds?: Array<{ text: string; category: string }> };
+
+      const intelTexts = intelSessions
+        .map((session) => {
+          const output = session.processed_output as LocalIntelOutput | null;
+          if (!output) return null;
+
+          const label = (session.session_label as string | null) ?? new Date(session.created_at as string).toLocaleDateString("en-US");
+          const typeTag = session.source_type === "cron" ? "[Daily]" : session.source_type === "publishers_weekly" ? "[PW]" : "[Manual]";
+
+          const topItems = (output.sections ?? [])
+            .flatMap((s) => s.items)
+            .filter((item) => ["A+", "A", "A-", "B+"].includes(item.impact_score))
+            .slice(0, 6);
+
+          const itemLines = topItems.length > 0
+            ? topItems.map((item) =>
+                `- [${item.impact_score}] **${item.headline}**: ${item.detail.slice(0, 200)}` +
+                (item.affected_repos?.length ? ` (→ ${item.affected_repos.join(", ")})` : "")
+              ).join("\n")
+            : "(no A-tier signals)";
+
+          const seedLines = output.proposed_seeds?.slice(0, 3)
+            .map((s) => `- ${s.text} (${s.category})`).join("\n") ?? "";
+
+          return `### ${typeTag} ${label}\n${output.summary ?? ""}\n\n**Top signals:**\n${itemLines}` +
+            (seedLines ? `\n\n**Proposed actions:**\n${seedLines}` : "");
+        })
+        .filter(Boolean)
+        .join("\n\n---\n\n");
+
+      blocks.push(`## Live Context: Recent Intel (last 48h)\n\nCurated business signals scored for direct impact on NCHO, SomersSchool, and BibleSaaS.\n\n${intelTexts}`);
+    }
+  } catch {
+    // intel_sessions table may not exist — ignore
+  }
+
   return blocks.length > 0
     ? "\n\n---\n\n" + blocks.join("\n\n---\n\n")
     : "";

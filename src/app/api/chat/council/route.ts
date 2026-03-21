@@ -377,5 +377,33 @@ async function buildLiveContext(userMessage: string): Promise<string> {
     }
   } catch { /* ignore */ }
 
+  try {
+    const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+    const { data: intelSessions } = await supabase
+      .from("intel_sessions")
+      .select("created_at, session_label, processed_output, source_type")
+      .eq("status", "complete")
+      .gte("created_at", cutoff)
+      .order("created_at", { ascending: false })
+      .limit(3);
+
+    if (intelSessions?.length) {
+      type LI = { headline: string; detail: string; impact_score: string; affected_repos: string[] };
+      type LO = { summary?: string; sections?: Array<{ items: LI[] }>; proposed_seeds?: Array<{ text: string; category: string }> };
+
+      const texts = intelSessions.map((sess) => {
+        const out = sess.processed_output as LO | null;
+        if (!out) return null;
+        const label = (sess.session_label as string | null) ?? new Date(sess.created_at as string).toLocaleDateString("en-US");
+        const top = (out.sections ?? []).flatMap((s) => s.items)
+          .filter((i) => ["A+", "A", "A-"].includes(i.impact_score)).slice(0, 4)
+          .map((i) => `- [${i.impact_score}] ${i.headline}: ${i.detail.slice(0, 150)}`).join("\n");
+        return `**${label}** — ${out.summary ?? ""}\n${top}`;
+      }).filter(Boolean).join("\n\n");
+
+      if (texts) blocks.push(`## Recent Intel (last 48h)\n${texts}`);
+    }
+  } catch { /* ignore */ }
+
   return blocks.length ? "\n\n---\n\n" + blocks.join("\n\n") : "";
 }
