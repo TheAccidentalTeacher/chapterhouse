@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chapterhouse Help Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --dark-bg: #0e0b02;
+            --darker-bg: #0a0a0f;
+            --accent: #D4A80E;
+            --dark-accent: #8B5E00;
+            --text: #f0e8cc;
+            --text-secondary: #d1d5db;
+            --border: #2d2d3d;
+            --code-bg: #1a1a24;
+        }
+        
+        body {
+            background-color: var(--dark-bg);
+            color: var(--text);
+            font-family: system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+        
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 280px;
+            background-color: var(--darker-bg);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 24px 0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+        }
+        
+        .sidebar-header {
+            padding: 0 24px 24px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 24px;
+        }
+        
+        .sidebar-header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 4px;
+        }
+        
+        .sidebar-header p {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+        
+        .sidebar-section-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            padding: 0 24px 12px;
+        }
+        
+        .sidebar-nav {
+            list-style: none;
+        }
+        
+        .sidebar-nav li {
+            margin: 0;
+        }
+        
+        .sidebar-nav a {
+            display: block;
+            padding: 10px 24px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-left: 2px solid transparent;
+            transition: all 0.2s ease;
+            font-size: 13px;
+        }
+        
+        .sidebar-nav a:hover {
+            color: var(--accent);
+            background-color: rgba(212, 168, 14, 0.05);
+            border-left-color: var(--accent);
+        }
+        
+        .sidebar-nav a.active {
+            color: var(--accent);
+            background-color: rgba(212, 168, 14, 0.1);
+            border-left-color: var(--accent);
+            font-weight: 500;
+        }
+        
+        /* Main Content */
+        .main {
+            flex: 1;
+            overflow-y: auto;
+            padding: 48px 64px;
+            max-width: 900px;
+        }
+        
+        /* Scrollbar styling */
+        .sidebar::-webkit-scrollbar,
+        .main::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .sidebar::-webkit-scrollbar-track,
+        .main::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb,
+        .main::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb:hover,
+        .main::-webkit-scrollbar-thumb:hover {
+            background: var(--dark-accent);
+        }
+        
+        /* Page sections */
+        .page {
+            display: none;
+        }
+        
+        .page.active {
+            display: block;
+        }
+        
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--accent);
+        }
+        
+        .page-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        h2 {
+            font-size: 22px;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 16px;
+            color: var(--text);
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+        
+        h2:first-child {
+            margin-top: 0;
+            border-top: none;
+            padding-top: 0;
+        }
+        
+        h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 24px;
+            margin-bottom: 12px;
+            color: var(--text);
+        }
+        
+        p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+        }
+        
+        ul, ol {
+            margin: 16px 0 16px 24px;
+            color: var(--text-secondary);
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s ease;
+        }
+        
+        a:hover {
+            border-bottom-color: var(--accent);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 24px 0;
+            border: 1px solid var(--border);
+            background-color: var(--code-bg);
+        }
+        
+        th {
+            background-color: rgba(212, 168, 14, 0.1);
+            border-bottom: 2px solid var(--border);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--accent);
+        }
+        
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+        
+        td:last-child {
+            border-right: none;
+        }
+        
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        tr:hover td {
+            background-color: rgba(212, 168, 14, 0.05);
+        }
+        
+        code {
+            background-color: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: var(--text);
+        }
+        
+        pre {
+            background-color: var(--code-bg);
+            padding: 16px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 16px 0;
+            border: 1px solid var(--border);
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+            border-radius: 0;
+        }
+        
+        .box {
+            background-color: rgba(212, 168, 14, 0.05);
+            border-left: 4px solid var(--accent);
+            padding: 16px;
+            margin: 24px 0;
+            border-radius: 4px;
+        }
+        
+        .box p {
+            margin: 0;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background-color: rgba(212, 168, 14, 0.2);
+            color: var(--accent);
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: 500;
+            margin: 0 4px 4px 0;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 240px;
+            }
+            .main {
+                padding: 32px 40px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+                padding: 16px 0;
+            }
+            .main {
+                padding: 24px 20px;
+            }
+            h1 {
+                font-size: 24px;
+            }
+            h2 {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>Chapterhouse</h1>
+                <p>Help & Documentation</p>
+            </div>
+            
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Getting Started</div>
+                <ul class="sidebar-nav">
+                    <li><a href="#overview" class="nav-link">Overview</a></li>
+                    <li><a href="#quickstart" class="nav-link">Quick Start</a></li>
+                </ul>
+            </div>
+            
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Command Center</div>
+                <ul class="sidebar-nav">
+                    <li><a href="#chat" class="nav-link">Chat & Council Mode</a></li>
+                    <li><a href="#dailybrief" class="nav-link">Daily Brief</a></li>
+                </ul>
+            </div>
+            
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Dream & Intelligence</div>
+                <ul class="sidebar-nav">
+                    <li><a href="#dreamer" class="nav-link">Dreamer</a></li>
+                    <li><a href="#intel" class="nav-link">Intel</a></li>
+                    <li><a href="#email" class="nav-link">Email Inbox</a></li>
+                </ul>
+            </div>
+            
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Intelligence & Research</div>
+                <ul class="sidebar-nav">
+                    <li><a href="#research" class="nav-link">Research</a></li>
+                    <li><a href="#opportunities" class="nav-link">Product Intelligence</a></li>
+                    <li><a href="#youtube" class="nav-link">YouTube Intelligence</a></li>
+                </ul>
+            </div>
+            
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Production</div>
+                <ul class="sidebar-nav">
+                    <li><a href="#content" class="nav-link">Content Studio</a></li>
+                    <li><a href="#review" class="nav-link">Review Queue</a></li>
+                    <li><a href="#tasks" class="nav-link">Tasks</a></li>
+                    <li><a href="#documents" class="nav-link">Documents</a></li>
+                    <li><a href="#context" class="nav-link">Context Brain</a></li>
+                </ul>
+            </div>
+            
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">AI & Automation</div>
+                <ul class="sidebar-nav">
+                    <li><a href="#jobs" class="nav-link">Job Runner</a></li>
+                    <li><a href="#curriculum" class="nav-link">Curriculum Factory</a></li>
+                    <li><a href="#council" class="nav-link">Council Chamber</a></li>
+                    <li><a href="#pipelines" class="nav-link">Pipelines</a></li>
+                    <li><a href="#social" class="nav-link">Social Media</a></li>
+                </ul>
+            </div>
+            
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Reference</div>
+                <ul class="sidebar-nav">
+                    <li><a href="#workflow" class="nav-link">Daily Workflow</a></li>
+                    <li><a href="#tracks" class="nav-link">Business Tracks</a></li>
+                    <li><a href="#advanced" class="nav-link">Advanced Features</a></li>
+                    <li><a href="#limitations" class="nav-link">Known Limitations</a></li>
+                    <li><a href="#faq" class="nav-link">FAQ</a></li>
+                </ul>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Overview Page -->
+            <div id="overview" class="page active">
+                <h1>Chapterhouse Help Guide</h1>
+                <p class="page-subtitle">Plain-English guide to everything the app does, how to use it, and what to expect.</p>
+                
+                <h2>What Is Chapterhouse?</h2>
+                <p>Chapterhouse is your private operating system — a website only you and Anna can access. It lives at <strong>chapterhouse.vercel.app</strong> and runs 24/7. Think of it as mission control: you read the morning news, talk to AI, save research, generate content, track tasks, manage dreams, collect intelligence, process email, manage context — all in one place, all tailored to Next Chapter and SomerSchool.</p>
+                
+                <p>Nobody else can see it. It's locked to your two email addresses.</p>
+                
+                <div class="box">
+                    <p><strong>Core concept:</strong> Chapterhouse is the command center for all three business tracks (NCHO, SomerSchool, BibleSaaS). Intelligence flows in from multiple sources (daily briefs, email, manual research, Intel reports, YouTube). You decide what matters (via tasks, seeds, opportunities). AI agents automate the rest (digest generation, draft replies, curriculum building, social media).</p>
+                </div>
+                
+                <h2>Quick Stats</h2>
+                <ul>
+                    <li><strong>Screens:</strong> 21 total (organized into 6 sidebar groups)</li>
+                    <li><strong>AI Models:</strong> Claude Sonnet 4.6, GPT-5.4, Claude Haiku 4.5, Gemini 2.5 Flash</li>
+                    <li><strong>Database:</strong> Supabase (PostgreSQL, us-west-2)</li>
+                    <li><strong>Hosting:</strong> Vercel Pro + Railway background workers</li>
+                    <li><strong>Monthly Cost:</strong> ~$15–25 Vercel + ~$50–100 AI API usage</li>
+                </ul>
+            </div>
+            
+            <!-- Quick Start Page -->
+            <div id="quickstart" class="page">
+                <h1>Quick Start</h1>
+                <p class="page-subtitle">Get up and running in 5 minutes.</p>
+                
+                <h2>First Time Here?</h2>
+                <ol>
+                    <li><strong>Log in</strong> with scott@nextchapterhomeschool.com or anna@nextchapterhomeschool.com</li>
+                    <li><strong>Go to Home</strong> (sidebar, left side). You'll see a chat input box.</li>
+                    <li><strong>Read your daily brief</strong> (auto-generated at 7 AM Alaska time, even on your first day)</li>
+                    <li><strong>Check your Email Action Banner</strong> on the Home page for any emails needing replies</li>
+                    <li><strong>Explore the sidebar</strong> — 6 groups with 21 screens total</li>
+                </ol>
+                
+                <h2>The Six Groups</h2>
+                <table>
+                    <tr>
+                        <th>Group</th>
+                        <th>What It Does</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Command Center</strong></td>
+                        <td>Chat with AI, read daily briefs</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Dream & Intelligence</strong></td>
+                        <td>Manage ideas (Dreamer), track market signals (Intel), process email</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Intelligence & Research</strong></td>
+                        <td>Save research, spot opportunities, extract curriculum from YouTube</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Production</strong></td>
+                        <td>Draft content, review work, track tasks, access documents</td>
+                    </tr>
+                    <tr>
+                        <td><strong>AI & Automation</strong></td>
+                        <td>Run background jobs, generate curriculum, schedule social posts</td>
+                    </tr>
+                    <tr>
+                        <td><strong>System</strong></td>
+                        <td>Configure settings, manage founder memory</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <!-- Chat Page -->
+            <div id="chat" class="page">
+                <h1>Chat & Council Mode</h1>
+                <p class="page-subtitle">Talk to AI. Get advice from the Council of the Unserious.</p>
+                
+                <h2>Chat Basics</h2>
+                <p>Type a question or request in the box at the bottom. Press Enter. One AI responds — or toggle <strong>Council Mode</strong> to get five voices at once.</p>
+                
+                <h3>Solo Mode (Default)</h3>
+                <p>Pick which AI to use from the Model dropdown (GPT-5.4, Claude Sonnet 4.6, or Claude Haiku 4.5). Ask anything. The AI reads your daily brief, research, opportunities, and founder memory automatically — so its answers are always in context.</p>
+                
+                <h3>Council Mode</h3>
+                <p>Click the amber <strong>Council</strong> pill button to toggle it on. Your question goes to five members of the Council of the Unserious:</p>
+                
+                <ul>
+                    <li><strong>Gandalf</strong> (amber) — Creator/architect. Strategic thinking.</li>
+                    <li><strong>Lt. Commander Data</strong> (blue) — Auditor/analyst. Logical rigor.</li>
+                    <li><strong>Polgara</strong> (emerald) — Content director. Child-first lens.</li>
+                    <li><strong>Earl Harbinger</strong> (orange) — Operations commander. Business reality.</li>
+                    <li><strong>Beavis & Butthead</strong> (zinc) — Engagement stress-test. Is it cool or does it suck?</li>
+                </ul>
+                
+                <p>Each responds in character with colored avatar. After they all weigh in, a <strong>rebuttal round</strong> follows where they respond to each other. It's like having a board meeting in your chat.</p>
+                
+                <h3>Advanced Chat Features</h3>
+                <ul>
+                    <li><strong>/remember [fact]</strong> — Teach the AI something permanently. Example: <code>/remember We decided to launch SomerSchool by August</code></li>
+                    <li><strong>Paste URLs</strong> — The AI fetches page content automatically (up to 12K chars)</li>
+                    <li><strong>Auto-learning</strong> — The system extracts key facts from your conversation and saves them to founder memory</li>
+                    <li><strong>Pin conversations</strong> — Keep important chats at the top of the thread list</li>
+                </ul>
+            </div>
+            
+            <!-- Daily Brief Page -->
+            <div id="dailybrief" class="page">
+                <h1>Daily Brief</h1>
+                <p class="page-subtitle">Your morning summary. Auto-generated every day at 7 AM Alaska time.</p>
+                
+                <h2>What You Get</h2>
+                <p>A summary of overnight developments across:</p>
+                <ul>
+                    <li>9 RSS news feeds (education, homeschool, edtech)</li>
+                    <li>11 GitHub repos you follow</li>
+                    <li>5 daily.dev feeds (For You, Popular, Anthropic, Security, Next.js)</li>
+                </ul>
+                
+                <h2>Reading the Brief</h2>
+                <p>Each item shows:</p>
+                <ul>
+                    <li><strong>Headline</strong> — What happened</li>
+                    <li><strong>Why it matters</strong> — How it connects to your work</li>
+                    <li><strong>Track impact</strong> — Colored dots showing relevance: NCHO (store), SomerSchool (curriculum), BibleSaaS (Bible study)</li>
+                </ul>
+                
+                <h2>⚡ Collisions Section</h2>
+                <p>At the top, items that score high (≥2) on 2+ business tracks appear in the "Collisions" section with an amber ⚡ badge. These are cross-track opportunities worth paying attention to.</p>
+                
+                <p><strong>Example collision:</strong> "Penguin Random House launches Christian curriculum platform" → Direct for NCHO (positioning opportunity), high relevance to SomerSchool market validation, medium for BibleSaaS audience.</p>
+                
+                <h2>What You Can Do</h2>
+                <ul>
+                    <li><strong>Convert to task</strong> — Send any item straight to your Tasks list</li>
+                    <li><strong>Send to review</strong> — Put it in Review Queue for later decision</li>
+                    <li><strong>Generate new brief</strong> — Click the button to create a fresh one anytime</li>
+                </ul>
+            </div>
+            
+            <!-- Dreamer Page -->
+            <div id="dreamer" class="page">
+                <h1>Dreamer</h1>
+                <p class="page-subtitle">Your idea management system. Seeds → Active → Building → Shipped.</p>
+                
+                <h2>The Kanban Board</h2>
+                <p>Dreamer is a kanban board with four columns:</p>
+                
+                <table>
+                    <tr>
+                        <th>Column</th>
+                        <th>What Goes Here</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Seeds</strong></td>
+                        <td>Raw ideas (from chat, Intel, daily brief, manual entry)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Active</strong></td>
+                        <td>Ideas you're seriously considering</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Building</strong></td>
+                        <td>Projects currently in progress</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Shipped</strong></td>
+                        <td>Completed and live</td>
+                    </tr>
+                </table>
+                
+                <h2>Using Dreamer</h2>
+                <ul>
+                    <li><strong>Drag cards</strong> between columns to change status</li>
+                    <li><strong>Add manually</strong> — Click + to create a new seed</li>
+                    <li><strong>View source</strong> — Each card shows where it came from (dreamer.md, chat, brief, Intel, push API)</li>
+                    <li><strong>Timestamps</strong> — Track when each idea was created or moved</li>
+                    <li><strong>Archive/Dismiss</strong> — Hide ideas you've decided against</li>
+                </ul>
+                
+                <h2>Earl's AI Review</h2>
+                <p>Click <strong>Get AI Review</strong> and Earl Harbinger (Claude Sonnet 4.6) analyzes all your seeds and suggests:</p>
+                <ul>
+                    <li><strong>Promote</strong> — High-impact, prioritize it</li>
+                    <li><strong>Dismiss</strong> — Not worth pursuing</li>
+                    <li><strong>Hold</strong> — Keep warm but not now</li>
+                    <li><strong>Merge</strong> — Combine with another seed</li>
+                </ul>
+                
+                <p><em>You always approve manually</em> — Earl advises, you decide.</p>
+                
+                <h2>Daily Dream Log</h2>
+                <p>Each day, you can add one mood check-in to track energy and focus. View the log over time to spot patterns.</p>
+            </div>
+            
+            <!-- Intel Page -->
+            <div id="intel" class="page">
+                <h1>Intel</h1>
+                <p class="page-subtitle">Intelligence analysis engine. Feed URLs, get signal from noise.</p>
+                
+                <h2>Three Ways to Add Intel</h2>
+                
+                <h3>1. New Session (Manual)</h3>
+                <p>Paste 1–20 URLs. Hit Analyze. System fetches each page, extracts content, runs multi-layer analysis.</p>
+                
+                <h3>2. Publishers Weekly</h3>
+                <p>Paste the raw text of a Publishers Weekly email. Auto-extracts book, market, and trend data.</p>
+                
+                <h3>3. Auto-Fetch</h3>
+                <p>Daily cron at 4 AM Alaska time monitors 5 watch sources (daily.dev, tech news, edtech research, homeschool news). Results auto-inject into Intel.</p>
+                
+                <h2>Reading an Intel Report</h2>
+                <p>Each report shows:</p>
+                <ul>
+                    <li><strong>Summary</strong> — Top findings from all URLs</li>
+                    <li><strong>Categorized sections:</strong>
+                        <ul>
+                            <li>🔴 Direct Impact (affects your business immediately)</li>
+                            <li>🟡 Ecosystem Signal (market-level trends)</li>
+                            <li>🟠 Community Signal (user/customer behavior shifts)</li>
+                            <li>🔵 Background (interesting but less urgent)</li>
+                        </ul>
+                    </li>
+                    <li><strong>Impact scores:</strong> A+ (act immediately) → C (background)</li>
+                    <li><strong>Affected repos</strong> — Which of your 47 repos this matters for</li>
+                    <li><strong>Proposed seeds</strong> — AI auto-suggests 1–3 seed ideas to add to Dreamer</li>
+                </ul>
+                
+                <h2>Behind the Scenes</h2>
+                <p>Claude Sonnet 4.6 extracts facts, Claude Haiku 4.5 verifies claims, and the Council provides multi-voice commentary. Results feed into both Dreamer (as proposed seeds) and your chat context (last 48h Intel always available).</p>
+            </div>
+            
+            <!-- Email Page -->
+            <div id="email" class="page">
+                <h1>Email Inbox</h1>
+                <p class="page-subtitle">Auto-sync, auto-categorize, auto-ingest, draft replies.</p>
+                
+                <h2>Two Views</h2>
+                
+                <h3>Live View</h3>
+                <p>Raw inbox from connected email accounts (Gmail, ncho@mailcow). Shows all messages as they arrive.</p>
+                
+                <h3>AI View</h3>
+                <p>Categorized and analyzed. Each email shows:</p>
+                <ul>
+                    <li>Category (11 types: spam, vendor, sales, customer, newsletter, etc.)</li>
+                    <li>Urgency score (0–5)</li>
+                    <li>Action required flag (red pulsing dot)</li>
+                    <li>AI summary of content</li>
+                </ul>
+                
+                <h2>Auto-Processes (Every 3 Hours)</h2>
+                <ol>
+                    <li><strong>Sync</strong> — Fetch last 30 days from Gmail/Mailcow, deduplicate</li>
+                    <li><strong>Categorize</strong> — Claude Haiku auto-assigns category + urgency + action flag</li>
+                    <li><strong>Auto-ingest</strong> — Newsletters → Research queue. Sales/customer → Product Intelligence</li>
+                </ol>
+                
+                <h2>Draft Reply Button</h2>
+                <p>Click on any email, scroll to bottom, click <strong>Draft Reply</strong> (orange button):</p>
+                <ul>
+                    <li>Claude Haiku generates a contextual reply</li>
+                    <li>You can edit before sending</li>
+                    <li>Drafts cache 24 hours (regenerate if stale)</li>
+                    <li>Replies route to your email drafts (not auto-sent)</li>
+                </ul>
+                
+                <h2>Email Action Banner</h2>
+                <p>On the Home page: shows top 5 unread emails needing replies. Click to jump directly to Inbox.</p>
+                
+                <h2>Cost</h2>
+                <p>~$0.001 per draft reply (Haiku). Auto-ingest + digest + categorization bundled into overall brief cost (~$0.05/day).</p>
+            </div>
+            
+            <!-- Research Page -->
+            <div id="research" class="page">
+                <h1>Research</h1>
+                <p class="page-subtitle">Your brain's intake system.</p>
+                
+                <h2>Five Ways to Add Research</h2>
+                
+                <table>
+                    <tr>
+                        <th>Tab</th>
+                        <th>What to Do</th>
+                    </tr>
+                    <tr>
+                        <td><strong>URL</strong></td>
+                        <td>Paste a web address. AI fetches, reads, summarizes, and verdicts.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Paste text</strong></td>
+                        <td>Copy-paste any text (email, article, Slack). AI analyzes.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Quick note</strong></td>
+                        <td>Jot down a thought. AI adds context.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Screenshot</strong></td>
+                        <td>Drag an image (competitor site, ad, social post). AI vision reads it.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Auto-research</strong></td>
+                        <td>Type a topic. System searches web, analyzes each result, auto-saves relevant items.</td>
+                    </tr>
+                </table>
+                
+                <h2>After You Save</h2>
+                <p>Each research item shows:</p>
+                <ul>
+                    <li>Title and summary</li>
+                    <li>Verdict (what you should do with this)</li>
+                    <li>Tags for organization</li>
+                    <li>Options to re-analyze or delete</li>
+                </ul>
+                
+                <p>Everything you save automatically feeds into your chat context and opportunity analysis.</p>
+            </div>
+
+            <!-- Context Brain Page -->
+            <div id="context" class="page">
+                <h1>Context Brain</h1>
+                <p class="page-subtitle">Your four-layer memory system.</p>
+                
+                <h2>What It Is</h2>
+                <p>Context Brain manages all documents that feed into AI conversations. These documents are automatically injected into every chat call, every brief generation, and every Council Chamber session.</p>
+                
+                <h2>Four Slots (Injected in Order)</h2>
+                
+                <table>
+                    <tr>
+                        <th>Slot</th>
+                        <th>Document</th>
+                        <th>Contains</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Core</strong></td>
+                        <td>copilot-instructions.md</td>
+                        <td>Your permanent identity (who you are, business tracks, all locked decisions)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Sessions</strong></td>
+                        <td>push log + session notes</td>
+                        <td>Most recent 8 sessions summarized (so AI knows what you decided)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Extended</strong></td>
+                        <td>extended_context.md</td>
+                        <td>Customer research, brand voice rules, copy principles, competitors</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Intel</strong></td>
+                        <td>intel summaries</td>
+                        <td>Last 48 hours of Intel analysis (highest-impact findings)</td>
+                    </tr>
+                </table>
+                
+                <h2>How to Use It</h2>
+                <ol>
+                    <li>Click <strong>Context Brain</strong> in sidebar</li>
+                    <li>Select a document from the pill selector</li>
+                    <li>Read the current content</li>
+                    <li>Edit inline (no external editor needed)</li>
+                    <li>Click <strong>Save</strong></li>
+                    <li>Changes auto-inject into every AI call immediately</li>
+                </ol>
+                
+                <h2>Push API</h2>
+                <p>For documents outside Chapterhouse (in your desktop workspace), use push tools:</p>
+                <ul>
+                    <li><strong>PUSH-DREAMER.bat</strong> — syncs latest dreamer.md</li>
+                    <li><strong>PUSH-ALL.bat</strong> — syncs copilot-instructions.md + extended_context.md + dreamer.md</li>
+                </ul>
+                
+                <p>This keeps your workspace (desktop files) and Chapterhouse (cloud context) in sync automatically.</p>
+            </div>
+            
+            <!-- Daily Workflow Page -->
+            <div id="workflow" class="page">
+                <h1>Your Daily Workflow</h1>
+                <p class="page-subtitle">How a typical day works across all three business tracks.</p>
+                
+                <h2>Morning (7 AM)</h2>
+                <ul>
+                    <li>Daily brief auto-generates</li>
+                    <li>Email inbox auto-syncs and categorizes overnight</li>
+                    <li>Read the brief, especially ⚡ Collisions section</li>
+                    <li>Check Email Action Banner (Home page) for top 5 emails needing replies</li>
+                    <li>Read any Intel reports from 4 AM auto-fetch</li>
+                </ul>
+                
+                <h2>Breakfast Review</h2>
+                <ul>
+                    <li>Open Dreamer — check Earl's AI suggestions for this week</li>
+                    <li>Decide: which seeds should become Active? Which should be dismissed?</li>
+                    <li>Check Context Brain — update founder memory if needed</li>
+                </ul>
+                
+                <h2>During the Day</h2>
+                <ul>
+                    <li><strong>Quick questions:</strong> Use Chat (toggle Council Mode on/off)</li>
+                    <li><strong>Save discoveries:</strong> Use Research to paste articles, screenshots, notes</li>
+                    <li><strong>Reply to mail:</strong> Use Email Inbox → Draft Reply on any customer/sales inquiry</li>
+                    <li><strong>Deep brainstorming:</strong> Use Council Mode for complex decisions</li>
+                </ul>
+                
+                <h2>Weekly Actions</h2>
+                <ul>
+                    <li><strong>Product Intelligence:</strong> Run on Mondays to surface opportunities from accumulated research</li>
+                    <li><strong>Social media:</strong> Auto-generated batch posts Monday 5 AM, approve/edit throughout week</li>
+                    <li><strong>Tasks review:</strong> Check what's blocked, what's done, what needs re-prioritizing</li>
+                </ul>
+                
+                <h2>Content Creation (As Needed)</h2>
+                <ul>
+                    <li><strong>Newsletter/campaigns:</strong> Use Content Studio</li>
+                    <li><strong>Curriculum from videos:</strong> Use YouTube Intelligence</li>
+                    <li><strong>Product descriptions:</strong> Use Content Studio</li>
+                    <li><strong>Scope & sequences:</strong> Use Curriculum Factory or Council Chamber</li>
+                </ul>
+                
+                <h2>End of Day</h2>
+                <ul>
+                    <li>Check Tasks — anything blocked or ready to mark done?</li>
+                    <li>Check Review Queue — any pending decisions?</li>
+                    <li>Check Dreamer — any seeds ready to promote to Active?</li>
+                    <li>Tomorrow's brief will auto-generate at 7 AM</li>
+                </ul>
+            </div>
+            
+            <!-- Business Tracks Page -->
+            <div id="tracks" class="page">
+                <h1>The Three Business Tracks</h1>
+                <p class="page-subtitle">Chapterhouse serves three concurrent businesses at once.</p>
+                
+                <table>
+                    <tr>
+                        <th>Track</th>
+                        <th>What It Does</th>
+                        <th>Key Pages</th>
+                        <th>Deadline</th>
+                    </tr>
+                    <tr>
+                        <td><strong>NCHO</strong></td>
+                        <td>Shopify curriculum store + curated products</td>
+                        <td>Product Intelligence, Social Media, Email (auto-ingests sales inquiries)</td>
+                        <td>Launch within 1 week</td>
+                    </tr>
+                    <tr>
+                        <td><strong>SomerSchool</strong></td>
+                        <td>Homeschool SaaS course platform</td>
+                        <td>Curriculum Factory, Council Chamber, YouTube Intelligence, Dreamer</td>
+                        <td>Revenue by August 2026</td>
+                    </tr>
+                    <tr>
+                        <td><strong>BibleSaaS</strong></td>
+                        <td>Personal AI-powered Bible study app</td>
+                        <td>Research, Dreams, Chat (roadmap)</td>
+                        <td>Beta phase</td>
+                    </tr>
+                </table>
+                
+                <h2>Collision Scoring</h2>
+                <p>Every daily brief item is scored 0–3 on three axes:</p>
+                <ul>
+                    <li><strong>ncho</strong> — relevance to homeschool store</li>
+                    <li><strong>somersschool</strong> — relevance to course platform</li>
+                    <li><strong>biblesaas</strong> — relevance to Bible study app</li>
+                </ul>
+                
+                <p>Items scoring ≥2 on 2+ tracks become <strong>"⚡ Collisions"</strong> flagged at top of brief. These are cross-track opportunities worth attention.</p>
+                
+                <div class="box">
+                    <p><strong>Example collision:</strong> "Penguin Random House launches Christian curriculum DTC platform" → Direct for NCHO (positioning + partnership opportunity), high for SomerSchool (validates market), medium for BibleSaaS (different audience but same market segment).</p>
+                </div>
+            </div>
+            
+            <!-- FAQ Page -->
+            <div id="faq" class="page">
+                <h1>FAQ & Quick Reference</h1>
+                <p class="page-subtitle">Common questions answered.</p>
+                
+                <h2>Access & Security</h2>
+                <h3>Who can access Chapterhouse?</h3>
+                <p>Only scott@nextchapterhomeschool.com and anna@nextchapterhomeschool.com (or your personal Gmail accounts configured in the system).</p>
+                
+                <h3>Is my data private?</h3>
+                <p>Yes — stored in your private Supabase (PostgreSQL) database in us-west-2. No one else has access. Never shared with third parties.</p>
+                
+                <h3>How do I sign out?</h3>
+                <p>Click the door icon in the top right corner of the page header.</p>
+                
+                <h2>AI & Costs</h2>
+                <h3>What AI models are used?</h3>
+                <ul>
+                    <li><strong>Chat:</strong> GPT-5.4 (solo) or Claude Sonnet 4.6 (trio roles)</li>
+                    <li><strong>Council:</strong> Gandalf + Data + Polgara (Claude Sonnet), Earl (GPT-5.4), Beavis & Butthead (GPT-5-mini)</li>
+                    <li><strong>Brief:</strong> Claude Haiku 4.5 (collision scoring)</li>
+                    <li><strong>Email:</strong> Haiku 4.5 (categorize, draft replies), Sonnet 4.6 (digest)</li>
+                    <li><strong>Social:</strong> Claude Sonnet 4.6</li>
+                    <li><strong>YouTube:</strong> Gemini 2.5 Flash (transcripts)</li>
+                    <li><strong>Curriculum:</strong> All Council members + Claude Sonnet 4.6 (extraction)</li>
+                </ul>
+                
+                <h3>How much does it cost?</h3>
+                <p>~$15–25 Vercel Pro + ~$50–100 AI API usage monthly depending on usage volume.</p>
+                
+                <h2>Automation & Timing</h2>
+                <h3>When do things auto-run?</h3>
+                <ul>
+                    <li><strong>Daily brief:</strong> 7 AM Alaska time, every day</li>
+                    <li><strong>Email sync:</strong> Every 3 hours</li>
+                    <li><strong>Email categorize:</strong> Every 3 hours</li>
+                    <li><strong>Intel fetch:</strong> 4 AM Alaska time</li>
+                    <li><strong>Email digest:</strong> 12:30 AM (00:30 UTC)</li>
+                    <li><strong>Social batch posts:</strong> Monday 5 AM Alaska time (12 PM UTC)</li>
+                </ul>
+                
+                <h2>Memory & Teaching</h2>
+                <h3>How do I teach Chapterhouse something?</h3>
+                <p>Three ways:</p>
+                <ol>
+                    <li>Type <code>/remember [fact]</code> in Chat</li>
+                    <li>Go to Settings → Founder Memory → Add</li>
+                    <li>Use Context Brain to edit copilot-instructions.md directly</li>
+                </ol>
+                
+                <h3>How long does it remember?</h3>
+                <p>Permanently. Facts saved to Founder Memory or Context Brain stay until you delete them.</p>
+                
+                <h2>Troubleshooting</h2>
+                <h3>Something's broken. What do I do?</h3>
+                <ol>
+                    <li>Check Settings → Environment Status for red/yellow indicators</li>
+                    <li>Most issues are API key misconfiguration</li>
+                    <li>Check Vercel logs at vercel.com/dashboard</li>
+                    <li>Email scott@nextchapterhomeschool.com for support</li>
+                </ol>
+                
+                <h3>Why are some feeds showing no new items?</h3>
+                <p>About 3 of 9 daily brief feeds are blocked by source websites (they detect Chapterhouse is a bot). The brief still generates — it just has fewer sources some days.</p>
+                
+                <h3>Why did my YouTube transcript take 77 seconds?</h3>
+                <p>YouTube blocks cloud IPs, so Chapterhouse falls back to Gemini 2.5 Flash on Railway. It watches the actual video and transcribes it. 77 seconds for a 20-minute video is normal.</p>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        // Sidebar navigation
+        const navLinks = document.querySelectorAll('.nav-link');
+        const pages = document.querySelectorAll('.page');
+        
+        function showPage(pageId) {
+            // Hide all pages
+            pages.forEach(page => page.classList.remove('active'));
+            // Remove active class from all links
+            navLinks.forEach(link => link.classList.remove('active'));
+            // Show selected page
+            const page = document.getElementById(pageId);
+            if (page) {
+                page.classList.add('active');
+                // Mark corresponding nav link as active
+                const activeLink = document.querySelector(`.nav-link[href="#${pageId}"]`);
+                if (activeLink) {
+                    activeLink.classList.add('active');
+                }
+            }
+            // Scroll main content to top
+            document.querySelector('.main').scrollTop = 0;
+        }
+        
+        // Add click handlers to nav links
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const pageId = link.getAttribute('href').substring(1);
+                showPage(pageId);
+                // Update URL hash
+                window.location.hash = pageId;
+            });
+        });
+        
+        // Handle URL hash on load
+        window.addEventListener('load', () => {
+            const hash = window.location.hash.substring(1);
+            if (hash) {
+                showPage(hash);
+            }
+        });
+        
+        // Handle back/forward buttons
+        window.addEventListener('hashchange', () => {
+            const hash = window.location.hash.substring(1);
+            if (hash) {
+                showPage(hash);
+            }
+        });
+    </script>
+</body>
+</html>
