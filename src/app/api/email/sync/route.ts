@@ -125,12 +125,17 @@ export async function POST(req: Request): Promise<NextResponse> {
 
           for await (const msg of client.fetch(
             batch,
-            { envelope: true, uid: true, source: true, flags: true, bodyStructure: true },
+            { envelope: true, internalDate: true, uid: true, source: true, flags: true, bodyStructure: true },
             { uid: true }
           )) {
             fetchedCount++;
             try {
               const env = msg.envelope;
+              const internalDate = msg.internalDate ? new Date(msg.internalDate) : null;
+              if (internalDate && internalDate < since) {
+                skipped++;
+                continue;
+              }
               const fromEntry = env?.from?.[0];
               const toEntry = env?.to?.[0];
 
@@ -156,7 +161,7 @@ export async function POST(req: Request): Promise<NextResponse> {
                 from_name: fromEntry?.name ?? null,
                 from_address: fromEntry?.address ?? "unknown@unknown",
                 to_address: toEntry?.address ?? null,
-                received_at: (env?.date ?? new Date()).toISOString(),
+                received_at: (internalDate ?? env?.date ?? new Date()).toISOString(),
                 has_attachment: hasAttachment,
                 is_read: msg.flags?.has("\\Seen") ?? false,
                 snippet,

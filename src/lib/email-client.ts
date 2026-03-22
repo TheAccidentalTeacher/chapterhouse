@@ -150,10 +150,11 @@ export async function listMessages(
 
       for await (const msg of client.fetch(
         pageUids,
-        { envelope: true, uid: true, flags: true, bodyStructure: true },
+        { envelope: true, internalDate: true, uid: true, flags: true, bodyStructure: true },
         { uid: true }
       )) {
         const env = msg.envelope;
+        const internalDate = msg.internalDate ? new Date(msg.internalDate) : null;
         const fromEntry = env?.from?.[0];
         const toEntry = env?.to?.[0];
 
@@ -163,7 +164,7 @@ export async function listMessages(
           from: fromEntry?.name || fromEntry?.address || "Unknown",
           fromAddress: fromEntry?.address || "",
           to: toEntry?.name || toEntry?.address || "",
-          date: env?.date?.toISOString() ?? new Date().toISOString(),
+          date: (internalDate ?? env?.date ?? new Date()).toISOString(),
           isRead: msg.flags?.has("\\Seen") ?? false,
           hasAttachment: hasAttachmentInStructure(msg.bodyStructure),
         });
