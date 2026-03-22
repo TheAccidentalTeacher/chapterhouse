@@ -35,6 +35,14 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "No email accounts configured" }, { status: 503 });
   }
 
+  // Purge emails older than 7 days — keeps the inbox clean on every sync
+  const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  await supabase
+    .from("emails")
+    .delete()
+    .eq("user_id", userId)
+    .lt("received_at", cutoff);
+
   let totalInserted = 0;
   let totalSkipped = 0;
   let totalScanned = 0;
