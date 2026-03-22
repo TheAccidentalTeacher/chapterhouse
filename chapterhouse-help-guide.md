@@ -6,15 +6,17 @@
 
 ## What Is Chapterhouse?
 
-Chapterhouse is your private operating system — a website only you and Anna can access. It lives at **chapterhouse.vercel.app** and runs 24/7. Think of it as a single dashboard where you read the morning news, talk to AI, save research, generate content, track tasks, and make decisions — all in one place, all tailored to Next Chapter.
+Chapterhouse is your private operating system — a website only you and Anna can access. It lives at **chapterhouse.vercel.app** and runs 24/7. Think of it as mission control: you read the morning news, talk to AI, save research, generate content, track tasks, manage dreams, collect intelligence, process email, manage context — all in one place, all tailored to Next Chapter and SomerSchool.
 
 Nobody else can see it. It's locked to your two email addresses.
+
+**Core concept:** Chapterhouse is the command center for all three business tracks (NCHO, SomerSchool, BibleSaaS). Intelligence flows in from multiple sources (daily briefs, email, manual research, Intel reports, YouTube). You decide what matters (via tasks, seeds, opportunities). AI agents automate the rest (digest generation, draft replies, curriculum building, social media).
 
 ---
 
 ## All Screens
 
-Chapterhouse has seventeen screens organized in five sidebar groups. Here's what each one does.
+Chapterhouse has twenty-one screens organized in six sidebar groups. Here's what each one does.
 
 ### Command Center
 
@@ -63,9 +65,137 @@ Chapterhouse has seventeen screens organized in five sidebar groups. Here's what
 
 ---
 
+### 3. Dreamer
+
+**What it is:** Your idea management system. A kanban board where seeds become active projects, then move into Building or Shipped. Includes an AI review layer (Earl Harbinger analyzes your seed ideas and suggests which to prioritize).
+
+**Four columns:**
+- **Seeds** — Raw idea capture (from manual entry, chat suggestions, Intel reports, or the push API)
+- **Active** — Ideas you're actively considering
+- **Building** — Projects currently in progress (repos, work streams)
+- **Shipped** — Completed and live
+
+**How to use it:**
+- Drag any card between columns to change its status
+- Click the **+** button to add a new seed manually
+- Each card shows: title, description, source (dreamer.md, chat, brief, intel, push_api), status, and timestamps
+- Click **Archive** to hide old seeds you've decided against
+- Click **Dismiss** to mark something as "do not revisit"
+
+**Earl's AI Review:** Every week (or on-demand), click **Get AI Review** and Earl Harbinger (via Claude Sonnet 4.6) analyzes all your seeds and returns:
+- **Promote** — This is high-impact, prioritize it
+- **Dismiss** — Not worth pursuing, deprioritize
+- **Hold** — Keep it warm but not now
+- **Merge** — This combines with another seed, consolidate them
+
+**You always approve manually** — Earl suggests, you decide.
+
+**Daily Dream Log:** Each day, you can add one mood check-in to track energy/focus/conviction. View the log to spot patterns ("When I'm focused on X, my ideas flow better").
+
+**Behind the scenes:** Seeds auto-import from dreamer.md in your workspace. High-collision findings from daily briefs and Intel reports automatically generate seed proposals for your review.
+
+---
+
+### 4. Intel
+
+**What it is:** The intelligence analysis engine. Feed URLs to the system, and it runs multi-layer analysis (Claude Sonnet for primary analysis, Claude Haiku for verification) to extract signal from noise. Results are categorized by impact type (direct, ecosystem, community, background) and scored A+ to C.
+
+**Three ways to add intelligence:**
+
+| Tab | What to do |
+|-----|-----------|
+| **New Session** | Paste 1–20 URLs, hit Analyze. System fetches each page, extracts content, runs analysis. |
+| **Publishers Weekly** | Paste the raw text of a Publishers Weekly email → auto-extracts book/market/trend data |
+| **Auto-Fetch** | Cron runs daily at 4:00 AM UTC, monitoring 5 watch sources (daily.dev, tech news feeds, edtech research, homeschool news) |
+
+**Each Intel report shows:**
+- **Summary** — Top findings across all URLs
+- **Categorized sections:**
+  - 🔴 Direct Impact (affects your business directly)
+  - 🟡 Ecosystem Signal (market-level trends)
+  - 🟠 Community Signal (user/customer behavior shifts)
+  - 🔵 Background (interesting but less urgent)
+- **Impact scores:** A+ (act immediately), A (this week), A- (this month), B+ (monitor), etc.
+- **Affected repos:** Which of your 47 repos this matters for
+- **Proposed seeds:** AI automatically suggests 1–3 seed ideas to add to Dreamer
+
+**Behind the scenes:** Claude Sonnet 4.6 extracts facts, Claude Haiku 4.5 verifies claims, and the Council of the Unserious provides multi-voice commentary on key findings. Results feed both into Dreamer (as proposed seeds) and into your chat context (last 48h Intel is always available in Chat).
+
+---
+
+### 5. Email Inbox
+
+**What it is:** Your email management system. Sync from Gmail and Mailcow, auto-categorize, auto-ingest to research/opportunities, generate draft replies, and see action items at a glance.
+
+**Two views:**
+
+**Live View** — Shows your raw inbox from connected email accounts (Gmail, ncho@mailcow).
+
+**AI View** — Categorized and analyzed:
+- 11 categories (spam, vendor, sales inquiry, customer, newsletter, notification, internal, order, media, other)
+- Unread indicator + action_required flag (red pulsing dot for emails needing a reply)
+- Urgency score (0–5)
+- AI summary of each email
+
+**Auto-processes run every 3 hours:**
+1. **Sync** — Fetches last 30 days from connected email accounts, deduplicates by UID
+2. **Categorize** — Claude Haiku 4.5 auto-assigns category + urgency + action_required flag
+3. **Auto-ingest** — Newsletters and media → added to Research. Sales inquiries and customer emails → added to Product Intelligence as opportunities
+
+**Draft Reply button** — Click on any email, scroll down, click **Draft Reply** (orange button):
+- Claude Haiku generates a contextual reply draft
+- Can edit before sending
+- Draft caches for 24 hours so you don't regenerate
+- Replies auto-route to your email drafts (not sent automatically)
+
+**Email Action Banner** — On Home page: shows top 5 unread emails that need replies. Click one to jump directly to it in Inbox.
+
+**Behind the scenes:** Automatic draft replies for action items appear in your daily digest (Step 4.5A). Newsletter and media URLs get automatically added to your Research queue (Step 4.5B). This happens in the background; you see the results in Research and Opportunities without manual work.
+
+**Cost:** ~$0.001 per draft reply (Haiku). Digest + auto-ingest costs bundled into overall brief generation (~$0.05/day).
+
+---
+
+### 6. Context Brain
+
+**What it is:** A four-layer memory system where you manage all the documents that feed into AI conversations. These documents are automatically injected into every chat call, every brief generation, and every Council Chamber session.
+
+**Four slots** (injected in this order):
+
+| Slot | Document | Inject Order | What it contains |
+|------|----------|--------------|------------------|
+| **Core** | copilot-instructions.md | 1 | Your permanent identity (who you are, your three business tracks, all locked decisions) |
+| **Sessions** | push log + session notes | 2 | The most recent 8 sessions summarized (so AI knows what you decided last week) |
+| **Extended** | extended_context.md | 3 | Customer research, brand voice rules, copy principles, competitor analysis |
+| **Intelligence** | intel session summaries | 4 | Last 48 hours of Intel analysis (highest-impact findings) |
+| **Bonus** | email digest | 5 | Previous day's email summary for continuity |
+
+**How to use it:**
+- Click **Context Brain** in sidebar
+- Select a document from the pill selector
+- Read the current content
+- Edit the text inline (no external editor needed)
+- Click **Save** to persist changes
+- Changes auto-inject into every AI call immediately
+
+**Push API** — For documents outside Chapterhouse (in your desktop workspace), use the push tools:
+- **PUSH-DREAMER.bat** — pushes latest dreamer.md to Context Brain
+- **PUSH-ALL.bat** — pushes copilot-instructions.md + extended_context.md + dreamer.md
+
+This pattern keeps your workspace (desktop files) and Chapterhouse (cloud AI context) in sync without manual copy-paste.
+
+---
+
 ### Intelligence
 
-### 3. Research
+### 7. Research
+| **Auto-research** | Type a topic and click Research. The system searches the web via Tavily, analyzes each result with GPT-5.4, checks for duplicates, and auto-saves relevant items. |
+
+**After saving:** Each research item shows a title, summary, verdict, and tags. You can re-analyze or delete items. Everything you save here automatically feeds into your chat context and opportunity analysis.
+
+---
+
+### 7. Research
 
 **What it is:** Your brain's intake system. Anything interesting you find — an article, a screenshot, a quick thought — goes here and gets analyzed by AI.
 
@@ -83,7 +213,7 @@ Chapterhouse has seventeen screens organized in five sidebar groups. Here's what
 
 ---
 
-### 4. Product Intelligence
+### 8. Product Intelligence
 
 **What it is:** An AI-powered radar that reads all your research and briefs, then suggests opportunities worth pursuing.
 
@@ -101,7 +231,7 @@ Chapterhouse has seventeen screens organized in five sidebar groups. Here's what
 
 ---
 
-### 5. YouTube Intelligence
+### 9. YouTube Intelligence
 
 **What it is:** Turn any YouTube video into curriculum materials. Paste a URL, get a transcript, then generate quizzes, lesson plans, vocabulary lists, and more — all grade-appropriate.
 
@@ -130,7 +260,7 @@ Chapterhouse has seventeen screens organized in five sidebar groups. Here's what
 
 ### Production
 
-### 6. Content Studio
+### 10. Content Studio
 
 **What it is:** A writing assistant that drafts content in your brand voice. Three modes:
 
@@ -147,7 +277,7 @@ Chapterhouse has seventeen screens organized in five sidebar groups. Here's what
 
 ---
 
-### 7. Review Queue
+### 11. Review Queue
 
 **What it is:** A holding pen where items wait for your decision before they move forward.
 
@@ -165,7 +295,7 @@ Chapterhouse has seventeen screens organized in five sidebar groups. Here's what
 
 ---
 
-### 8. Tasks
+### 12. Tasks
 
 **What it is:** Your to-do list. Simple, focused, no fluff.
 
@@ -187,7 +317,7 @@ Each task shows where it came from (brief, opportunity, or manual) so you always
 
 ---
 
-### 9. Documents
+### 13. Documents
 
 **What it is:** A library of all the brand documents, strategy guides, and reference files in the system.
 
@@ -202,7 +332,7 @@ Each task shows where it came from (brief, opportunity, or manual) so you always
 
 ### System
 
-### 10. Settings
+### 14. Settings
 
 **What it is:** System configuration and your "founder memory" manager.
 
@@ -216,7 +346,7 @@ Each task shows where it came from (brief, opportunity, or manual) so you always
 
 ### AI & Automation
 
-### 11. Job Runner
+### 15. Job Runner
 
 **What it is:** A dashboard for background AI jobs that run while you sleep. Jobs are queued, processed by a Railway worker, and report progress in real time.
 
@@ -231,7 +361,7 @@ Each task shows where it came from (brief, opportunity, or manual) so you always
 
 ---
 
-### 12. Curriculum Factory
+### 16. Curriculum Factory
 
 **What it is:** A 5-pass AI pipeline that generates curriculum scope & sequences using the Council of the Unserious critique loop.
 
@@ -253,7 +383,7 @@ Each task shows where it came from (brief, opportunity, or manual) so you always
 
 ---
 
-### 13. Council Chamber
+### 17. Council Chamber
 
 **What it is:** A purpose-built 5-agent system for generating curriculum scope & sequences as a background job. Uses the full Council of the Unserious (Gandalf → Data → Polgara → Earl → Beavis & Butthead) as a longer, more thorough process.
 
@@ -267,7 +397,7 @@ Each task shows where it came from (brief, opportunity, or manual) so you always
 
 ---
 
-### 14. Pipelines
+### 18. Pipelines
 
 **What it is:** A control panel for n8n automation workflows running on Railway.
 
@@ -281,7 +411,7 @@ Each task shows where it came from (brief, opportunity, or manual) so you always
 
 ---
 
-### 15. Social Media
+### 19. Social Media
 
 **What it is:** AI-powered social media post generation, human review, and scheduling for all your brands. Replaces Sintra ($49/mo).
 
@@ -310,13 +440,13 @@ Each task shows where it came from (brief, opportunity, or manual) so you always
 
 ---
 
-### 16. Help
+### 20. Help
 
 **What it is:** This page! A plain-English guide to every feature in Chapterhouse.
 
 ---
 
-### 17. Login
+### 21. Login
 
 **What it is:** The authentication gate. Locked to two email addresses only.
 
@@ -324,52 +454,114 @@ Each task shows where it came from (brief, opportunity, or manual) so you always
 
 ## The Sidebar
 
-The sidebar on the left organizes all 17 screens into five collapsible groups:
+The sidebar on the left organizes all twenty-one screens into six collapsible groups:
 
 | Group | Screens |
 |-------|---------|
 | **Command Center** | Home (Chat), Daily Brief |
+| **Dream & Intelligence** | Dreamer, Intel, Email Inbox |
 | **Intelligence** | Research, Product Intelligence, YouTube Intelligence |
-| **Production** | Content Studio, Review Queue, Tasks, Documents |
-| **AI & Automation** | Job Runner, Curriculum Factory, Pipelines, Council Chamber, Social Media |
+| **Production** | Content Studio, Review Queue, Tasks, Documents, Context Brain |
+| **AI & Automation** | Job Runner, Curriculum Factory, Council Chamber, Pipelines, Social Media |
 | **System** | Settings |
 
 Click a group header to expand/collapse it. The group containing the current page opens automatically.
 
-**Global search:** The search bar at the top of the sidebar searches across tasks, research, opportunities, chat threads, and briefs simultaneously. Results are color-coded by type. Click any result to navigate directly to that item.
+**Global search:** The search bar at the top of the sidebar searches across tasks, research, opportunities, chat threads, briefs, seeds, intel sessions, and emails simultaneously. Results are color-coded by type. Click any result to navigate directly to that item.
 
 **Tooltips:** Hover over any nav item to see a tooltip card explaining what that screen does.
 
-**Status badges:** Some items show a badge — "beta" (amber) means partially working, "soon" (blue) means planned but not built yet.
+**Status badges:** Some items show a badge — "beta" (amber) means partially working, "soon" (blue) means planned but not built yet. Most items show "live" (green).
 
-**Right sidebar:** Shows a dynamic system status rail with colored dots for every screen (green = live, amber = beta, blue = planned).
+**Dynamic system status:** The right sidebar shows real-time status indicators for external services (Supabase, OpenAI, Anthropic, QStash, Railway worker status).
 
 ---
 
 ## Your Daily Workflow
 
-Here's how a typical day might look:
+Here's how a typical day might look using all of Chapterhouse:
 
-1. **Morning:** Open Chapterhouse. Your daily brief is already generated (7 AM auto-run). Read through it. Convert anything important to a task or send it to review.
+1. **Morning (7 AM):** Daily brief auto-generates. Open Chapterhouse, read it. Your email inbox has auto-synced and categorized overnight. Click on any action_required email to see its auto-generated draft reply. Check your Email Action Banner (Home page) to see top 5 emails needing replies.
 
-2. **During the day:** Use **Chat** for quick questions, brainstorming, or research. Use **Research** to save interesting articles, screenshots, or notes as you find them.
+2. **Breakfast review:** In Daily Brief, notice the "⚡ Collisions" section — high-impact items that affect 2+ business tracks. Read Intel reports if there are new ones from the 4 AM auto-fetch (daily.dev, tech news, homeschool research).
 
-3. **Weekly:** Run **Product Intelligence** to surface new opportunities from everything you've collected. Review and act on them.
+3. **Sand the ideas:** Open Dreamer. Check Earl's AI suggestions from this week — which seeds should become Active vs. Dismissed?
 
-4. **When creating content:** Open **Content Studio** to draft newsletters, curriculum guides, or product descriptions.
+4. **During the day:** 
+   - Use **Chat** (toggle Council Mode on/off) for quick decisions, brainstorming, or research synthesis
+   - Use **Research** to save articles, screenshots, notes as you find them (auto-ingests into chat context)
+   - Use **Email Inbox** → Draft Reply on any customer/sales inquiry you want to respond to
+   - Use **Product Intelligence** on a weekly basis to surface opportunities from accumulated research
 
-5. **Staying organized:** Check **Review Queue** to clear pending items. Check **Tasks** to track what needs doing.
+5. **Afternoon:** Open **Context Brain**, make any edits to keep your founder memory fresh (copilot-instructions.md, extended_context.md, dreamer session notes).
+
+6. **Content creation:** **Content Studio** for newsletters, curriculum guides, product descriptions. Or **YouTube Intelligence** if building curriculum from videos.
+
+7. **End of day:** Check **Tasks** — anything blocked? Anything done that should move to Shipped? Check **Review Queue** — any pending research or opportunities to decide on? Social media posts auto-generated Monday morning, approve them throughout the week as needed.
 
 ---
 
-## Known Limitations
+## The Three Business Tracks (Brief Overview)
 
-| Item | Status |
-|------|--------|
-| **Bell icon** (top right) | Links to Review Queue — not a notification system yet. |
-| **Some RSS feeds** | About 3 of 9 feeds work reliably. The others are blocked by the source websites. The brief still generates — it just has fewer sources some days. |
-| **Document editing** | Documents are read-only. To edit them, you'd edit the files directly in the codebase. |
-| **n8n Pipelines** | Requires n8n API key configured. Without it, the page shows a setup message. |
+Chapterhouse serves three concurrent business tracks. Context Brain keeps all three visible at once:
+
+| Track | What It Does | Key Pages | Deadline |
+|-------|-------------|-----------|----------|
+| **NCHO** | Shopify curriculum store + curated products | Product Intelligence, Social Media, Email (auto-ingests sales inquiries) | Launch within 1 week |
+| **SomersSchool** | Homeschool SaaS course platform | Curriculum Factory, Council Chamber, YouTube Intelligence, Dreamer (feature ideas) | Revenue by August 2026 |
+| **BibleSaaS** | Personal AI-powered Bible study app | Dreams, Research, chat (long-term roadmap) | Beta phase |
+
+All three get mentioned in briefs, all three have their own contexts, all three have dedicated seeds/tasks/opportunities. The AI context system keeps them all in mind simultaneously.
+
+---
+
+## Advanced Features
+
+### Collision Scoring in Briefs
+
+Every daily brief item is scored 0–3 on three axes:
+- **ncho** — relevance to homeschool store
+- **somersschool** — relevance to course platform
+- **biblesaas** — relevance to Bible study app
+
+Items scoring ≥2 on 2+ tracks become **"⚡ Collisions"** flagged at the top of the brief. These are cross-track opportunities. Example: "PRH Christian launches DTC curriculum platform" → Direct for NCHO (can position as competitor + partner), high for SomersSchool (validates market), medium for BibleSaaS (different audience).
+
+### Auto-Ingestion Pipeline
+
+**Email:**
+- Newsletters (substack, morning brew, daily.dev, etc.) → Research queue
+- Sales inquiries + customer emails → Product Intelligence opportunities
+- URLs extracted from newsletters → auto-added to Research (with rate limiting to avoid spam)
+
+**Daily Brief + Intel:**
+- High-collision items → auto-seed proposals to Dreamer (for your review)
+- Competitor announcements → auto-flag in Product Intelligence
+
+**YouTube:**
+- Video URL → transcript extraction (fast path or Gemini 2.5 Flash on Railway)
+- Transcript → auto-generate 8 types of curriculum materials instantly
+
+**Context Brain:**
+- Push API syncs desktop files (dreamer.md, copilot-instructions.md, extended_context.md) to cloud
+- Every new chat/brief/Council call pulls fresh context from all 4 slots + email digest
+
+---
+
+## Known Limitations & Workarounds
+---
+
+## Known Limitations & Workarounds
+
+| Item | Status | Workaround |
+|------|--------|-----------|
+| **Document editing** | Documents are read-only in the UI | Edit the source files in the codebase, then use Push API to sync to Context Brain |
+| **YouTube transcript extraction** | YouTube blocks cloud IPs. Fast captions/innertube paths fail | System auto-falls back to Gemini 2.5 Flash on Railway (~77 sec per 20-min video) — works 100% of the time |
+| **Email sync latency** | Emails sync every 3 hours, categorize batch every 3 hours | For real-time sync, check Gmail/Mailcow directly; Chapterhouse catches up in next batch |
+| **Some RSS feeds** | 3 of 9 daily brief feeds blocked by source websites | Brief still generates from working feeds; coverage varies day-to-day |
+| **n8n Pipelines** | Requires API key configured | Add N8N_API_KEY and N8N_BASE_URL to Vercel environment |
+| **Draft reply regeneration** | Drafts cache for 24 hours, then expire | Click Draft Reply again to regenerate if it's stale |
+| **Context size limits** | Chapterhouse injects ~200KB of context into each AI call | Most calls work fine; very large documents may hit token limits on edge cases |
+| **Bell icon** | Shows unread count but not a live notification center | Check Home page → Email Action Banner for priority emails needing replies |
 
 ---
 
@@ -377,15 +569,24 @@ Here's how a typical day might look:
 
 | Question | Answer |
 |----------|--------|
-| **Who can access this?** | Only scott@somers.com and anna@somers.com |
+| **Who can access this?** | Only scott@nextchapterhomeschool.com and anna@nextchapterhomeschool.com (or personal Gmail accounts) |
 | **Where does it live?** | chapterhouse.vercel.app |
-| **Is my data private?** | Yes — stored in your private Supabase database. No one else has access. |
-| **What AI models are used?** | GPT-5.4 (chat, research, opportunities), Claude Sonnet 4.6 (daily brief, content studio, curriculum factory, social media, YouTube curriculum tools). Council Mode uses both: Gandalf + Data + Polgara on Claude, Earl on GPT-5.4, Beavis & Butthead on GPT-5-mini. YouTube transcripts use Gemini 2.5 Flash on Railway. |
-| **Does it cost money to run?** | Vercel Pro hosting + AI API usage. No per-user fees. |
-| **How do I sign out?** | Click the door icon in the top right corner |
-| **How do I teach it something?** | Type `/remember [fact]` in chat, or add facts in Settings → Founder Memory |
-| **When does the daily brief run?** | 7:00 AM Alaska time, every day, automatically |
+| **Is my data private?** | Yes — stored in your private Supabase (PostgreSQL) database in us-west-2. No one else has access. |
+| **What AI models are used?** | **Chat:** GPT-5.4 (solo) or Claude Sonnet 4.6 (trio roles). **Council:** Gandalf + Data + Polgara (Claude Sonnet 4.6), Earl (GPT-5.4), Beavis & Butthead (GPT-5-mini). **Brief:** Claude Haiku 4.5 (collision scoring). **Email:** Claude Haiku 4.5 (categorize, draft replies), Claude Sonnet 4.6 (digest). **Social:** Claude Sonnet 4.6. **YouTube:** Gemini 2.5 Flash (transcripts). **Curriculum:** All Council members + Extract (Claude Sonnet 4.6). |
+| **Approximate monthly cost?** | ~$15–25 Vercel Pro + ~$50–100 AI API usage (briefs, chat, email, social, YouTube, curriculum) depending on usage volume. |
+| **How do I sign out?** | Click the door icon (top right of page header) |
+| **How do I teach it something?** | Type `/remember [fact]` in Chat. Or go to Settings → Founder Memory → Add. Or use Context Brain to edit copilot-instructions.md directly. |
+| **When do things auto-run?** | Daily brief: 7 AM Alaska time. Email sync/categorize: every 3 hours. Intel fetch: 4 AM Alaska time. Email digest: 12:30 AM (00:30 UTC). Social batch generation: Monday 5 AM Alaska time (12 PM UTC). |
+| **How do I push my desktop files to Chapterhouse?** | Use PUSH-ALL.bat or PUSH-DREAMER.bat in your desktop workspace (requires CHAPTERHOUSE_PUSH_KEY env var). Or manually copy/paste into Context Brain. |
+| **What if something breaks?** | Check Settings → Environment Status for red/yellow indicators. Most issues are API key misconfiguration. Check Vercel logs at vercel.com/dashboard. |
+| **Can I delete my data?** | Yes — but contact support first. Data deletions are not reversible. |
+| **Is this open source?** | No — Chapterhouse is closed-source, a private product. The code lives in a private GitHub repo (TheAccidentalTeacher/chapterhouse). |
 
 ---
 
-*This guide lives in the Documents section of Chapterhouse. Last updated: March 16, 2026.*
+**Email Support:** scott@nextchapterhomeschool.com  
+**Deployment:** Vercel Pro (main app), Railway (background workers)  
+**Database:** Supabase (Postgres), running in us-west-2  
+**Status:** Live and production-ready (March 21, 2026)
+
+*This guide lives in the Documents section of Chapterhouse. Last updated: March 21, 2026 (Session 25).*
