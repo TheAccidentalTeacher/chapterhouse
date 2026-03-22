@@ -21,6 +21,7 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
+import { requireEmailAuth } from "@/lib/email-auth";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -103,16 +104,14 @@ const VALID_CATEGORIES = new Set([
   "notification", "internal", "order", "media", "other",
 ]);
 
-export async function POST(): Promise<NextResponse> {
+export async function POST(req: Request): Promise<NextResponse> {
+  const emailAuth = await requireEmailAuth(req);
+  if (!emailAuth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { userId } = emailAuth;
+
   const supabase = getSupabaseServiceRoleClient();
   if (!supabase) {
     return NextResponse.json({ error: "Database not available" }, { status: 503 });
-  }
-
-  const { data: usersData } = await supabase.auth.admin.listUsers();
-  const userId = usersData?.users?.[0]?.id;
-  if (!userId) {
-    return NextResponse.json({ error: "No user found" }, { status: 500 });
   }
 
   // Fetch emails that haven't been categorized yet

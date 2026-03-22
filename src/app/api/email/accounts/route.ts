@@ -8,6 +8,7 @@
 
 import { NextResponse } from "next/server";
 import { getConfiguredAccounts } from "@/lib/email-client";
+import { requireEmailAuth } from "@/lib/email-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,10 @@ const ACCOUNT_META: Record<string, { label: string; emailEnv: string }> = {
   gmail_ncho:      { label: "G·NCHO",  emailEnv: "GMAIL_NCHO_USER" },
 };
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(req: Request): Promise<NextResponse> {
+  const emailAuth = await requireEmailAuth(req);
+  if (!emailAuth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const keys = getConfiguredAccounts();
   const accounts = keys.map((key) => ({
     key,

@@ -304,7 +304,7 @@ function MessageViewer({
         {message.html ? (
           <iframe
             srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:system-ui,sans-serif;font-size:14px;color:#d1d5db;background:#0a0a0f;padding:24px;margin:0;word-break:break-word;}a{color:#60a5fa;}img{max-width:100%;}</style></head><body>${message.html}</body></html>`}
-            sandbox="allow-same-origin"
+            sandbox="allow-popups allow-popups-to-escape-sandbox"
             className="w-full h-full min-h-96 border-0"
             title="Email content"
             style={{ minHeight: "400px" }}
@@ -356,7 +356,12 @@ export function EmailInbox() {
   const [searchPage, setSearchPage] = useState(1);
   const [searching, setSearching] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [syncResult, setSyncResult] = useState<{ total: number; inserted: number; accounts: Record<string, { inserted: number; skipped: number; total: number }> } | null>(null);
+  const [syncResult, setSyncResult] = useState<{
+    total: number;
+    inserted: number;
+    accounts: Record<string, { inserted: number; skipped: number; total: number; error?: string }>;
+    errors?: Array<{ account: string; error: string }>;
+  } | null>(null);
   const [accounts, setAccounts] = useState<AccountInfo[]>([]);
   const [activeAccount, setActiveAccount] = useState("all");
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -475,7 +480,7 @@ export function EmailInbox() {
       setView("categorized");
       await fetchCategorized(searchQuery, activeCategory, 1, activeAccount);
       if (isMounted.current && syncData) {
-        setSyncResult({ total: syncData.total ?? 0, inserted: syncData.inserted ?? 0, accounts: syncData.accounts ?? {} });
+        setSyncResult({ total: syncData.total ?? 0, inserted: syncData.inserted ?? 0, accounts: syncData.accounts ?? {}, errors: syncData.errors });
         setTimeout(() => { if (isMounted.current) setSyncResult(null); }, 7000);
       }
     } catch (err) {
@@ -710,19 +715,35 @@ export function EmailInbox() {
 
           {/* Sync result banner */}
           {!!syncResult && (
-            <div className="px-4 py-2 bg-green-900/30 border-b border-green-700/30 text-xs text-green-400 flex items-center gap-2 flex-wrap">
-              <span className="font-semibold">✓ Sync complete —</span>
-              {Object.entries(syncResult.accounts).map(([acct, stats]) => (
-                <span key={acct} className="text-green-300">
-                  {acct === "gmail_personal" ? "Gmail" : acct === "gmail_ncho" ? "G·NCHO" : "NCHO"}:
-                  {" "}{stats.inserted > 0 ? `${stats.inserted} new` : "up to date"}
-                  {stats.total > 0 && <span className="text-green-600 ml-1">({stats.total} scanned)</span>}
-                </span>
-              ))}
-              {Object.keys(syncResult.accounts).length === 0 && (
-                <span className="text-green-300">No accounts configured</span>
+            <>
+              <div className="px-4 py-2 bg-green-900/30 border-b border-green-700/30 text-xs text-green-400 flex items-center gap-2 flex-wrap">
+                <span className="font-semibold">✓ Sync complete —</span>
+                {Object.entries(syncResult.accounts)
+                  .filter(([, stats]) => !stats.error)
+                  .map(([acct, stats]) => (
+                  <span key={acct} className="text-green-300">
+                    {acct === "gmail_personal" ? "Gmail" : acct === "gmail_ncho" ? "G·NCHO" : "NCHO"}:
+                    {" "}{stats.inserted > 0 ? `${stats.inserted} new` : "up to date"}
+                    {stats.total > 0 && <span className="text-green-600 ml-1">({stats.total} scanned)</span>}
+                  </span>
+                ))}
+                {Object.keys(syncResult.accounts).length === 0 && (
+                  <span className="text-green-300">No accounts configured</span>
+                )}
+              </div>
+              {syncResult.errors && syncResult.errors.length > 0 && (
+                <div className="px-4 py-2 bg-red-900/30 border-b border-red-700/30 text-xs text-red-400 flex flex-col gap-1">
+                  <span className="font-semibold">⚠ Connection errors:</span>
+                  {syncResult.errors.map(({ account, error }) => (
+                    <span key={account} className="text-red-300">
+                      <span className="font-medium">
+                        {account === "gmail_personal" ? "Gmail" : account === "gmail_ncho" ? "G·NCHO" : "NCHO"}
+                      </span>: {error}
+                    </span>
+                  ))}
+                </div>
               )}
-            </div>
+            </>
           )}
 
           {/* Search + category filter — AI view only */}

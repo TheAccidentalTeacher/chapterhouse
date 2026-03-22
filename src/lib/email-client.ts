@@ -56,7 +56,10 @@ export type InboxResult = {
 
 export type EmailAccount = 'ncho' | 'gmail_personal' | 'gmail_ncho';
 
-export function getImapClient(account: EmailAccount = 'ncho'): ImapFlow | null {
+export function getImapClient(
+  account: EmailAccount = 'ncho',
+  opts?: { socketTimeout?: number }
+): ImapFlow | null {
   let host: string | undefined;
   let user: string | undefined;
   let password: string | undefined;
@@ -78,15 +81,22 @@ export function getImapClient(account: EmailAccount = 'ncho'): ImapFlow | null {
 
   if (!host || !user || !password) return null;
 
+  // TLS: Gmail (imap.gmail.com) has a valid Google certificate — always verify.
+  // NCHO uses a self-hosted Mailcow server that may carry a self-signed cert.
+  // Set NCHO_TLS_SKIP_VERIFY=true in Vercel env to opt out of strict TLS for
+  // NCHO only. Gmail verification is never skipped regardless of env vars.
+  const rejectUnauthorized =
+    account !== "ncho" ? true : process.env.NCHO_TLS_SKIP_VERIFY !== "true";
+
   return new ImapFlow({
     host,
     port: 993,
     secure: true,
     auth: { user, pass: password },
     logger: false,
-    tls: { rejectUnauthorized: false },
-    socketTimeout: 8000,   // keep under Vercel's 10s serverless limit
-    greetingTimeout: 5000,
+    tls: { rejectUnauthorized },
+    socketTimeout: opts?.socketTimeout ?? 8000,  // keep under Vercel's 10s limit
+    greetingTimeout: 8000,
   });
 }
 

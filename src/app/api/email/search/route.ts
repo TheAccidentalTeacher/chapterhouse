@@ -8,19 +8,18 @@
 
 import { NextResponse } from "next/server";
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
+import { requireEmailAuth } from "@/lib/email-auth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request): Promise<NextResponse> {
+  const emailAuth = await requireEmailAuth(req);
+  if (!emailAuth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { userId } = emailAuth;
+
   const supabase = getSupabaseServiceRoleClient();
   if (!supabase) {
     return NextResponse.json({ error: "Database not available" }, { status: 503 });
-  }
-
-  const { data: usersData } = await supabase.auth.admin.listUsers();
-  const userId = usersData?.users?.[0]?.id;
-  if (!userId) {
-    return NextResponse.json({ error: "No user found" }, { status: 500 });
   }
 
   const { searchParams } = new URL(req.url);

@@ -12,73 +12,22 @@
  */
 
 import { NextResponse } from "next/server";
-import { ImapFlow } from "imapflow";
 import { simpleParser } from "mailparser";
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
+import { getImapClient, getConfiguredAccounts } from "@/lib/email-client";
+import { requireEmailAuth } from "@/lib/email-auth";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-type EmailAccount = 'ncho' | 'gmail_personal' | 'gmail_ncho';
+export async function POST(req: Request): Promise<NextResponse> {
+  const emailAuth = await requireEmailAuth(req);
+  if (!emailAuth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { userId } = emailAuth;
 
-function getImapClient(account: EmailAccount): ImapFlow | null {
-  let host: string | undefined;
-  let user: string | undefined;
-  let password: string | undefined;
-
-  if (account === 'ncho') {
-    host = process.env.NCHO_EMAIL_HOST;
-    user = process.env.NCHO_EMAIL_USER;
-    password = process.env.NCHO_EMAIL_PASSWORD;
-  } else if (account === 'gmail_personal') {
-    host = 'imap.gmail.com';
-    user = process.env.GMAIL_PERSONAL_USER;
-    password = process.env.GMAIL_PERSONAL_APP_PASSWORD;
-  } else {
-    // gmail_ncho
-    host = 'imap.gmail.com';
-    user = process.env.GMAIL_NCHO_USER;
-    password = process.env.GMAIL_NCHO_APP_PASSWORD;
-  }
-
-  if (!host || !user || !password) return null;
-
-  return new ImapFlow({
-    host,
-    port: 993,
-    secure: true,
-    auth: { user, pass: password },
-    logger: false,
-    tls: { rejectUnauthorized: false },
-    socketTimeout: 20000,
-    greetingTimeout: 8000,
-  });
-}
-
-function getConfiguredAccounts(): EmailAccount[] {
-  const accounts: EmailAccount[] = [];
-  if (process.env.NCHO_EMAIL_HOST && process.env.NCHO_EMAIL_USER && process.env.NCHO_EMAIL_PASSWORD) {
-    accounts.push('ncho');
-  }
-  if (process.env.GMAIL_PERSONAL_USER && process.env.GMAIL_PERSONAL_APP_PASSWORD) {
-    accounts.push('gmail_personal');
-  }
-  if (process.env.GMAIL_NCHO_USER && process.env.GMAIL_NCHO_APP_PASSWORD) {
-    accounts.push('gmail_ncho');
-  }
-  return accounts;
-}
-
-export async function POST(): Promise<NextResponse> {
   const supabase = getSupabaseServiceRoleClient();
   if (!supabase) {
     return NextResponse.json({ error: "Database not available" }, { status: 503 });
-  }
-
-  const { data: usersData } = await supabase.auth.admin.listUsers();
-  const userId = usersData?.users?.[0]?.id;
-  if (!userId) {
-    return NextResponse.json({ error: "No user found" }, { status: 500 });
   }
 
   const accounts = getConfiguredAccounts();
@@ -89,15 +38,16 @@ export async function POST(): Promise<NextResponse> {
   let totalInserted = 0;
   let totalSkipped = 0;
   let totalScanned = 0;
-  const accountResults: Record<string, { inserted: number; skipped: number; total: number }> = {};
+  const accountResults: Record<string, { inserted: number; skipped: number; total: number; error?: string }> = {};
 
   for (const account of accounts) {
-    const client = getImapClient(account);
+    const client = getImapClient(account, { socketTimeout: 20000 });
     if (!client) continue;
 
     let inserted = 0;
     let skipped = 0;
     let total = 0;
+    let accountError: string | undefined;
 
     try {
       await client.connect();
@@ -216,21 +166,27 @@ export async function POST(): Promise<NextResponse> {
         lock.release();
       }
     } catch (err) {
-      console.error(`[email/sync:${account}] Connection failed:`, err);
+      accountError = err instanceof Error ? err.message : String(err);
+      console.error(`[email/sync:${account}] Connection failed:`, accountError);
     } finally {
       try { await client.logout(); } catch { /* ignore disconnect errors */ }
     }
 
-    accountResults[account] = { inserted, skipped, total };
+    accountResults[account] = { inserted, skipped, total, ...(accountError ? { error: accountError } : {}) };
     totalInserted += inserted;
     totalSkipped += skipped;
     totalScanned += total;
   }
+
+  const errors = Object.entries(accountResults)
+    .filter(([, v]) => v.error)
+    .map(([acct, v]) => ({ account: acct, error: v.error! }));
 
   return NextResponse.json({
     inserted: totalInserted,
     skipped: totalSkipped,
     total: totalScanned,
     accounts: accountResults,
+    ...(errors.length > 0 ? { errors } : {}),
   });
 }
