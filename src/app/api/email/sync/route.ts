@@ -46,7 +46,7 @@ export async function POST(req: Request): Promise<NextResponse> {
   let totalInserted = 0;
   let totalSkipped = 0;
   let totalScanned = 0;
-  const accountResults: Record<string, { inserted: number; skipped: number; total: number; error?: string }> = {};
+  const accountResults: Record<string, { inserted: number; skipped: number; total: number; fetchedCount: number; parseErrors: number; rowsBuilt: number; upsertError?: string; error?: string }> = {};
 
   for (const account of accounts) {
     const client = getImapClient(account, { socketTimeout: 20000 });
@@ -56,6 +56,11 @@ export async function POST(req: Request): Promise<NextResponse> {
     let skipped = 0;
     let total = 0;
     let accountError: string | undefined;
+    // Diagnostic counters — identify exactly where Gmail 0-insertions happen
+    let fetchedCount = 0;   // msgs the for-await loop actually yielded
+    let parseErrors = 0;    // msgs that threw inside the body-parse try-catch
+    let rowsBuilt = 0;      // rows ready for upsert after the loop
+    let upsertErrorMsg: string | undefined; // Supabase upsert error message
 
     try {
       await client.connect();
@@ -68,7 +73,7 @@ export async function POST(req: Request): Promise<NextResponse> {
         const searchResult = await client.search({ since });
 
         if (!searchResult || searchResult.length === 0) {
-          accountResults[account] = { inserted: 0, skipped: 0, total: 0 };
+          accountResults[account] = { inserted: 0, skipped: 0, total: 0, fetchedCount: 0, parseErrors: 0, rowsBuilt: 0 };
           continue;
         }
 
@@ -93,7 +98,7 @@ export async function POST(req: Request): Promise<NextResponse> {
         skipped = searchResult.length - newUids.length;
 
         if (newUids.length === 0) {
-          accountResults[account] = { inserted: 0, skipped, total };
+          accountResults[account] = { inserted: 0, skipped, total, fetchedCount: 0, parseErrors: 0, rowsBuilt: 0 };
           continue;
         }
 
@@ -123,6 +128,7 @@ export async function POST(req: Request): Promise<NextResponse> {
             { envelope: true, uid: true, source: true, flags: true, bodyStructure: true },
             { uid: true }
           )) {
+            fetchedCount++;
             try {
               const env = msg.envelope;
               // Hard date guard: skip emails older than the 7-day cutoff regardless
@@ -165,11 +171,13 @@ export async function POST(req: Request): Promise<NextResponse> {
                 html_body: htmlBody ? htmlBody.slice(0, 100000) : null,
               });
             } catch (parseErr) {
+              parseErrors++;
               console.warn(`[email/sync:${account}] Failed to parse UID ${msg.uid}:`, parseErr);
             }
           }
         }
 
+        rowsBuilt = rows.length;
         if (rows.length > 0) {
           // Upsert — conflict on (user_id, email_account, uid) is a no-op
           const { error: insertError } = await supabase
@@ -177,6 +185,7 @@ export async function POST(req: Request): Promise<NextResponse> {
             .upsert(rows, { onConflict: "user_id,email_account,uid", ignoreDuplicates: true });
 
           if (insertError) {
+            upsertErrorMsg = insertError.message;
             console.error(`[email/sync:${account}] Upsert failed:`, insertError);
           } else {
             inserted = rows.length;
@@ -192,7 +201,13 @@ export async function POST(req: Request): Promise<NextResponse> {
       try { await client.logout(); } catch { /* ignore disconnect errors */ }
     }
 
-    accountResults[account] = { inserted, skipped, total, ...(accountError ? { error: accountError } : {}) };
+    accountResults[account] = {
+      inserted, skipped, total,
+      // diagnostic fields — shows exactly where Gmail insertions stall
+      fetchedCount, parseErrors, rowsBuilt,
+      ...(upsertErrorMsg ? { upsertError: upsertErrorMsg } : {}),
+      ...(accountError ? { error: accountError } : {}),
+    };
     totalInserted += inserted;
     totalSkipped += skipped;
     totalScanned += total;
