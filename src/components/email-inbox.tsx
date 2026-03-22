@@ -76,6 +76,8 @@ const CATEGORY_COLORS: Record<string, string> = {
   other: "bg-zinc-700/80 text-zinc-400",
 };
 
+type AccountInfo = { key: string; label: string; email: string };
+
 const CATEGORY_TABS = [
   { key: "", label: "All" },
   { key: "customer", label: "Customer" },
@@ -355,6 +357,8 @@ export function EmailInbox() {
   const [searching, setSearching] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<{ total: number; inserted: number; accounts: Record<string, { inserted: number; skipped: number; total: number }> } | null>(null);
+  const [accounts, setAccounts] = useState<AccountInfo[]>([]);
+  const [activeAccount, setActiveAccount] = useState("all");
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMounted = useRef(true);
 
@@ -391,13 +395,22 @@ export function EmailInbox() {
     fetchMessages(1);
   }, [fetchMessages]);
 
+  // Load configured accounts for account tabs
+  useEffect(() => {
+    fetch("/api/email/accounts")
+      .then((r) => r.json())
+      .then((d) => { if (isMounted.current) setAccounts(d.accounts ?? []); })
+      .catch(console.error);
+  }, []);
+
   const fetchCategorized = useCallback(
-    async (query: string, category: string, p: number) => {
+    async (query: string, category: string, p: number, account = "all") => {
       setSearching(true);
       try {
         const params = new URLSearchParams({ page: String(p), limit: String(limit) });
         if (query.trim()) params.set("q", query.trim());
         if (category) params.set("category", category);
+        if (account && account !== "all") params.set("account", account);
         const res = await fetch(`/api/email/search?${params}`);
         if (!res.ok) throw new Error("Search failed");
         const data = await res.json();
@@ -437,18 +450,18 @@ export function EmailInbox() {
       setSearchQuery(query);
       if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
       searchTimerRef.current = setTimeout(() => {
-        fetchCategorized(query, activeCategory, 1);
+        fetchCategorized(query, activeCategory, 1, activeAccount);
       }, 400);
     },
-    [activeCategory, fetchCategorized]
+    [activeCategory, activeAccount, fetchCategorized]
   );
 
   const handleCategoryChange = useCallback(
     (cat: string) => {
       setActiveCategory(cat);
-      fetchCategorized(searchQuery, cat, 1);
+      fetchCategorized(searchQuery, cat, 1, activeAccount);
     },
-    [searchQuery, fetchCategorized]
+    [searchQuery, activeAccount, fetchCategorized]
   );
 
   const handleSyncCategorize = useCallback(async () => {
@@ -460,7 +473,7 @@ export function EmailInbox() {
       await fetch("/api/email/categorize", { method: "POST" });
       // Always switch to AI view after sync so Gmail emails are visible
       setView("categorized");
-      await fetchCategorized(searchQuery, activeCategory, 1);
+      await fetchCategorized(searchQuery, activeCategory, 1, activeAccount);
       if (isMounted.current && syncData) {
         setSyncResult({ total: syncData.total ?? 0, inserted: syncData.inserted ?? 0, accounts: syncData.accounts ?? {} });
         setTimeout(() => { if (isMounted.current) setSyncResult(null); }, 7000);
@@ -470,12 +483,21 @@ export function EmailInbox() {
     } finally {
       if (isMounted.current) setSyncing(false);
     }
-  }, [searchQuery, activeCategory, fetchCategorized]);
+  }, [searchQuery, activeCategory, activeAccount, fetchCategorized]);
+
+  const handleAccountChange = useCallback((acct: string) => {
+    setActiveAccount(acct);
+    // Non-NCHO accounts have no Live IMAP view — switch to AI automatically
+    if (acct !== "all" && acct !== "ncho") {
+      setView("categorized");
+    }
+    fetchCategorized(searchQuery, activeCategory, 1, acct);
+  }, [fetchCategorized, searchQuery, activeCategory]);
 
   // Load categorized view when switching to it
   useEffect(() => {
     if (view === "categorized") {
-      fetchCategorized("", "", 1);
+      fetchCategorized("", "", 1, activeAccount);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
@@ -602,16 +624,19 @@ export function EmailInbox() {
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
             <div className="flex items-center gap-1.5">
               <Mail className="w-4 h-4 text-gray-400" />
-              <button
-                onClick={() => setView("live")}
-                className={`text-xs px-2 py-1 rounded transition-colors ${
-                  view === "live"
-                    ? "bg-amber-600/30 text-amber-400 font-semibold"
-                    : "text-gray-400 hover:text-white"
-                }`}
-              >
-                Live
-              </button>
+              {/* Live tab: only available for NCHO / All — Gmail has no direct IMAP view */}
+              {(activeAccount === "all" || activeAccount === "ncho") && (
+                <button
+                  onClick={() => setView("live")}
+                  className={`text-xs px-2 py-1 rounded transition-colors ${
+                    view === "live"
+                      ? "bg-amber-600/30 text-amber-400 font-semibold"
+                      : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  Live
+                </button>
+              )}
               <button
                 onClick={() => setView("categorized")}
                 className={`text-xs px-2 py-1 rounded transition-colors ${
@@ -650,6 +675,38 @@ export function EmailInbox() {
               </button>
             </div>
           </div>
+
+          {/* Account tabs — only shown when multiple accounts are configured */}
+          {accounts.length > 1 && (
+            <div className="flex gap-1 px-3 py-1.5 border-b border-white/5 bg-white/[0.015]">
+              <button
+                onClick={() => handleAccountChange("all")}
+                className={`text-[10px] px-2.5 py-1 rounded-full font-medium transition-colors shrink-0 ${
+                  activeAccount === "all"
+                    ? "bg-amber-600/40 text-amber-300"
+                    : "bg-white/5 text-gray-400 hover:text-white hover:bg-white/10"
+                }`}
+              >
+                All
+              </button>
+              {accounts.map((acct) => (
+                <button
+                  key={acct.key}
+                  onClick={() => handleAccountChange(acct.key)}
+                  title={acct.email}
+                  className={`text-[10px] px-2.5 py-1 rounded-full font-medium transition-colors shrink-0 ${
+                    activeAccount === acct.key
+                      ? acct.key === "ncho"
+                        ? "bg-amber-600/40 text-amber-300"
+                        : "bg-blue-600/40 text-blue-300"
+                      : "bg-white/5 text-gray-400 hover:text-white hover:bg-white/10"
+                  }`}
+                >
+                  {acct.label}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Sync result banner */}
           {!!syncResult && (
@@ -738,7 +795,7 @@ export function EmailInbox() {
                 onClick={() =>
                   view === "live"
                     ? fetchMessages(page - 1)
-                    : fetchCategorized(searchQuery, activeCategory, searchPage - 1)
+                    : fetchCategorized(searchQuery, activeCategory, searchPage - 1, activeAccount)
                 }
                 disabled={view === "live" ? page <= 1 : searchPage <= 1}
                 className="disabled:opacity-30 hover:text-white transition-colors"
@@ -752,7 +809,7 @@ export function EmailInbox() {
                 onClick={() =>
                   view === "live"
                     ? fetchMessages(page + 1)
-                    : fetchCategorized(searchQuery, activeCategory, searchPage + 1)
+                    : fetchCategorized(searchQuery, activeCategory, searchPage + 1, activeAccount)
                 }
                 disabled={view === "live" ? page >= totalPages : searchPage >= totalPages}
                 className="disabled:opacity-30 hover:text-white transition-colors"

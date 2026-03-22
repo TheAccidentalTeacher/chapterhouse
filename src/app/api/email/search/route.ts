@@ -53,6 +53,11 @@ export async function GET(req: Request): Promise<NextResponse> {
     dbQuery = dbQuery.eq("category", category);
   }
 
+  const account = searchParams.get("account") ?? "";
+  if (account && account !== "all") {
+    dbQuery = dbQuery.eq("email_account", account);
+  }
+
   const { data: emails, error, count } = await dbQuery;
 
   if (error) {
