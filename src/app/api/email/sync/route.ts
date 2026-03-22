@@ -131,13 +131,6 @@ export async function POST(req: Request): Promise<NextResponse> {
             fetchedCount++;
             try {
               const env = msg.envelope;
-              // Hard date guard: skip emails older than the 7-day cutoff regardless
-              // of what IMAP SINCE returned. Checked before body parse (stays fast).
-              const emailDate = env?.date ?? new Date();
-              if (emailDate < since) {
-                skipped++;
-                continue;
-              }
               const fromEntry = env?.from?.[0];
               const toEntry = env?.to?.[0];
 
