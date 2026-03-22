@@ -85,8 +85,11 @@ export function getImapClient(
   // NCHO uses a self-hosted Mailcow server that may carry a self-signed cert.
   // Set NCHO_TLS_SKIP_VERIFY=true in Vercel env to opt out of strict TLS for
   // NCHO only. Gmail verification is never skipped regardless of env vars.
-  const rejectUnauthorized =
-    account !== "ncho" ? true : process.env.NCHO_TLS_SKIP_VERIFY !== "true";
+  // For NCHO: rejectUnauthorized=false suppresses CA chain errors, but Node.js
+  // still runs checkServerIdentity for hostname verification separately.
+  // The Mailcow cert covers nextchapterhomeschool.com but not the
+  // mail.nextchapterhomeschool.com subdomain — so we must override both.
+  const skipTls = account === "ncho" && process.env.NCHO_TLS_SKIP_VERIFY === "true";
 
   return new ImapFlow({
     host,
@@ -94,7 +97,9 @@ export function getImapClient(
     secure: true,
     auth: { user, pass: password },
     logger: false,
-    tls: { rejectUnauthorized },
+    tls: skipTls
+      ? { rejectUnauthorized: false, checkServerIdentity: () => undefined }
+      : { rejectUnauthorized: true },
     socketTimeout: opts?.socketTimeout ?? 8000,  // keep under Vercel's 10s limit
     greetingTimeout: 8000,
   });

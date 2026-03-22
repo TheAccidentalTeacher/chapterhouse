@@ -807,7 +807,11 @@ export function EmailInbox() {
                 <p className="text-sm">
                   {view === "live" ? "No messages found" : "No emails found"}
                 </p>
-                {view === "categorized" && (
+                {view === "live" ? (
+                  <p className="text-xs text-gray-600 mt-1 text-center px-4">
+                    Live view uses NCHO IMAP. If NCHO is unavailable, switch to the AI tab — Gmail emails are there.
+                  </p>
+                ) : (
                   <p className="text-xs text-gray-600 mt-1">Try syncing first</p>
                 )}
               </div>
