@@ -54,8 +54,9 @@ export async function POST(req: Request): Promise<NextResponse> {
       const lock = await client.getMailboxLock("INBOX");
 
       try {
-        // Fetch last 30 days of messages
-        const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        // Fetch last 7 days of messages — bootstrap window.
+        // Run a few syncs and the DB will accumulate history going forward.
+        const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
         const searchResult = await client.search({ since });
 
         if (!searchResult || searchResult.length === 0) {

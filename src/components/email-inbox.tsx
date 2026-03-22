@@ -507,7 +507,7 @@ export function EmailInbox() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
 
-  const selectMessage = useCallback(async (uid: number) => {
+  const selectMessage = useCallback(async (uid: number, emailAccount?: string) => {
     setSelectedUid(uid);
     setComposing(false);
     setFullMessage(null);
@@ -515,15 +515,29 @@ export function EmailInbox() {
     setMobileView("message");
 
     try {
-      const res = await fetch(`/api/email/messages/${uid}`);
+      // AI/categorized view: email body is already stored in Supabase — read from there.
+      // Live view (NCHO IMAP): fetch from live IMAP.
+      // The /api/email/messages/[uid] route only talks to NCHO Mailcow, so Gmail UIDs
+      // must always use the persisted route regardless of active view.
+      const url = emailAccount
+        ? `/api/email/persisted/${uid}?account=${encodeURIComponent(emailAccount)}`
+        : `/api/email/messages/${uid}`;
+
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch message");
       const data: FullMessage = await res.json();
       if (isMounted.current) {
         setFullMessage(data);
-        // Mark as read locally
-        setMessages((prev) =>
-          prev.map((m) => (m.uid === uid ? { ...m, isRead: true } : m))
-        );
+        // Mark as read locally — update the right list depending on which view is active
+        if (emailAccount) {
+          setSearchResults((prev) =>
+            prev.map((m) => (m.uid === uid && m.email_account === emailAccount ? { ...m, isRead: true } : m))
+          );
+        } else {
+          setMessages((prev) =>
+            prev.map((m) => (m.uid === uid ? { ...m, isRead: true } : m))
+          );
+        }
       }
     } catch (err) {
       console.error("[inbox] selectMessage:", err);
@@ -803,7 +817,7 @@ export function EmailInbox() {
                   key={msg.uid}
                   msg={msg}
                   selected={msg.uid === selectedUid}
-                  onClick={() => selectMessage(msg.uid)}
+                  onClick={() => selectMessage(msg.uid, msg.email_account)}
                 />
               ))
             )}
