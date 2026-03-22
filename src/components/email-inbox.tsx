@@ -90,6 +90,17 @@ const CATEGORY_TABS = [
   { key: "other", label: "Other" },
 ];
 
+// ── Account badge ────────────────────────────────────────────────────────────
+
+function AccountBadge({ account }: { account?: string }) {
+  if (!account || account === "ncho") return null;
+  if (account === "gmail_personal")
+    return <span className="text-[9px] px-1 py-0.5 rounded bg-blue-900/60 text-blue-400 font-medium shrink-0">Gmail</span>;
+  if (account === "gmail_ncho")
+    return <span className="text-[9px] px-1 py-0.5 rounded bg-green-900/60 text-green-400 font-medium shrink-0">G·NCHO</span>;
+  return null;
+}
+
 // ── Message list item ─────────────────────────────────────────────────────────
 
 function MessageRow({
@@ -138,6 +149,9 @@ function MessageRow({
           {msg.subject}
         </p>
         <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+          {msg.email_account && msg.email_account !== "ncho" && (
+            <AccountBadge account={msg.email_account} />
+          )}
           {msg.category && (
             <span
               className={`text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wide ${
@@ -340,6 +354,7 @@ export function EmailInbox() {
   const [searchPage, setSearchPage] = useState(1);
   const [searching, setSearching] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<{ total: number; inserted: number; accounts: Record<string, { inserted: number; skipped: number; total: number }> } | null>(null);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMounted = useRef(true);
 
@@ -401,6 +416,7 @@ export function EmailInbox() {
               ai_summary: row.ai_summary as string | undefined,
               action_required: Boolean(row.action_required),
               urgency: row.urgency as number | undefined,
+              email_account: row.email_account as string | undefined,
             })
           );
           setSearchResults(mapped);
@@ -437,20 +453,24 @@ export function EmailInbox() {
 
   const handleSyncCategorize = useCallback(async () => {
     setSyncing(true);
+    setSyncResult(null);
     try {
-      await fetch("/api/email/sync", { method: "POST" });
+      const syncRes = await fetch("/api/email/sync", { method: "POST" });
+      const syncData = syncRes.ok ? await syncRes.json() : null;
       await fetch("/api/email/categorize", { method: "POST" });
-      if (view === "categorized") {
-        await fetchCategorized(searchQuery, activeCategory, searchPage);
-      } else {
-        fetchMessages(page, true);
+      // Always switch to AI view after sync so Gmail emails are visible
+      setView("categorized");
+      await fetchCategorized(searchQuery, activeCategory, 1);
+      if (isMounted.current && syncData) {
+        setSyncResult({ total: syncData.total ?? 0, inserted: syncData.inserted ?? 0, accounts: syncData.accounts ?? {} });
+        setTimeout(() => { if (isMounted.current) setSyncResult(null); }, 7000);
       }
     } catch (err) {
       console.error("[inbox] handleSyncCategorize:", err);
     } finally {
       if (isMounted.current) setSyncing(false);
     }
-  }, [view, searchQuery, activeCategory, searchPage, fetchCategorized, fetchMessages, page]);
+  }, [searchQuery, activeCategory, fetchCategorized]);
 
   // Load categorized view when switching to it
   useEffect(() => {
@@ -630,6 +650,23 @@ export function EmailInbox() {
               </button>
             </div>
           </div>
+
+          {/* Sync result banner */}
+          {!!syncResult && (
+            <div className="px-4 py-2 bg-green-900/30 border-b border-green-700/30 text-xs text-green-400 flex items-center gap-2 flex-wrap">
+              <span className="font-semibold">✓ Sync complete —</span>
+              {Object.entries(syncResult.accounts).map(([acct, stats]) => (
+                <span key={acct} className="text-green-300">
+                  {acct === "gmail_personal" ? "Gmail" : acct === "gmail_ncho" ? "G·NCHO" : "NCHO"}:
+                  {" "}{stats.inserted > 0 ? `${stats.inserted} new` : "up to date"}
+                  {stats.total > 0 && <span className="text-green-600 ml-1">({stats.total} scanned)</span>}
+                </span>
+              ))}
+              {Object.keys(syncResult.accounts).length === 0 && (
+                <span className="text-green-300">No accounts configured</span>
+              )}
+            </div>
+          )}
 
           {/* Search + category filter — AI view only */}
           {view === "categorized" && (

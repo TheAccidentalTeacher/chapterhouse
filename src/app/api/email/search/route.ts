@@ -33,7 +33,7 @@ export async function GET(req: Request): Promise<NextResponse> {
   let dbQuery = supabase
     .from("emails")
     .select(
-      "id, uid, subject, from_name, from_address, received_at, is_read, has_attachment, snippet, category, ai_summary, action_required, urgency",
+      "id, uid, subject, from_name, from_address, received_at, is_read, has_attachment, snippet, category, ai_summary, action_required, urgency, email_account",
       { count: "exact" }
     )
     .eq("user_id", userId)

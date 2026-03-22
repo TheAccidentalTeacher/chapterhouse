@@ -33,6 +33,7 @@ export type MessageListItem = {
   ai_summary?: string;
   action_required?: boolean;
   urgency?: number;
+  email_account?: string; // 'ncho' | 'gmail_personal' | 'gmail_ncho'
 };
 
 export type FullMessage = MessageListItem & {
