@@ -122,6 +122,7 @@ export default function ImageGenerationStudio() {
   // ── Upscale/save state ─────────────────────────────────────────────────────
   const [upscaling, setUpscaling] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
 
   // ── Tab ────────────────────────────────────────────────────────────────────
   const [tab, setTab] = useState<"generate" | "stock">("generate");
@@ -229,7 +230,8 @@ export default function ImageGenerationStudio() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Save failed");
-      alert(`Saved to Cloudinary: ${data.url}`);
+      setSaveSuccess(data.url);
+      setTimeout(() => setSaveSuccess(null), 4000);
     } catch (err) {
       setGenError(err instanceof Error ? err.message : "Save failed");
     } finally {
@@ -428,10 +430,12 @@ export default function ImageGenerationStudio() {
                             >
                               {saving === img.url ? (
                                 <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : saveSuccess === img.url ? (
+                                <Check className="h-3 w-3 text-green-500" />
                               ) : (
                                 <Upload className="h-3 w-3" />
                               )}
-                              Save to CDN
+                              {saveSuccess === img.url ? "Saved!" : "Save to CDN"}
                             </button>
                           </>
                         )}
@@ -537,6 +541,8 @@ export default function ImageGenerationStudio() {
                       >
                         {saving === img.url ? (
                           <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : saveSuccess === img.url ? (
+                          <Check className="h-3 w-3 text-green-500" />
                         ) : (
                           <Upload className="h-3 w-3" />
                         )}
