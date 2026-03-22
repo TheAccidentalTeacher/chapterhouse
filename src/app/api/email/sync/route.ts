@@ -74,6 +74,10 @@ export async function POST(req: Request): Promise<NextResponse> {
 
         total = searchResult.length;
 
+        // Sort descending: highest UID = newest email. Gmail IMAP SINCE is unreliable
+        // (can return old UIDs) — sorting ensures we always process newest mail first.
+        searchResult.sort((a: number, b: number) => b - a);
+
         // Check which UIDs are already stored for this specific account
         const { data: existingRows } = await supabase
           .from("emails")
@@ -121,6 +125,13 @@ export async function POST(req: Request): Promise<NextResponse> {
           )) {
             try {
               const env = msg.envelope;
+              // Hard date guard: skip emails older than the 7-day cutoff regardless
+              // of what IMAP SINCE returned. Checked before body parse (stays fast).
+              const emailDate = env?.date ?? new Date();
+              if (emailDate < since) {
+                skipped++;
+                continue;
+              }
               const fromEntry = env?.from?.[0];
               const toEntry = env?.to?.[0];
 
