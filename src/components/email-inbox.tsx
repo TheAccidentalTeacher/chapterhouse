@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AtSign,
+  Bot,
   ChevronLeft,
   Loader2,
   Mail,
@@ -269,9 +270,19 @@ function ComposePanel({
 function MessageViewer({
   message,
   onReply,
+  onDraftReply,
+  draftLoading,
+  draftText,
+  onDismissDraft,
+  onUseDraft,
 }: {
   message: FullMessage;
   onReply: () => void;
+  onDraftReply: () => void;
+  draftLoading: boolean;
+  draftText: string | null;
+  onDismissDraft: () => void;
+  onUseDraft: (text: string) => void;
 }) {
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -316,15 +327,59 @@ function MessageViewer({
         )}
       </div>
 
-      {/* Reply button */}
+      {/* Draft panel */}
+      {draftText && (
+        <div className="px-6 py-3 border-t border-amber-600/20 bg-amber-900/10 shrink-0">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-amber-400">AI Draft Reply</span>
+            <button onClick={onDismissDraft} className="text-gray-500 hover:text-gray-300">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <pre className="text-sm text-gray-300 whitespace-pre-wrap font-sans leading-relaxed max-h-40 overflow-y-auto">
+            {draftText}
+          </pre>
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={() => onUseDraft(draftText)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 text-xs rounded-lg transition-colors"
+            >
+              <PenLine className="w-3 h-3" />
+              Use &amp; Edit
+            </button>
+            <button
+              onClick={onDismissDraft}
+              className="px-3 py-1.5 text-gray-400 hover:text-white text-xs transition-colors"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Reply buttons */}
       <div className="px-6 py-4 border-t border-white/10 shrink-0">
-        <button
-          onClick={onReply}
-          className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/15 text-white text-sm rounded-lg transition-colors"
-        >
-          <Reply className="w-4 h-4" />
-          Reply
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onReply}
+            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/15 text-white text-sm rounded-lg transition-colors"
+          >
+            <Reply className="w-4 h-4" />
+            Reply
+          </button>
+          <button
+            onClick={onDraftReply}
+            disabled={draftLoading}
+            className="flex items-center gap-2 px-4 py-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 text-sm rounded-lg transition-colors disabled:opacity-40"
+          >
+            {draftLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Bot className="w-4 h-4" />
+            )}
+            {draftLoading ? "Drafting…" : "Draft Reply"}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -345,6 +400,8 @@ export function EmailInbox() {
   const [compose, setCompose] = useState<ComposeState>(EMPTY_COMPOSE);
   const [sending, setSending] = useState(false);
   const [sendStatus, setSendStatus] = useState<"idle" | "success" | string>("idle");
+  const [draftText, setDraftText] = useState<string | null>(null);
+  const [draftLoading, setDraftLoading] = useState(false);
   const [mobileView, setMobileView] = useState<"list" | "message">("list");
   const limit = 30;
   // Categorized / search view state
@@ -513,6 +570,8 @@ export function EmailInbox() {
     setFullMessage(null);
     setLoadingMessage(true);
     setMobileView("message");
+    setDraftText(null);
+    setDraftLoading(false);
 
     try {
       // AI/categorized view: email body is already stored in Supabase — read from there.
@@ -569,6 +628,47 @@ export function EmailInbox() {
     });
     setComposing(true);
   }, [fullMessage]);
+
+  const handleDraftReply = useCallback(async () => {
+    if (!fullMessage?.supabaseId) return;
+    setDraftLoading(true);
+    setDraftText(null);
+    try {
+      const res = await fetch("/api/email/draft-reply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emailId: fullMessage.supabaseId }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDraftText(data.draft || null);
+      }
+    } catch (err) {
+      console.error("[inbox] draft reply failed:", err);
+    } finally {
+      setDraftLoading(false);
+    }
+  }, [fullMessage]);
+
+  const handleUseDraft = useCallback(
+    (text: string) => {
+      if (!fullMessage) return;
+      const reSubject = fullMessage.subject.startsWith("Re:")
+        ? fullMessage.subject
+        : `Re: ${fullMessage.subject}`;
+      setCompose({
+        mode: "reply",
+        to: fullMessage.fromAddress,
+        subject: reSubject,
+        body: text,
+        inReplyTo: fullMessage.messageId,
+        references: fullMessage.references,
+      });
+      setComposing(true);
+      setDraftText(null);
+    },
+    [fullMessage]
+  );
 
   const handleSend = useCallback(async () => {
     if (!compose.to || !compose.subject || !compose.body) return;
@@ -890,7 +990,15 @@ export function EmailInbox() {
               <span className="text-sm">Loading message…</span>
             </div>
           ) : fullMessage ? (
-            <MessageViewer message={fullMessage} onReply={openReply} />
+            <MessageViewer
+              message={fullMessage}
+              onReply={openReply}
+              onDraftReply={handleDraftReply}
+              draftLoading={draftLoading}
+              draftText={draftText}
+              onDismissDraft={() => setDraftText(null)}
+              onUseDraft={handleUseDraft}
+            />
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-gray-600 select-none">
               <Mail className="w-10 h-10 mb-3 text-gray-800" />

@@ -211,5 +211,24 @@ export async function POST(req: Request): Promise<NextResponse> {
     }
   }
 
+  // Fire-and-forget: auto-ingest newsletters → research, sales → opportunities
+  if (processed > 0) {
+    const origin =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+
+    fetch(`${origin}/api/email/auto-ingest`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(process.env.CRON_SECRET
+          ? { authorization: `Bearer ${process.env.CRON_SECRET}` }
+          : {}),
+      },
+    }).catch((err) => {
+      console.warn("[email/categorize] auto-ingest fire-and-forget failed:", err);
+    });
+  }
+
   return NextResponse.json({ processed, failed });
 }

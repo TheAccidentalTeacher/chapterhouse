@@ -43,6 +43,7 @@ export type FullMessage = MessageListItem & {
   messageId?: string;
   inReplyTo?: string;
   references?: string[];
+  supabaseId?: string; // Supabase row ID — present when loaded from persisted route
 };
 
 export type InboxResult = {

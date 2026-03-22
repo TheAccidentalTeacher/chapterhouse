@@ -449,6 +449,9 @@ async function buildLiveContext(userMessage: string): Promise<string> {
         }).join("\n");
         const summary = `${emails.length} recent / ${unread.length} unread / ${actionRequired.length} need action`;
         blocks.push(`## Live Context: Inbox (queried now)\n\n${summary}\n\n${emailLines}`);
+        if (actionRequired.length > 0) {
+          blocks.push(`## Email Intelligence\n\nScott has ${actionRequired.length} email(s) flagged as needing a reply. If he asks for draft replies, help compose concise, professional responses for each action_required email listed above. Match formality to the sender.`);
+        }
       }
     } catch { /* emails table may not exist — ignore */ }
   }

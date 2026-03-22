@@ -246,6 +246,9 @@ async function buildLiveContext(userMessage: string = ""): Promise<string> {
         }).join("\n");
         const summary = `Inbox summary: ${emails.length} recent / ${unread.length} unread / ${actionRequired.length} need action / ${urgent.length} urgent`;
         blocks.push(`## Live Context: Inbox (queried now)\n\n${summary}\n\n${emailLines}`);
+        if (actionRequired.length > 0) {
+          blocks.push(`## Email Intelligence\n\nScott has ${actionRequired.length} email(s) flagged as needing a reply. If he asks for draft replies, help compose concise, professional responses for each action_required email listed above. Match formality to the sender.`);
+        }
       } else {
         blocks.push(`## Live Context: Inbox (queried now)\n\nNo emails found in the persisted inbox. Run "Sync & Categorize" from the Email Inbox page to pull in recent messages.`);
       }

@@ -45,7 +45,7 @@ export async function GET(
   const { data: row, error } = await supabase
     .from("emails")
     .select(
-      "uid, subject, from_name, from_address, to_address, received_at, is_read, has_attachment, text_body, html_body, email_account"
+      "id, uid, subject, from_name, from_address, to_address, received_at, is_read, has_attachment, text_body, html_body, email_account"
     )
     .eq("user_id", userId)
     .eq("email_account", account)
@@ -79,6 +79,7 @@ export async function GET(
     text: (row.text_body as string | null) ?? null,
     html: (row.html_body as string | null) ?? null,
     email_account: row.email_account as string | undefined,
+    supabaseId: row.id as string,
   };
 
   return NextResponse.json(message);

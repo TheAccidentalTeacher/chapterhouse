@@ -146,22 +146,26 @@ export async function GET(request: Request): Promise<Response> {
     return Response.json({ ok: true, emails: 0, digestGenerated: false });
   }
 
-  // ── Step 3.5: Fetch TLDR newsletter body content (last 48h) ────────────────
-  // TLDR newsletters arrive at scott@ncho and contain dense AI/tech intelligence.
-  // We extract the full text_body and pass it to Claude for structured extraction.
+  // ── Step 3.5: Fetch newsletter body content (last 48h) ──────────────────────
+  // Expanded beyond TLDR to capture all high-signal newsletters.
   const since48h = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-  const { data: tldrEmails } = await supabase
+  const { data: newsletterEmails } = await supabase
     .from("emails")
-    .select("subject, from_name, received_at, text_body")
+    .select("id, subject, from_name, from_address, received_at, text_body, urgency")
     .eq("user_id", userId)
     .gte("received_at", since48h)
-    .or("from_address.ilike.%tldr%,subject.ilike.%TLDR%")
+    .or("from_address.ilike.%tldr%,from_address.ilike.%substack%,from_address.ilike.%morning brew%,from_address.ilike.%daily.dev%,from_address.ilike.%the hustle%,from_address.ilike.%pragmatic%,category.eq.newsletter")
     .not("text_body", "is", null)
     .order("received_at", { ascending: false })
-    .limit(3);
+    .limit(5);
 
-  const tldrContent = tldrEmails && tldrEmails.length > 0
-    ? (tldrEmails as Array<{ subject: string; from_name: string | null; received_at: string; text_body: string | null }>)
+  type NewsletterRow = {
+    id: string; subject: string; from_name: string | null;
+    from_address: string; received_at: string; text_body: string | null; urgency: number | null;
+  };
+
+  const tldrContent = newsletterEmails && newsletterEmails.length > 0
+    ? (newsletterEmails as NewsletterRow[])
         .map((e) =>
           `### ${e.subject} (${new Date(e.received_at).toLocaleDateString()})
 ${(e.text_body ?? "").slice(0, 3000)}`
@@ -239,6 +243,93 @@ ${(e.text_body ?? "").slice(0, 3000)}`
     return Response.json({ ok: true, emails: todayEmails.length, digestGenerated: false });
   }
 
+  // ── Step 4.5A: Generate draft replies for action-required emails (max 5) ──
+  const actionEmails = (todayEmails as EmailDigestRow[])
+    .filter((e) => e.action_required)
+    .slice(0, 5);
+
+  if (actionEmails.length > 0) {
+    const draftLines: string[] = [];
+    for (const email of actionEmails) {
+      try {
+        // Look up the Supabase row ID for this email
+        const { data: row } = await supabase
+          .from("emails")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("uid", email.uid)
+          .single();
+
+        if (row?.id) {
+          const draftRes = await fetch(`${origin}/api/email/draft-reply`, {
+            method: "POST",
+            headers: cronHeaders,
+            body: JSON.stringify({ emailId: row.id }),
+          });
+          if (draftRes.ok) {
+            const draftData = (await draftRes.json()) as { draft: string };
+            draftLines.push(
+              `- **${email.category ?? "other"}** ${email.from_name || email.from_address}: ${email.subject}\n  > **Suggested reply:** ${draftData.draft.slice(0, 300)}${draftData.draft.length > 300 ? "…" : ""}`
+            );
+          }
+        }
+      } catch {
+        // Non-fatal — if one draft fails, continue
+      }
+    }
+
+    if (draftLines.length > 0) {
+      digestMarkdown += `\n\n## 📝 Draft Replies\n${draftLines.join("\n\n")}`;
+    }
+  }
+
+  // ── Step 4.5B: Extract newsletter URLs → research pipeline ────────────────
+  // Parse URLs from newsletter bodies and auto-ingest via existing research route.
+  let urlsIngested = 0;
+  if (newsletterEmails && newsletterEmails.length > 0) {
+    const urlRegex = /https?:\/\/[^\s<>"{}|\\^`[\]]+/g;
+    const trackingPatterns = /unsubscribe|click\.|track\.|list-manage|mailchimp|email\.mg\.|sendgrid|mailgun|utm_source.*utm_medium/i;
+    const allUrls = new Set<string>();
+
+    for (const nl of newsletterEmails as NewsletterRow[]) {
+      if (!nl.text_body || (nl.urgency ?? 0) < 1) continue;
+      const matches = nl.text_body.match(urlRegex) ?? [];
+      for (const url of matches) {
+        if (!trackingPatterns.test(url) && allUrls.size < 10) {
+          allUrls.add(url);
+        }
+      }
+    }
+
+    for (const url of allUrls) {
+      try {
+        // Dedup: check if URL already exists in research_items
+        const { data: existing } = await supabase
+          .from("research_items")
+          .select("id")
+          .eq("url", url)
+          .limit(1);
+
+        if (existing && existing.length > 0) continue;
+
+        await fetch(`${origin}/api/research`, {
+          method: "POST",
+          headers: cronHeaders,
+          body: JSON.stringify({ url }),
+        });
+        urlsIngested++;
+        // Rate limit: 1s delay between URL ingestions
+        await new Promise((r) => setTimeout(r, 1000));
+      } catch {
+        // Non-fatal — if one URL fails, continue
+      }
+    }
+
+    if (urlsIngested > 0) {
+      console.log(`[email-digest] Ingested ${urlsIngested} newsletter URLs to research`);
+    }
+  }
+
   // ── Step 5: Save digest to context_files (inject_order=5) ─────────────────
   // Deactivate any prior email_daily records first
   await supabase
@@ -272,7 +363,7 @@ ${(e.text_body ?? "").slice(0, 3000)}`
     );
   }
 
-  console.log(`[email-digest] Digest saved. ${todayEmails.length} emails, ${syncResult.inserted} new today.`);
+  console.log(`[email-digest] Digest saved. ${todayEmails.length} emails, ${syncResult.inserted} new, ${urlsIngested} URLs ingested.`);
 
   return Response.json({
     ok: true,
@@ -281,5 +372,7 @@ ${(e.text_body ?? "").slice(0, 3000)}`
     categorized: categorizeResult.processed,
     digestGenerated: true,
     digestLength: digestMarkdown.length,
+    urlsIngested,
+    draftReplies: actionEmails.length,
   });
 }
