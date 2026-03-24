@@ -113,15 +113,36 @@ async function generateReplicate(
   width: number,
   height: number,
   model?: string,
+  referenceImageUrl?: string,
 ): Promise<{ url: string; model: string }> {
   const token = process.env.REPLICATE_API_TOKEN ?? process.env.REPLICATE_TOKEN;
   if (!token) throw new Error("REPLICATE_TOKEN not configured");
 
-  const modelSlug = model || "black-forest-labs/flux-schnell";
+  // When a reference image is provided, use Flux Dev (supports img2img).
+  // Flux Schnell does not support the `image` input parameter.
+  const modelSlug = referenceImageUrl
+    ? (model || "black-forest-labs/flux-dev")
+    : (model || "black-forest-labs/flux-schnell");
+
   // Use the model-specific endpoint — /v1/predictions requires a version hash,
   // /v1/models/{owner}/{name}/predictions accepts just { input: {...} }
   const [owner, name] = modelSlug.split("/");
   const endpoint = `https://api.replicate.com/v1/models/${owner}/${name}/predictions`;
+
+  // Build input — img2img when reference image provided
+  const input: Record<string, unknown> = referenceImageUrl
+    ? {
+        prompt,
+        image: referenceImageUrl,
+        prompt_strength: 0.75, // 0 = copy reference, 1 = ignore reference
+        num_outputs: 1,
+      }
+    : {
+        prompt,
+        width,
+        height,
+        num_outputs: 1,
+      };
 
   const response = await fetch(endpoint, {
     method: "POST",
@@ -130,14 +151,7 @@ async function generateReplicate(
       "Content-Type": "application/json",
       Prefer: "wait",
     },
-    body: JSON.stringify({
-      input: {
-        prompt,
-        width,
-        height,
-        num_outputs: 1,
-      },
-    }),
+    body: JSON.stringify({ input }),
   });
 
   if (!response.ok) {
@@ -173,13 +187,74 @@ async function generateReplicate(
   throw new Error("Replicate generation timed out");
 }
 
+// Upload a public image URL to Leonardo's init-images endpoint.
+// Returns the imagePromptId to use in the generation request.
+async function uploadRefImageToLeonardo(
+  imageUrl: string,
+  apiKey: string,
+): Promise<string | null> {
+  try {
+    // Step 1 — get a presigned upload slot
+    const initRes = await fetch(
+      "https://cloud.leonardo.ai/api/rest/v1/init-images",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ extension: "png" }),
+      },
+    );
+    if (!initRes.ok) return null;
+    const initData = await initRes.json();
+    const { id, url, fields } = initData.uploadInitImage ?? {};
+    if (!id || !url || !fields) return null;
+
+    // Step 2 — fetch the reference image
+    const imgRes = await fetch(imageUrl);
+    if (!imgRes.ok) return null;
+    const imgBlob = await imgRes.blob();
+
+    // Step 3 — upload to Leonardo's presigned S3 URL
+    const fieldsObj: Record<string, string> = JSON.parse(fields);
+    const formData = new FormData();
+    for (const [k, v] of Object.entries(fieldsObj)) formData.append(k, v);
+    formData.append("file", imgBlob, "reference.png");
+    await fetch(url, { method: "POST", body: formData });
+
+    return id as string;
+  } catch {
+    return null; // Non-fatal — fall back to text-only generation
+  }
+}
+
 async function generateLeonardo(
   prompt: string,
   width: number,
   height: number,
+  referenceImageUrl?: string,
 ): Promise<{ url: string; model: string }> {
   const key = process.env.LEONARDO_API_KEY ?? process.env.LEONARDO_AI_API_KEY;
   if (!key) throw new Error("LEONARDO_API_KEY not configured");
+
+  // Attempt to upload the character reference image for visual consistency
+  let imagePrompts: { imagePromptId: string; weight: number }[] | undefined;
+  if (referenceImageUrl) {
+    const imagePromptId = await uploadRefImageToLeonardo(referenceImageUrl, key);
+    if (imagePromptId) {
+      imagePrompts = [{ imagePromptId, weight: 0.8 }];
+    }
+  }
+
+  const genBody: Record<string, unknown> = {
+    prompt,
+    width,
+    height,
+    num_images: 1,
+    modelId: "6b645e3a-d64f-4341-a6d8-7a3690fbf042", // Leonardo Phoenix
+  };
+  if (imagePrompts) genBody.imagePrompts = imagePrompts;
 
   const response = await fetch(
     "https://cloud.leonardo.ai/api/rest/v1/generations",
@@ -189,13 +264,7 @@ async function generateLeonardo(
         Authorization: `Bearer ${key}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        prompt,
-        width,
-        height,
-        num_images: 1,
-        modelId: "6b645e3a-d64f-4341-a6d8-7a3690fbf042", // Leonardo Phoenix
-      }),
+      body: JSON.stringify(genBody),
     },
   );
 
@@ -283,14 +352,14 @@ export async function POST(req: Request) {
     let effectiveModel = body.model;
     let referenceImageUrl: string | null = null;
 
-    if (
-      character &&
-      character.reference_images?.length > 0 &&
-      provider === "replicate"
-    ) {
-      // Use first reference image as style anchor (Flux img2img)
+    if (character && character.reference_images?.length > 0) {
+      // Use first reference image as visual anchor for character consistency
       referenceImageUrl = character.reference_images[0];
-      effectiveModel = effectiveModel || "black-forest-labs/flux-dev";
+      if (provider === "replicate") {
+        // Flux Schnell doesn't support img2img — generateReplicate will auto-switch to flux-dev
+        effectiveModel = effectiveModel || "black-forest-labs/flux-dev";
+      }
+      // Leonardo: referenceImageUrl gets uploaded inside generateLeonardo
     }
 
     let result: { url: string; model: string };
@@ -313,10 +382,16 @@ export async function POST(req: Request) {
           width,
           height,
           effectiveModel,
+          referenceImageUrl ?? undefined,
         );
         break;
       case "leonardo":
-        result = await generateLeonardo(finalPrompt, width, height);
+        result = await generateLeonardo(
+          finalPrompt,
+          width,
+          height,
+          referenceImageUrl ?? undefined,
+        );
         break;
     }
 
