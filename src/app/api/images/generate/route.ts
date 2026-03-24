@@ -117,17 +117,20 @@ async function generateReplicate(
   const token = process.env.REPLICATE_API_TOKEN ?? process.env.REPLICATE_TOKEN;
   if (!token) throw new Error("REPLICATE_TOKEN not configured");
 
-  const modelVersion =
-    model || "black-forest-labs/flux-schnell";
+  const modelSlug = model || "black-forest-labs/flux-schnell";
+  // Use the model-specific endpoint — /v1/predictions requires a version hash,
+  // /v1/models/{owner}/{name}/predictions accepts just { input: {...} }
+  const [owner, name] = modelSlug.split("/");
+  const endpoint = `https://api.replicate.com/v1/models/${owner}/${name}/predictions`;
 
-  const response = await fetch("https://api.replicate.com/v1/predictions", {
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
+      Prefer: "wait",
     },
     body: JSON.stringify({
-      model: modelVersion,
       input: {
         prompt,
         width,
@@ -160,7 +163,7 @@ async function generateReplicate(
         ? result.output[0]
         : result.output;
       if (!imageUrl) throw new Error("No output from Replicate");
-      return { url: imageUrl, model: modelVersion };
+      return { url: imageUrl, model: modelSlug };
     }
     if (result.status === "failed") {
       throw new Error(result.error || "Replicate generation failed");
