@@ -114,7 +114,7 @@ async function generateReplicate(
   height: number,
   model?: string,
 ): Promise<{ url: string; model: string }> {
-  const token = process.env.REPLICATE_TOKEN;
+  const token = process.env.REPLICATE_API_TOKEN ?? process.env.REPLICATE_TOKEN;
   if (!token) throw new Error("REPLICATE_TOKEN not configured");
 
   const modelVersion =

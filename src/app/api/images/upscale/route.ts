@@ -11,7 +11,7 @@ export async function POST(req: Request) {
       return Response.json({ error: "imageUrl is required" }, { status: 400 });
     }
 
-    const token = process.env.REPLICATE_TOKEN;
+    const token = process.env.REPLICATE_API_TOKEN ?? process.env.REPLICATE_TOKEN;
     if (!token) {
       return Response.json(
         { error: "REPLICATE_TOKEN not configured" },
