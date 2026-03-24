@@ -61,7 +61,7 @@ async function generateStability(
   height: number,
   negativePrompt?: string,
 ): Promise<{ url: string; model: string }> {
-  const key = process.env.STABILITY_AI_KEY;
+  const key = process.env.STABILITY_API_KEY ?? process.env.STABILITY_AI_KEY;
   if (!key) throw new Error("STABILITY_AI_KEY not configured");
 
   // Stable Diffusion XL requires dimensions divisible by 64
@@ -178,7 +178,7 @@ async function generateLeonardo(
   width: number,
   height: number,
 ): Promise<{ url: string; model: string }> {
-  const key = process.env.LEONARDO_API_KEY;
+  const key = process.env.LEONARDO_API_KEY ?? process.env.LEONARDO_AI_API_KEY;
   if (!key) throw new Error("LEONARDO_API_KEY not configured");
 
   const response = await fetch(
