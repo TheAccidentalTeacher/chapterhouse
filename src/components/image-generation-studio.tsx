@@ -156,8 +156,8 @@ export default function ImageGenerationStudio() {
     try {
       const size = SIZE_PRESETS[sizeIndex];
       const selectedCharacter = characters.find((c) => c.id === selectedCharacterId);
-      // Auto-switch to character's preferred provider when a character is selected
-      const effectiveProvider = selectedCharacter ? selectedCharacter.preferred_provider : provider;
+      // Use whatever provider the user selected — character prompt enhancement works with any provider
+      const effectiveProvider = provider;
 
       const res = await fetch("/api/images/generate", {
         method: "POST",
