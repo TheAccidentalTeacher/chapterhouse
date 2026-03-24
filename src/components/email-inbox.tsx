@@ -314,14 +314,14 @@ function MessageViewer({
       <div className="flex-1 overflow-y-auto">
         {message.html ? (
           <iframe
-            srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:system-ui,sans-serif;font-size:14px;color:#d1d5db;background:#0a0a0f;padding:24px;margin:0;word-break:break-word;}a{color:#60a5fa;}img{max-width:100%;}</style></head><body>${message.html}</body></html>`}
+            srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:system-ui,sans-serif;font-size:14px;color:#d1d5db;background:#0a0a0f;padding:24px;margin:0;word-break:break-word;line-height:1.5;}p,div{margin:0.25em 0;}br+br{display:none;}a{color:#60a5fa;}img{max-width:100%;}</style></head><body>${message.html}</body></html>`}
             sandbox="allow-popups allow-popups-to-escape-sandbox"
             className="w-full h-full min-h-96 border-0"
             title="Email content"
             style={{ minHeight: "400px" }}
           />
         ) : (
-          <pre className="px-6 py-5 text-sm text-gray-300 whitespace-pre-wrap font-sans leading-relaxed">
+          <pre className="px-6 py-5 text-sm text-gray-300 whitespace-pre-line font-sans leading-relaxed">
             {message.text ?? "(no content)"}
           </pre>
         )}

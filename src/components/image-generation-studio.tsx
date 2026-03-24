@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Loader2,
   Download,
@@ -11,11 +11,21 @@ import {
   ZoomIn,
   Sparkles,
   Image as ImageIcon,
+  Dog,
 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 type Provider = "openai" | "stability" | "replicate" | "leonardo";
+
+interface Character {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  hero_image_url: string | null;
+  preferred_provider: Provider;
+}
 
 interface GeneratedImage {
   url: string;
@@ -126,7 +136,18 @@ export default function ImageGenerationStudio() {
 
   // ── Tab ────────────────────────────────────────────────────────────────────
   const [tab, setTab] = useState<"generate" | "stock">("generate");
+  // ── Character state ─────────────────────────────────────────────────────
+  const [characters, setCharacters] = useState<Character[]>([]);
+  const [selectedCharacterId, setSelectedCharacterId] = useState<string>("");
 
+  useEffect(() => {
+    fetch("/api/characters")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.characters) setCharacters(d.characters);
+      })
+      .catch(() => {}); // Non-fatal — character picker just stays empty
+  }, []);
   // ── Generate ───────────────────────────────────────────────────────────────
   async function handleGenerate() {
     if (!prompt.trim()) return;
@@ -134,15 +155,20 @@ export default function ImageGenerationStudio() {
     setGenError("");
     try {
       const size = SIZE_PRESETS[sizeIndex];
+      const selectedCharacter = characters.find((c) => c.id === selectedCharacterId);
+      // Auto-switch to character's preferred provider when a character is selected
+      const effectiveProvider = selectedCharacter ? selectedCharacter.preferred_provider : provider;
+
       const res = await fetch("/api/images/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: prompt.trim(),
-          provider,
+          provider: effectiveProvider,
           width: size.width,
           height: size.height,
           negativePrompt: negativePrompt.trim() || undefined,
+          characterId: selectedCharacterId || undefined,
         }),
       });
       const data = await res.json();
@@ -272,6 +298,53 @@ export default function ImageGenerationStudio() {
         <div className="space-y-4">
           {/* Prompt */}
           <div className="glass-panel rounded-3xl p-6 space-y-4">
+            {/* Character Picker */}
+            {characters.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted uppercase tracking-wider flex items-center gap-1">
+                  <Dog className="h-3 w-3" /> Character (optional)
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setSelectedCharacterId("")}
+                    className={`rounded-full px-3 py-1 text-xs border transition ${
+                      selectedCharacterId === ""
+                        ? "border-accent/50 bg-accent/10 text-accent"
+                        : "border-border/70 text-muted hover:text-foreground"
+                    }`}
+                  >
+                    None
+                  </button>
+                  {characters.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => setSelectedCharacterId(c.id)}
+                      className={`rounded-full px-3 py-1 text-xs border transition flex items-center gap-1.5 ${
+                        selectedCharacterId === c.id
+                          ? "border-accent/50 bg-accent/10 text-accent"
+                          : "border-border/70 text-muted hover:text-foreground"
+                      }`}
+                    >
+                      {c.hero_image_url && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={c.hero_image_url}
+                          alt={c.name}
+                          className="h-4 w-4 rounded-full object-cover"
+                        />
+                      )}
+                      {c.name}
+                    </button>
+                  ))}
+                </div>
+                {selectedCharacterId && (
+                  <p className="text-xs text-muted">
+                    ✨ Prompt will be enhanced for {characters.find((c) => c.id === selectedCharacterId)?.name} — describe the scene, the character details are automatic
+                  </p>
+                )}
+              </div>
+            )}
+
             <label className="block text-sm font-medium text-foreground">
               Image Prompt
             </label>

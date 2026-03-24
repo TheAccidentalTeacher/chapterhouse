@@ -1,0 +1,102 @@
+import Anthropic from "@anthropic-ai/sdk";
+
+// ── Types ──────────────────────────────────────────────────────────────────────
+
+export interface CharacterRef {
+  slug: string;
+  name: string;
+  physical_description: string;
+  art_style: string;
+  negative_prompt: string;
+  reference_images: string[];
+}
+
+export interface EnhancedPrompt {
+  enhanced: string;         // Full enhanced prompt ready to send to image API
+  negative: string;         // Negative prompt (character's + any additions)
+  notes: string;            // What was changed / why (for debugging)
+  original: string;         // Original raw prompt (preserved for DB storage)
+}
+
+// ── Prompt Enhancer ────────────────────────────────────────────────────────────
+
+export async function enhancePrompt(
+  rawPrompt: string,
+  character?: CharacterRef,
+  context?: string,            // Optional: e.g. "explaining photosynthesis to 2nd graders"
+): Promise<EnhancedPrompt> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    // Graceful fallback: return raw prompt unchanged if Anthropic not configured
+    return {
+      enhanced: rawPrompt,
+      negative: character?.negative_prompt ?? "",
+      notes: "No ANTHROPIC_API_KEY — prompt returned as-is",
+      original: rawPrompt,
+    };
+  }
+
+  const client = new Anthropic({ apiKey });
+
+  const systemPrompt = character
+    ? `You are a professional prompt engineer specializing in consistent character illustration for children's educational content.
+
+CHARACTER: ${character.name}
+PHYSICAL DESCRIPTION: ${character.physical_description}
+ART STYLE: ${character.art_style}
+
+Your job:
+1. Take the user's scene description and expand it into a detailed, vivid image generation prompt
+2. Weave in the character's physical description naturally so it appears consistently
+3. Maintain the art style throughout
+4. Keep it concise — under 200 words
+5. Output ONLY the enhanced prompt text, nothing else`
+    : `You are a professional prompt engineer specializing in educational content for children.
+
+Your job:
+1. Take the user's scene description and expand it into a detailed, vivid image generation prompt
+2. Add appropriate atmosphere, lighting, and style details
+3. Make it child-friendly and appropriate for educational use
+4. Keep it concise — under 200 words
+5. Output ONLY the enhanced prompt text, nothing else`;
+
+  const userMessage = context
+    ? `Scene: ${rawPrompt}\nContext: ${context}`
+    : rawPrompt;
+
+  try {
+    const response = await client.messages.create({
+      model: "claude-haiku-4-5",
+      max_tokens: 300,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userMessage }],
+    });
+
+    const enhanced =
+      response.content[0].type === "text"
+        ? response.content[0].text.trim()
+        : rawPrompt;
+
+    // Build notes by comparing length/content
+    const notes =
+      enhanced.length > rawPrompt.length * 1.5
+        ? `Expanded prompt with character details and art style (${rawPrompt.length} → ${enhanced.length} chars)`
+        : `Minor refinements applied (${rawPrompt.length} → ${enhanced.length} chars)`;
+
+    return {
+      enhanced,
+      negative: character?.negative_prompt ?? "",
+      notes,
+      original: rawPrompt,
+    };
+  } catch (err) {
+    // Non-fatal: fallback to raw prompt on any API error
+    console.error("[prompt-enhancer] Claude Haiku failed, using raw prompt:", err);
+    return {
+      enhanced: rawPrompt,
+      negative: character?.negative_prompt ?? "",
+      notes: `Enhancement failed: ${err instanceof Error ? err.message : "unknown error"}`,
+      original: rawPrompt,
+    };
+  }
+}

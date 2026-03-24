@@ -3,6 +3,7 @@ import { PageFrame } from "@/components/page-frame";
 import { getEnvironmentStatus } from "@/lib/env";
 import { hasSupabasePublicEnv } from "@/lib/env";
 import { FounderMemoryPanel } from "@/components/founder-memory-panel";
+import { BrandVoicesPanel } from "@/components/brand-voices-panel";
 
 export default function SettingsPage() {
   const environment = getEnvironmentStatus();
@@ -29,6 +30,8 @@ export default function SettingsPage() {
         </Link>
 
         <FounderMemoryPanel />
+
+        <BrandVoicesPanel />
 
         <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <section className="glass-panel rounded-3xl p-6">

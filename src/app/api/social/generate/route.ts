@@ -10,7 +10,8 @@ const generateSchema = z.object({
   job_id: z.string().uuid().optional(),
 });
 
-const BRAND_VOICE_SYSTEM = `
+// Hardcoded safety net — never remove. Used when DB is unavailable.
+const BRAND_VOICE_FALLBACK = `
 You are a social media content generator for three brands owned by Scott and Anna Somers.
 Return ONLY valid JSON — no markdown, no explanation, no preamble.
 
@@ -60,6 +61,49 @@ OUTPUT FORMAT — return a JSON array of post objects:
 ]
 `.trim();
 
+const PLATFORM_RULES = `
+PLATFORM FORMAT RULES:
+- facebook: conversational, 2-4 sentences, CTA at end, no hashtags
+- instagram: punchy, first 125 chars must stand alone, 3-5 hashtags on separate line
+- linkedin: professional, first 210 chars is the hook, white space between paragraphs, no hashtags
+
+OUTPUT FORMAT — return a JSON array of post objects:
+[
+  {
+    "brand": "ncho",
+    "platform": "facebook",
+    "post_text": "...",
+    "hashtags": [],
+    "image_brief": "What the image should show, color palette, dimensions needed"
+  }
+]`;
+
+async function getBrandVoiceSystem(brands: string[]): Promise<string> {
+  try {
+    const supabase = getSupabaseServiceRoleClient();
+    if (!supabase) return BRAND_VOICE_FALLBACK;
+
+    const { data, error } = await supabase
+      .from("brand_voices")
+      .select("brand, full_voice_prompt")
+      .in("brand", brands)
+      .eq("is_active", true);
+
+    if (error || !data?.length) return BRAND_VOICE_FALLBACK;
+
+    const voiceBlocks = data.map((v) => v.full_voice_prompt).join("\n\n");
+    return `You are a social media content generator for three brands owned by Scott and Anna Somers.
+Return ONLY valid JSON — no markdown, no explanation, no preamble.
+
+BRAND RULES:
+
+${voiceBlocks}
+${PLATFORM_RULES}`.trim();
+  } catch {
+    return BRAND_VOICE_FALLBACK;
+  }
+}
+
 export async function POST(req: Request) {
   const supabase = getSupabaseServiceRoleClient();
   if (!supabase) return Response.json({ error: "DB unavailable" }, { status: 503 });
@@ -94,10 +138,11 @@ Total objects expected: ${brands.length * platforms.length * count_per_combo}`;
   }>;
 
   try {
+    const brandVoiceSystem = await getBrandVoiceSystem(brands);
     const response = await anthropic.messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 4096,
-      system: BRAND_VOICE_SYSTEM,
+      system: brandVoiceSystem,
       messages: [{ role: "user", content: userPrompt }],
     });
 

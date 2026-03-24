@@ -1,0 +1,52 @@
+import { createCourseAdmin } from "@/lib/course-supabase";
+
+// All columns except `content` — too large to send on every list request
+const BUNDLE_COLUMNS = [
+  "id", "subject", "subject_code", "grade",
+  "unit", "lesson", "bundle_number", "title",
+  "slides_count", "slides_generated",
+  "audio_generated", "audio_url",
+  "videos_count", "videos_generated",
+  "worksheet_present",
+].join(", ");
+
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const course = searchParams.get("course");
+  const gradeStr = searchParams.get("grade");
+
+  if (!course || !gradeStr) {
+    return Response.json(
+      { error: "course and grade query params are required" },
+      { status: 400 }
+    );
+  }
+
+  const grade = parseInt(gradeStr, 10);
+  if (isNaN(grade)) {
+    return Response.json({ error: "grade must be a number" }, { status: 400 });
+  }
+
+  let supabase;
+  try {
+    supabase = createCourseAdmin();
+  } catch {
+    return Response.json(
+      { error: "CoursePlatform DB not configured — set COURSE_SUPABASE_URL and COURSE_SUPABASE_SERVICE_ROLE_KEY" },
+      { status: 503 }
+    );
+  }
+
+  const { data, error } = await supabase
+    .from("bundles")
+    .select(BUNDLE_COLUMNS)
+    .eq("subject_code", course)
+    .eq("grade", grade)
+    .order("bundle_number", { ascending: true });
+
+  if (error) {
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+
+  return Response.json({ bundles: data ?? [], course, grade });
+}

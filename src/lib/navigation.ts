@@ -523,6 +523,30 @@ export const navigationGroups: NavigationGroup[] = [
         },
         status: "live",
       },
+      {
+        label: "Course Assets",
+        href: "/course-assets",
+        description: "Generate and track slide images, audio, and video for all SomersSchool courses.",
+        icon: BookOpen,
+        tooltip: {
+          summary: "Production dashboard for SomersSchool course assets. Select any subject + grade to see all 24 lesson bundles with live status dots for slides, audio, video, and worksheet. Queue image generation jobs per lesson or generate all missing in one click. Powered by Leonardo Phoenix + Cloudinary.",
+          features: [
+            "5 status dots per lesson: bundle · slides · audio · video · worksheet",
+            "Aggregate slides progress bar for the selected course/grade",
+            "Generate Slides: queues a background job — Leonardo generates each slide image and uploads to Cloudinary",
+            "Generate All Missing: loops all lessons with incomplete slides in one action",
+            "Live progress bar per lesson via Supabase Realtime subscription on jobs table",
+            "Supports Gimli character reference (optional Leonardo characterId) for K-5 character consistency",
+          ],
+          tips: [
+            "Select sci + Grade 1 first — 24 lessons are already partially built",
+            "Hover a row to reveal the Generate Slides button",
+            "After clicking Generate All Missing, watch the per-row progress bars fill in real time",
+            "If a slide job fails, the completed slides are already saved — re-run to continue from where it stopped",
+          ],
+        },
+        status: "live",
+      },
     ],
   },
   {

@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/cron/social-weekly",
-      "schedule": "0 5 * * 1"
+      "schedule": "0 14 * * 1"
     },
     {
       "path": "/api/cron/intel-fetch",

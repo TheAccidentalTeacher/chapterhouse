@@ -60,6 +60,9 @@ const environmentSchema = z.object({
   GMAIL_PERSONAL_APP_PASSWORD: z.string().min(1).optional(),
   GMAIL_NCHO_USER: z.string().min(1).optional(),
   GMAIL_NCHO_APP_PASSWORD: z.string().min(1).optional(),
+  // CoursePlatform
+  COURSE_SUPABASE_URL: z.string().url().optional(),
+  COURSE_SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
 });
 
 const envSource = {
@@ -123,6 +126,9 @@ const envSource = {
   GMAIL_PERSONAL_APP_PASSWORD: process.env.GMAIL_PERSONAL_APP_PASSWORD,
   GMAIL_NCHO_USER: process.env.GMAIL_NCHO_USER,
   GMAIL_NCHO_APP_PASSWORD: process.env.GMAIL_NCHO_APP_PASSWORD,
+  // CoursePlatform
+  COURSE_SUPABASE_URL: process.env.COURSE_SUPABASE_URL,
+  COURSE_SUPABASE_SERVICE_ROLE_KEY: process.env.COURSE_SUPABASE_SERVICE_ROLE_KEY,
 };
 
 export function getEnvironmentStatus() {
@@ -159,6 +165,8 @@ export function getEnvironmentStatus() {
         ? "video"
         : key === "NCHO_EMAIL_HOST" || key === "NCHO_EMAIL_USER" || key === "NCHO_EMAIL_PASSWORD" || key === "GMAIL_PERSONAL_USER" || key === "GMAIL_PERSONAL_APP_PASSWORD" || key === "GMAIL_NCHO_USER" || key === "GMAIL_NCHO_APP_PASSWORD"
         ? "email-accounts"
+        : key === "COURSE_SUPABASE_URL" || key === "COURSE_SUPABASE_SERVICE_ROLE_KEY"
+        ? "course-platform"
         : "ai",
     })),
   };

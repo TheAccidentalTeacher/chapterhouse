@@ -1,5 +1,6 @@
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
 import OpenAI from "openai";
+import { enhancePrompt } from "@/lib/prompt-enhancer";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -13,6 +14,9 @@ interface GenerateRequest {
   height?: number;
   style?: string;
   negativePrompt?: string;
+  // Character support
+  characterId?: string;   // UUID from characters table
+  context?: string;       // e.g. "explaining photosynthesis for 2nd graders"
 }
 
 // ── Provider Implementations ───────────────────────────────────────────────────
@@ -245,38 +249,82 @@ export async function POST(req: Request) {
     const width = body.width || 1024;
     const height = body.height || 1024;
 
+    // ── Character & Prompt Enhancement ──────────────────────────────────────
+    const supabase = getSupabaseServiceRoleClient();
+    let character = null;
+
+    if (body.characterId && supabase) {
+      const { data } = await supabase
+        .from("characters")
+        .select("slug, name, physical_description, art_style, negative_prompt, reference_images")
+        .eq("id", body.characterId)
+        .eq("is_active", true)
+        .single();
+      character = data;
+    }
+
+    const enhanced = await enhancePrompt(
+      body.prompt,
+      character ?? undefined,
+      body.context,
+    );
+
+    // Use enhanced prompt; merge negative prompts
+    const finalPrompt = enhanced.enhanced;
+    const finalNegative = [
+      enhanced.negative,
+      body.negativePrompt,
+    ].filter(Boolean).join(", ");
+
+    // ── Character Consistency: img2img with reference image (Replicate only) ──
+    let effectiveModel = body.model;
+    let referenceImageUrl: string | null = null;
+
+    if (
+      character &&
+      character.reference_images?.length > 0 &&
+      provider === "replicate"
+    ) {
+      // Use first reference image as style anchor (Flux img2img)
+      referenceImageUrl = character.reference_images[0];
+      effectiveModel = effectiveModel || "black-forest-labs/flux-dev";
+    }
+
     let result: { url: string; model: string };
 
     switch (provider) {
       case "openai":
-        result = await generateOpenAI(body.prompt, width, height);
+        result = await generateOpenAI(finalPrompt, width, height);
         break;
       case "stability":
         result = await generateStability(
-          body.prompt,
+          finalPrompt,
           width,
           height,
-          body.negativePrompt,
+          finalNegative || undefined,
         );
         break;
       case "replicate":
         result = await generateReplicate(
-          body.prompt,
+          finalPrompt,
           width,
           height,
-          body.model,
+          effectiveModel,
         );
         break;
       case "leonardo":
-        result = await generateLeonardo(body.prompt, width, height);
+        result = await generateLeonardo(finalPrompt, width, height);
         break;
     }
 
-    // Save to database
-    const supabase = getSupabaseServiceRoleClient();
+    // ── Save to database ─────────────────────────────────────────────────────
     if (supabase) {
       await supabase.from("generated_images").insert({
-        prompt: body.prompt,
+        prompt: enhanced.original,
+        prompt_original: enhanced.original,
+        prompt_enhanced: enhanced.enhanced,
+        enhancement_notes: enhanced.notes,
+        character_id: body.characterId ?? null,
         provider,
         model: result.model,
         width,
@@ -284,7 +332,9 @@ export async function POST(req: Request) {
         image_url: result.url,
         metadata: {
           style: body.style,
-          negativePrompt: body.negativePrompt,
+          negativePrompt: finalNegative,
+          referenceImageUrl,
+          context: body.context,
         },
       });
     }
@@ -295,6 +345,8 @@ export async function POST(req: Request) {
       model: result.model,
       width,
       height,
+      enhanced: enhanced.enhanced !== body.prompt,  // true if prompt was changed
+      enhancementNotes: enhanced.notes,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Generation failed";
