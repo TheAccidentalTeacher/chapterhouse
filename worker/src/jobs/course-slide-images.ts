@@ -242,7 +242,7 @@ async function generateImageLeonardo(prompt: string, character?: Character): Pro
     );
     const result = await poll.json() as { generations_by_pk?: { generated_images?: { url: string }[] } };
     const images = result.generations_by_pk?.generated_images;
-    if (images?.length > 0) return images[0].url as string;
+    if (images && images.length > 0) return images[0].url as string;
   }
 
   throw new Error("Leonardo generation timed out after 3 minutes");
