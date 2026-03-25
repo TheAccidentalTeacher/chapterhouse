@@ -69,7 +69,7 @@ Phase 7 (Voice Studio Narration)  ───────── needs Phase 5
 | Claude prompt enhancement | Every image/video prompt passes through Claude before going to provider. |
 | Text overlay strategy | Cloudinary URL transforms (e.g. `l_text:Arial_40_bold:Hello/fl_relative`) on clean images — never bake text into generated images. |
 | Image providers | GPT Image 1, Stability AI, Flux (Replicate), Leonardo.ai — all selectable in UI. Leonardo is NOT the default and NOT the character consistency engine. |
-| Character consistency | LoRA fine-tuning via **Leonardo Custom Model** (Phoenix fine-tune, `modelType: CHARACTERS`). Upload 10–20 ToonBee reference images → create Leonardo dataset → `POST /api/rest/v1/models` (sd_version: PHOENIX) → trained `modelId` stored in `characters.lora_model_id` → all future generations use LoRA model ID in place of Phoenix base. Reference injection (ToonBee refs as `imagePrompts`, weight 0.75) serves as live bridge until training completes. Trigger token = character slug in UPPER_CASE (e.g. `GIMLI`). Repeatable for every new character. Full workflow in Phase 3.5. |
+| Character consistency | LoRA fine-tuning via **Leonardo Custom Model** (Flux Dev base, `modelType: CHARACTERS`). Generate 3D-render-style character images via Leonardo Image tab (3D Render/RENDER_3D preset, white background, Pixar-style) → train Custom Model in Leonardo UI → trained `modelId` stored in `characters.lora_model_id` → all future generations use LoRA model ID in place of Phoenix base. Reference injection serves as live bridge until training completes. Trigger token = character slug in UPPER_CASE (e.g. `GIMLI`). Repeatable for every new character. Full workflow in Phase 3.5. **⚠️ CORRECTION: Base model is Flux Dev (not Phoenix) — confirmed March 24, 2026 from Leonardo training UI.** |
 | Video providers | **Leonardo Video tab first** — evaluate for Gimli animated clips BEFORE committing to Kling. Scott has Premium ($24/mo, already active). Native image→video inside Leonardo feeds from LoRA-trained Gimli image. If quality is sufficient → skip Kling subscription ($29.99/mo saved). Kling AI second if Leonardo Video is inadequate. D-ID third (talking-head lip-sync). **HeyGen = Scott Mr. S avatar ONLY.** Not for Gimli. ToonBee retired — superseded by Leonardo LoRA + Video tab. Evaluate before Phase 4 build. |
 | Review Queue | Non-negotiable. All content (posts, images, videos) through human approval. |
 | Bundle data | **Option C** — `bundles` table in CoursePlatform's Supabase. Both apps share it. |
@@ -1029,7 +1029,7 @@ export async function POST(request: Request) {
 > // imagePrompts reference injection still applies on top of LoRA for extra lock
 > ```
 >
-> **To train:** Upload 10-20 ToonBee Gimli images to Leonardo → train Custom Model (Phoenix, Characters, Medium strength) → store returned model UUID as `lora_model_id`. One-time per character. Full workflow in Phase 3.5.
+> **To train:** Generate 3D-render Gimli images via Leonardo Image tab (RENDER_3D preset, white background, Pixar-style) → train Custom Model (Flux Dev, Characters, Medium strength) → store returned model UUID as `lora_model_id`. One-time per character. Full workflow in Phase 3.5.
 
 **File to modify:** `src/app/api/images/generate/route.ts`
 
@@ -1168,7 +1168,19 @@ After deciding:
 
 # PHASE 3.5 — CHARACTER LORA TRAINING
 
-**WHAT:** Fine-tune Leonardo Phoenix on a character's reference images to produce a character-specific model. Every image generated with the LoRA model looks like *that specific character* regardless of scene, prompt, or run — not just "similar style."
+> **🔴 IN PROGRESS — March 24, 2026.** Gimli LoRA is **actively training RIGHT NOW** in Leonardo.ai.
+> - Name: `Gimli` — Description: `Gimli First Try`
+> - Base Model: **Flux Dev (1024×1024)** ← confirmed correct base for character consistency
+> - Category: Character | Instance prompt: `GIMLI` | Cost: 2 tokens
+> - Art style locked: **Option A — 3D Render (Pixar-style), white background** — all training images generated fresh via Leonardo Image tab using RENDER_3D preset
+> - ToonBee PNGs were NOT used (ToonBee = retired; images are different art style). Training set = newly generated 3D-render malamute poses from Leonardo Premium
+> - Expected completion: ~15–25 minutes
+> - **NEXT STEP when done:** More → Models → copy UUID → run SQL below:
+>   ```sql
+>   UPDATE characters SET lora_model_id = '{YOUR_UUID}' WHERE slug = 'gimli';
+>   ```
+
+**WHAT:** Fine-tune Leonardo Flux Dev on a character's reference images to produce a character-specific model. Every image generated with the LoRA model looks like *that specific character* regardless of scene, prompt, or run — not just "similar style."
 
 **WHY:** Reference injection (imagePrompts, weight 0.75) is the bridge — it helps, but Phoenix doesn't truly *learn* Gimli. A fine-tuned custom model bakes character identity into the weights. The difference is "good 3D cartoon dog" (bridge) vs. "this is my actual dog" (LoRA). With 168 lesson slides in sci-g1 alone, that difference compounds fast.
 
@@ -1193,39 +1205,49 @@ all future generations use LoRA, both Creative Studio and Course Asset pipeline
 
 ## Step 3.5.1 — Collect training images
 
-Gather 10–20 ToonBee Gimli illustrations. Quality beats quantity here.
+> **✅ DONE — March 24, 2026.** Training images generated and uploaded to Leonardo for Gimli's first LoRA run.
+
+Generate 10–20 3D-render-style malamute images via Leonardo Image tab. **Do NOT use ToonBee images** — ToonBee is retired and uses a different art style that would produce an inconsistent LoRA.
+
+**Art style locked for Gimli: Option A — 3D Render (Pixar-style)**
+- Clean white background
+- Volumetric fur, warm lighting
+- Pixar-adjacent proportions
+- Generated via Leonardo Phoenix/Flux with RENDER_3D preset
 
 **What makes a good training image:**
 - Different angles: front, 3/4, side, slight overhead
 - Different expressions: neutral, happy, confused, cross-eyed (his signature)
-- Consistent character, varying backgrounds — that is the exact goal
-- All ToonBee cartoon style — no photos, no other art styles mixed in
-- Minimum 512×512; 768×768 or 1024×1024 preferred
+- Consistent 3D render style — NO mixing with flat cartoon or dark cinematic styles
+- Clean white or simple background
+- Minimum 1024×1024 (Flux Dev native resolution)
 - No watermarks, no text, no other characters cropped into frame
 
-You already have several from ToonBee. Generate remaining poses if needed before training.
+Generate in batches of 4 from the Image tab. Download the best 15–20 and upload to Leonardo training.
 
 ---
 
 ## Step 3.5.2 — Train the LoRA via Leonardo web UI (Gimli, one-time)
 
+> **✅ TRAINING NOW — March 24, 2026.** Gimli LoRA submitted and training. Awaiting completion (~15-25 min).
+
 The web UI is the fastest path for Gimli. For all future characters, use the programmatic API route in Step 3.5.5 — one button click from inside Chapterhouse.
 
-1. Go to [leonardo.ai](https://leonardo.ai) → **Finetuning** (left sidebar)
-2. Click **Train a Custom Model**
-3. Settings:
-   - **Name:** `Gimli — Alaskan Malamute K-5 Mascot`
-   - **Description:** `ToonBee-style cartoon Alaskan Malamute. Curriculum explainer for SomersSchool K-5.`
-   - **Resolution:** 768
-   - **Base Model:** Phoenix
-   - **Model Type:** Characters
-   - **Training Strength:** Medium
-4. Upload your 10–20 ToonBee Gimli images
-5. **Instance Prompt:** `GIMLI` — this is the trigger token; include it in generation prompts for strongest activation (e.g. `GIMLI teaching fractions at a chalkboard`)
-6. Click **Start Training** — ~15–25 minutes
-7. When complete, go to **My Models** → click the new model → copy its **Model ID** (UUID format)
+**⚠️ CORRECTION FROM DOCS:** Base Model is **Flux Dev**, NOT Phoenix. Phoenix is not available as a LoRA base in the current Leonardo UI. Always double-check the base model dropdown before hitting Start Training.
 
-**Cost:** ~$5–10 Leonardo credits. One-time per character.
+1. Go to [leonardo.ai](https://leonardo.ai) → More → **Models & Training** → **Train New Model**
+2. Settings used for Gimli (first run):
+   - **Name:** `Gimli`
+   - **Description:** `Gimli First Try`
+   - **Base Model:** Flux Dev (1024×1024) ← **this is the correct base**
+   - **Category:** Character (NOT Style or Object)
+   - **Training Strength:** Medium (leave default)
+3. Upload your 15–20 3D-render Gimli images
+4. **Instance Prompt:** `GIMLI` — trigger token for generation prompts (e.g. `GIMLI teaching fractions at a chalkboard`)
+5. Click **Start Training ⓔ2** — costs 2 tokens, ~15–25 minutes
+6. When complete, go to **My Models** → click the new model → copy its **Model ID** (UUID format)
+
+**Cost:** 2 Leonardo tokens (~$0 on Premium plan token budget). One-time per character.
 
 ---
 
@@ -1338,12 +1360,12 @@ export async function POST(
       modelType: "CHARACTERS",
       nsfw: false,
       notSafeForWork: false,
-      resolution: 768,
+      resolution: 1024,        // Flux Dev native resolution
       datasetId,
       num_train_epochs: 10,
       learning_rate: 0.0001,
       instance_prompt: triggerWord,
-      sd_version: "PHOENIX",
+      sd_version: "FLUX_DEV",  // ⚠️ Flux Dev — NOT Phoenix. Confirmed March 24, 2026.
       strength: "MEDIUM",
     }),
   });

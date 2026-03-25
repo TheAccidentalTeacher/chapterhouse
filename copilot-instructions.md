@@ -497,7 +497,7 @@ The end state: every major decision — product, architecture, curriculum, marke
 
 **The two-layer Gimli architecture:**
 - **Layer 1 — Establish Gimli:** Commission or AI-generate a cartoon illustration of Gimli in 5-8 poses (sitting, pointing, confused, excited, cross-eyed, sleeping). This asset is reused in every video. Never regenerate from scratch.
-- **Layer 2 — Deploy Gimli:** **Leonardo.ai Premium** is the primary engine — LoRA fine-tune on Phoenix locks character identity across all scenes. Video via Leonardo Video tab (native, evaluate before committing to Phase 4 Kling decision). Doodly Smart Draw available for whiteboard-style assets if needed.
+- **Layer 2 — Deploy Gimli:** **Leonardo.ai Premium** is the primary engine — LoRA fine-tune (Flux Dev base, confirmed March 24, 2026) locks character identity across all scenes. Video via Leonardo Video tab (native, evaluate before committing to Phase 4 Kling decision). Doodly Smart Draw available for whiteboard-style assets if needed.
 
 **Gimli voice guidelines for script writing:**
 - Reluctant but competent. He sighs before explaining.
@@ -525,7 +525,7 @@ The end state: every major decision — product, architecture, curriculum, marke
 **Full-stack curriculum production pipeline:**
 `Descript (record/edit) → HeyGen (avatar intro) → Leonardo.ai (Gimli LoRA image + Video tab animated clip) → Flixier (assemble/caption) → Minvo (clip for social)`
 
-**Leonardo.ai Premium:** ✅ Confirmed — $24/mo active. Gimli images AND video via Leonardo (LoRA + Phoenix + Video tab). **HeyGen = Scott Mr. S avatar ONLY (all grades). Do NOT use HeyGen for Gimli.** These are two separate video roles. ToonBee is retired as an active generation tool — existing ToonBee PNGs are LoRA training data only.
+**Leonardo.ai Premium:** ✅ Confirmed — $24/mo active. Gimli images AND video via Leonardo (Flux Dev LoRA + Video tab). **HeyGen = Scott Mr. S avatar ONLY (all grades). Do NOT use HeyGen for Gimli.** These are two separate video roles. ToonBee is retired as an active generation tool — existing ToonBee PNGs are LoRA training data only.
 
 ---
 

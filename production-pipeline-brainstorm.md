@@ -853,6 +853,58 @@ Step 7  Voice Studio narration: alongside Step 6
 
 ---
 
+## 🔴 SESSION STATUS — March 24, 2026
+
+### Where We Are RIGHT NOW
+
+**Gimli LoRA is actively training in Leonardo.ai as of this session.**
+
+| Decision | Value |
+|---|---|
+| Art style | **Option A — 3D Render (Pixar-style)** — clean white background, volumetric fur, warm lighting |
+| Training source | Newly generated 3D-render malamute images via Leonardo Image tab (RENDER_3D preset) |
+| ToonBee images | NOT used — ToonBee is retired. Different art style. Those PNGs are archived only. |
+| Base model | **Flux Dev (1024×1024)** — NOT Phoenix (Phoenix not available as LoRA base in Leonardo UI) |
+| Model name | `Gimli` |
+| Description | `Gimli First Try` |
+| Category | Character ✅ |
+| Instance prompt | `GIMLI` |
+| Cost | 2 Leonardo tokens |
+| Status | 🔴 TRAINING NOW (~15–25 min) |
+
+### What Happens When Training Completes
+
+1. Go to Leonardo.ai → More → Models & Training
+2. Click the `Gimli` model → copy the **Model ID** (UUID format)
+3. Run in Supabase Dashboard → SQL Editor:
+   ```sql
+   UPDATE characters SET lora_model_id = '{YOUR_UUID}' WHERE slug = 'gimli';
+   ```
+4. No deploy needed — both generation routes already check `character.lora_model_id` and switch from Phoenix to the LoRA model automatically
+
+### Phase Status As Of This Session
+
+| Phase | Status |
+|---|---|
+| Phase 0 — Smoke test + foundation | ✅ COMPLETE |
+| Phase 1 — Brand Voices → Supabase | ✅ COMPLETE (Session 27) |
+| Phase 2 — Social Pipeline Version C | 🔴 NOT STARTED |
+| Phase 3 — Character Library | ✅ COMPLETE (Sessions 29-30) |
+| **Phase 3.5 — Gimli LoRA Training** | **🔴 IN PROGRESS — Training now** |
+| Phase 4 — Video Tab Rebuild | 🔴 NOT STARTED (gates on Phase 3.5 completion) |
+| Phase 5 — Course Asset Dashboard | ✅ COMPLETE (Session 28) |
+| Phase 6 — Course Video Pipeline | 🔴 NOT STARTED |
+| Phase 7 — Voice Studio Narration | 🔴 NOT STARTED |
+
+### Correction to All Prior Docs
+
+Previous session notes said to use **Phoenix** as the LoRA base model. This was incorrect — Phoenix is a generation model only. **Flux Dev is the correct base**. This has been corrected in:
+- `production-pipeline-build-bible.md` — Phase 3.5 Steps 3.5.1, 3.5.2, and 3.5.5 API code
+- Character consistency architecture decisions row
+- `sd_version` in programmatic train-lora route spec changed from `PHOENIX` → `FLUX_DEV`
+
+CLAUDE.md and copilot-instructions.md will be updated after LoRA training completes and the UUID is confirmed.
+
 **Q66 — Build order priority?**
 
 > **✅ DECISION LOCKED:** The sequence IS the priority order. Build in order. Keep going.
