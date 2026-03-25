@@ -555,6 +555,8 @@ voices.map(voice => (
 
 ## Phase 1 SMOKE TEST
 
+> **✅ COMPLETE — March 24, 2026 (Session 27).** `brand_voices` table (migration 023) + seed (023b) shipped. `BrandVoicesPanel` in `/settings` renders 4 brand editors. `/api/brand-voices/` CRUD routes live. Hardcoded `BRAND_VOICE_SYSTEM` in `/api/social/generate/route.ts` replaced with DB lookup.
+
 1. Open `/settings` — verify 3 brand voice editors appear with the seeded text
 2. Edit the NCHO voice — change one sentence, save (blur out of textarea)
 3. Call `GET /api/brand-voices?brand=ncho` directly — verify changed text is returned
@@ -1156,6 +1158,8 @@ After deciding:
 
 ## Phase 3 SMOKE TEST
 
+> **✅ COMPLETE — March 24, 2026 (Sessions 29-30).** `characters` table (migration 024) + Gimli seed (024b, ToonBee reference images → Cloudinary) shipped. `src/lib/prompt-enhancer.ts` (Claude Haiku, physical_description front-loaded, art_style locked, features ×2). Character picker in `image-generation-studio.tsx`. `/api/characters/` CRUD routes. 3-tier Replicate character injection in `worker/src/jobs/course-slide-images.ts`. 6 bug-fix commits: model endpoint format, REPLICATE_API_TOKEN env name, provider enforcement, reference images correctly passed to Replicate img2img + Leonardo imagePrompts[], invalid Leonardo fields removed. `generated_images` extended with `character_id`, `prompt_original`, `prompt_enhanced`, `enhancement_notes`.
+
 1. Open `/creative-studio`, Images tab
 2. Character dropdown shows "Gimli — Curriculum explainer mascot for SomersSchool K-5 lessons"
 3. Select Gimli, type prompt: "teaching about rainbows"
@@ -1202,9 +1206,12 @@ CREATE TABLE generated_videos (
 
   -- Generation inputs
   character_id     UUID         REFERENCES characters(id) ON DELETE SET NULL,
-  provider         TEXT         NOT NULL CHECK (provider IN ('heygen', 'did', 'kling', 'runway', 'pika')),
+  provider         TEXT         NOT NULL CHECK (provider IN ('heygen', 'did', 'kling', 'wan', 'runway', 'pika')),
   scene_description TEXT        NOT NULL,  -- raw from Scott
-  scene_enhanced   TEXT,                   -- Claude-enhanced scene
+  scene_enhanced   TEXT,                   -- Claude-enhanced IMAGE prompt (static frame)
+  video_motion_prompt TEXT,               -- Claude-enhanced VIDEO MOTION prompt (how camera/scene moves)
+                                          -- Distinct from image prompt — ToonBee uses two layers of AI direction per scene
+  scene_duration_seconds FLOAT DEFAULT 6.0, -- Per-scene duration; ToonBee default = 6.0s, 7 scenes = ~42s total
   audio_source     TEXT         CHECK (audio_source IN ('tts', 'upload', 'none')),
   tts_text         TEXT,                   -- if audio_source = 'tts'
   tts_voice_id     TEXT,                   -- ElevenLabs voice ID
@@ -1320,13 +1327,27 @@ const response = await fetch('https://api.d-id.com/talks', {
 > - **D-ID** — talking head: Gimli/Scott reference image + ElevenLabs audio → lip-synced video. Use for lesson segments where Gimli speaks directly to the student.
 > - **Kling** — animated clip: Gimli reference image + scene description → cartoon Gimli in motion. Use for intros, transitions, and celebration moments.
 
+**Credit economics from ToonBee research (March 24, 2026):**
+ToonBee's provider dropdown reveals the market pricing. Kling 2.1 costs 14 ToonBee credits/video vs WAN at 3cr/video. For 168 sci-g1 videos:
+- WAN (free tier): 168 × 3cr = **504 credits** — viable
+- Kling 2.1 via ToonBee: 168 × 14cr = **2,352 credits** — expensive through ToonBee's markup
+- **Kling direct API billing is per-second**, not per-credit. At 5s/clip, direct API likely far cheaper than ToonBee's 14cr markup. Verify before committing to Kling for bulk course production.
+- **WAN model (WAN-Video):** Check if available via Replicate or HuggingFace inference API. If yes, use WAN for bulk course generation (cost) and Kling/D-ID for hero content (quality).
+- ToonBee's free tier providers beyond WAN: Hailuo 2.3 (6cr), Seedance 1 PRO (6cr/8cr) — these are likely Wan Video variants. All worth testing via direct API before defaulting to Kling everywhere.
+
 **Note on Kling JWT:** Kling uses HS256 JWT with specific payload fields. **Read `https://platform.klingai.com/docs` before writing a single line of auth code.** Do not guess the JWT structure — it must match exactly or calls fail silently.
 
 - Endpoint: `POST https://api-global.kuaishou.com/kling/v1/videos/image2video`
 - Auth: JWT generated fresh per request from `KLING_API_KEY` + `KLING_API_SECRET` key pair
-- Input: `{ image: characterRefUrl, prompt: enhancedPrompt, duration: '5', aspect_ratio: '16:9' }`
+- Input: `{ image: characterRefUrl, prompt: enhancedScenePrompt, duration: '5', aspect_ratio: '16:9' }`
+- **Pass `video_motion_prompt` to Kling, not `scene_enhanced`** — image providers get the static prompt; video providers get the motion prompt. Two separate Claude outputs.
 - File to create: `src/app/api/video/providers/kling/route.ts`
 - Railway env vars required: `KLING_API_KEY`, `KLING_API_SECRET`
+
+**Add WAN provider:**
+- File to create: `src/app/api/video/providers/wan/route.ts`
+- Evaluate: Replicate `wan-video` model or direct Wan API. Cost target: <$0.05/video for bulk production.
+- Fallback for Kling if character consistency passes threshold at lower cost.
 
 ---
 
@@ -1356,19 +1377,29 @@ Add case: `case 'video_generate': → runVideoGenerate()`
 
 **File to modify:** `src/components/video-generator.tsx` — gut and rebuild
 
-**New UI structure:**
+**New UI structure (informed by ToonBee BeeGuide full-pipeline research):**
 
 ```
 [ Character ] ← ComboBox pulling from /api/characters
-[ Provider  ] ← D-ID (talking head) / Kling AI (animated) / HeyGen / Runway / Pika
+[ Provider  ] ← WAN (fast/cheap) / Kling AI (animated, quality) / D-ID (talking head) / HeyGen (Scott only)
 [ Scene description ] ← textarea, rough concept
-  → "Claude will enhance this before sending to [provider]"
+  → "Claude will generate both an image prompt and a motion prompt from this"
+[ Scene Duration ] ← number input, default 6.0s (ToonBee default; 7 scenes × 6s = 42s)
 [ Audio ] ← None / Text-to-speech / Upload audio
   → If TTS: voice picker (ElevenLabs voices)
-  → If TTS: script textarea
+  → If TTS: narration script textarea (separate from scene description)
 [ Usage context ] ← text input, "sci-g1-u1-l01 intro", "NCHO promo"
 [ Generate button ] → creates Railway job, shows Realtime progress bar
 ```
+
+**Dual prompt generation (Claude step before provider call):**
+Claude receives: character record + scene description → outputs TWO prompts:
+1. **Image prompt** — static frame description for scene thumbnail / reference (`scene_enhanced`)
+2. **Video motion prompt** — how camera moves, what action occurs, atmosphere details (`video_motion_prompt`)
+Image providers receive `scene_enhanced`. Video providers receive `video_motion_prompt`. Never swapped.
+
+**Style-reference for new character consistency:**
+When generating character images in Phase 3, the Character picker for "Generate Character" should offer an existing character as visual style reference. ToonBee calls this "Image Reference As Style" — selecting Gimli as reference for Ninja Master ensures both characters live in the same art style. This is the `imagePrompts[0]` pattern already partially wired in Leonardo integration. Surface this in the Phase 3 character generation UI.
 
 **After job completes:**
 - Video previews in the component (HTML5 `<video>` element)
@@ -1392,13 +1423,17 @@ Change from 3-tab (Images / Sounds / Video) to 4-tab (Images / Sounds / Video / 
 
 1. Open `/creative-studio`, Video tab
 2. Select Gimli as character
-3. Select D-ID as provider
+3. Select D-ID as provider (talking head — fastest to validate)
 4. Type scene: "Gimli sitting at a school desk explaining photosynthesis"
-5. Set audio: TTS, pick a voice, type: "Today we are learning about how plants make food!"
-6. Click Generate — Railway job created, Realtime progress bar appears
-7. Wait 60-120 seconds — video appears in the component
-8. Click Approve — `generated_videos.status` changes to `'approved'`
-9. Check Supabase `generated_videos` table — row present with all fields populated
+5. Confirm Claude generates BOTH `scene_enhanced` (image prompt) AND `video_motion_prompt` (motion prompt) — check the Railway job payload in Supabase `jobs` to verify both fields are populated and distinct
+6. Set audio: TTS, pick a voice, type: "Today we are learning about how plants make food!"
+7. Set scene duration: 6.0s (default)
+8. Click Generate — Railway job created, Realtime progress bar appears
+9. Wait 60-120 seconds — video appears in the component
+10. Click Approve — `generated_videos.status` changes to `'approved'`
+11. Check Supabase `generated_videos` table — `scene_enhanced`, `video_motion_prompt`, `scene_duration_seconds` all populated
+12. **Kling test (second pass):** Repeat steps 2-11, switch provider to Kling. Compare character consistency against D-ID output. Decision gate: does Kling hold Gimli's visual identity better than D-ID for animated clips?
+13. **WAN test (cost validation):** If WAN available via Replicate, run ONE clip. Compare output quality vs cost vs Kling. Document result.
 
 ---
 
@@ -1814,6 +1849,8 @@ Add: `case 'course_slide_images': → runCourseSlideImages()`
 
 ## Phase 5 SMOKE TEST
 
+> **✅ COMPLETE — March 24, 2026 (Session 28).** `src/app/course-assets/page.tsx` (BundleRow, StatusDot, 5-dot status grid), `src/lib/course-supabase.ts` singleton for CoursePlatform DB. Routes: `/api/course-assets/status/` (GET), `/api/course-assets/generate-slides/` (POST → QStash → Railway), `/api/course-assets/bundle/[id]/` (GET). Railway worker job `course-slide-images.ts` with 3-tier Replicate (LoRA → flux-dev img2img → flux-schnell), Cloudinary upload, CoursePlatform Supabase status updates. Env vars `COURSE_SUPABASE_URL` + `COURSE_SUPABASE_SERVICE_ROLE_KEY` active.
+
 1. Run migration script — check Supabase Dashboard shows `bundles` table with 25 rows
 2. Open Chapterhouse `/course-assets`
 3. Select "sci", grade "1" — 24 lessons appear in grid
@@ -2220,6 +2257,7 @@ Add these as you reach each phase:
 | Phase 4 | `DID_API_KEY` | Vercel + Railway + `src/lib/env.ts` |
 | Phase 4 | `KLING_API_KEY` | Vercel + Railway + `src/lib/env.ts` |
 | Phase 4 | `KLING_API_SECRET` | Vercel + Railway + `src/lib/env.ts` |
+| Phase 4 | `WAN_API_KEY` (or use `REPLICATE_API_TOKEN`) | Vercel + Railway — TBD once WAN provider evaluated |
 | Phase 5 | `COURSE_SUPABASE_URL` | Vercel (Chapterhouse) + Railway |
 | Phase 5 | `COURSE_SUPABASE_SERVICE_ROLE_KEY` | Vercel (Chapterhouse) + Railway |
 | Phase 5 | `BUNDLE_SOURCE` | CoursePlatform Vercel (`'disk'` initially, then `'supabase'`) |
@@ -2232,7 +2270,7 @@ Add these to `worker/src/jobs/router.ts` as each phase is built:
 
 | Job type | Phase | File | Payload |
 |---|---|---|---|
-| `video_generate` | Phase 4 | `video-generate.ts` | `{ videoId, provider, characterId?, sceneEnhanced, audioSource, ttsText?, ttsVoiceId? }` |
+| `video_generate` | Phase 4 | `video-generate.ts` | `{ videoId, provider, characterId?, sceneEnhanced, videoMotionPrompt, sceneDurationSeconds, audioSource, ttsText?, ttsVoiceId? }` |
 | `course_slide_images` | Phase 5 | `course-slide-images.ts` | `{ bundleId, characterId? }` |
 | `course_batch` | Phase 5 | *(parent container)* | `{ course, grade, assetType }` |
 | `course_video` | Phase 6 | `course-video.ts` | `{ bundleId, characterId, provider, ttsProvider }` |

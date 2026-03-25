@@ -867,4 +867,332 @@ Step 7  Voice Studio narration: alongside Step 6
 >
 > Nothing gets skipped. If something takes longer than expected, the next step starts when the previous one's exit criteria are met.
 
+---
+
+## ToonBee BeeGuide — UX Research Notes (March 24, 2026)
+
+*Live session documentation from app.toonbee.ai. Purpose: inform Phase 4 (Video Tab Rebuild) UX design — specifically what Chapterhouse needs to replicate and where it should surpass ToonBee.*
+
+### Scott's ToonBee Project History
+
+7 existing projects at time of research, all 3D Pixar style, Landscape 16:9. Credit balance: 226.4.
+
+| Project | Created | Scenes | Style |
+|---|---|---|---|
+| Gimli's Sound Quest | 3 days ago | 7 scenes | 3D Pixar |
+| Galactic Learning Quest | Mar 14 | 4 scenes | 3D Pixar |
+| gimli | Mar 13 | 1 scene | — |
+| Garden Whispers | Mar 11 | 7 scenes | 3D Pixar |
+| Gimli's Dino Odyssey | Mar 10 | 6 scenes | 3D Pixar |
+| Gimli's Butterfly Tale | Mar 10 | 4 scenes | 3D Pixar |
+
+Pattern: all Gimli, all 3D Pixar, all landscape. Scott has already validated the character + style combination across 6 multi-scene projects.
+
+---
+
+### ToonBee Creation Modes
+
+At project creation, two paths:
+
+- **BeeGuide** — AI-powered creation. Asks clarifying questions, develops story structure, then generates. This is the recommended path and the one Scott tested.
+- **BeeStudio** — Full manual control. Direct scene editing. No AI assistance.
+
+---
+
+### BeeGuide Workflow — 6 Steps
+
+ToonBee shows a persistent 6-step progress bar at the top of every screen:
+
+```
+Your Story → Review → Characters → Images → Voice & Music → Videos
+```
+
+**Step 1 — Your Story:**
+- Text area (up to 3000 chars). Prompt entered: "I want to create a video of Gimli becoming a ninja and fighting nazis" (70 chars)
+- AI scores your prompt in real time with a green banner: "Great! Your prompt looks good — Add more details like emotions or visual style for even better results."
+- Settings on this screen:
+  - **Aspect Ratio:** Landscape 16:9 (selected, FREE) | Portrait 9:16 (paid) | Square 1:1 (paid)
+  - **Number of Scenes:** slider 1–49, default 7
+  - **Style:** 22 styles across tabs (All Styles | Animated | Illustration | Fine Art | Contemporary). Free tier: **3D Pixar** only. All others (Paper Craft, Animated 3D, Low Poly, Anime, Storybook, Disney, and 16 more) are PRO tier.
+
+**Step 2 — Review (BeeGuide quiz):**
+Starts with a choice modal:
+- **"Refine & Improve"** — Answer a few questions (recommended ⭐). Leads to 9-question story quiz.
+- **"Start Directly"** — Process as-is. Skips all questions.
+
+After selecting "Refine & Improve": loading screen ("Analyzing your idea — Preparing questions to enhance your story"), ~2-3 seconds, then the 9-question quiz begins.
+
+---
+
+### The BeeGuide 9-Question Story Quiz
+
+Questions are context-specific — AI generated them from "Gimli becoming a ninja and fighting nazis." Each question has:
+- A/B/C/D multiple choice options (AI-generated, specific to your prompt)
+- "Or type your own" freeform text field at the bottom
+- Back button to return to previous question
+- Purple accent on selected answer
+
+Questions follow a narrative arc: **motivation → origin → villain motivation → ally → weapon → climax → twist → conclusion → final details**
+
+| Q | Question Asked | Scott's Selection |
+|---|---|---|
+| 1/9 | What is Gimli's motivation for becoming a ninja? | **A:** To seek revenge on the Nazis for attacking his homeland |
+| 2/9 | How does Gimli acquire his ninja skills? | **D:** He is chosen by a spirit of a long-lost ninja clan to carry on their legacy |
+| 3/9 | What motivates Gimli to fight against the nazis? | (options: steal dwarven treasures / destroy enchanted lands / personal vendetta / seek dark powers; selection not captured) |
+| 4/9 | Who is Gimli's unexpected ally in his mission? | (options: time-traveling elf / orc turned against evil / mysterious human spy / dragon who owes Gimli a life debt; selection not captured) |
+| 5/9 | What unique weapon does Gimli wield as a ninja? | **A** highlighted: A battle axe that transforms into a katana |
+| 6/9 | What is the climax of the battle between Gimli and the nazis? | **D:** A battle in the heart of a volcano about to erupt |
+| 7/9 | What unexpected twist occurs during the story? | **B:** The nazis are being controlled by a dark sorcerer |
+| 8/9 | How does the story conclude for Gimli? | (options: leader of peacekeeping force / returns home as hero / travels world helping others / opens ninja school; selection not captured) |
+| **9/9** | **"Any other important details?"** — Optional freeform field. Placeholder: *"E.g., 'Focus on humor', 'Include a plot twist at the end', 'Keep the tone professional'..."* | (optional — user types anything or skips) |
+
+After Q9: **"✨ Generate Script →"** button → "Creating Your Masterpiece — Creating script outline..." loading screen (purple wand icon, progress bar, ~10-30 seconds) → drops into the **Review Storyboard** step.
+
+---
+
+### What This Reveals About ToonBee's Architecture
+
+**What ToonBee does well:**
+- **Progressive disclosure** — 6-step pipeline surfaces the right decision at the right moment (style before scenes, story before characters, characters before images). Never overwhelming.
+- **The style picker is step 1** — users commit to visual identity before writing a word. This is correct.
+- **Scene count is a setting, not an afterthought** — 1–49 slider, default 7 for a "full" video. Good default for a lesson (~3–5 min at ~25 seconds/scene).
+- **BeeGuide quiz forces narrative structure** — even for someone who "just wants a quick video," the 9 questions produce a story with a beginning, middle, and end. The questions are the plot framework.
+- **A/B/C/D + "type your own"** — never blocks creative intent while still guiding users who don't know what they want.
+
+**Where ToonBee falls short (Chapterhouse's opening):**
+- **ToonBee doesn't know Gimli.** The 9 questions ask general hero-story questions. None of them reference that Gimli is a 125-lb Alaskan malamute who is cross-eyed when annoyed and obstinate. ToonBee generates questions as if Gimli could be any character. Chapterhouse reads the actual Character Library record.
+- **45 minutes per project.** This is the whole problem. ToonBee's workflow is beautiful but too slow for production volume. 168 sci-g1 videos × 45 minutes = not viable.
+- **No curriculum awareness.** ToonBee has no concept of learning objectives, grade levels, or lesson structure. It tells stories — not lessons.
+- **Style = PRO paywall.** Only 3D Pixar is free. Every interesting style (Anime, Storybook, Disney, etc.) requires a paid upgrade.
+- **No batch mode.** Each project is a standalone manual workflow.
+
+---
+
+### Phase 4 Design Implications
+
+**What Chapterhouse should replicate:**
+- The 6-step pipeline structure (scene picker → characters → images → voice → video → review)
+- Style picker at the start (visual identity decision before scene writing)
+- Scene count control (1–49, default 7 for a lesson)
+- Narrative arc structure (even for curriculum content: hook → explanation → example → check → close)
+- Loading state between steps ("Analyzing your idea...") — sets expectations, feels intentional
+- Per-scene character assignment — scenes can have different character combinations
+- "Copy Script" button on the Review step — always let the user export what was generated
+- Style-reference-as-consistency mechanism — when generating a new character, pick an existing character as the visual style anchor
+
+**What Chapterhouse should replace:**
+- The 9-question quiz → Claude reads the Character Library record and generates the full scene list automatically. No quiz required. Scott describes the lesson topic; Claude generates 7 Gimli-consistent scenes. User can edit any scene before generating.
+- ToonBee's per-session bottleneck → Chapterhouse generates in Railway async jobs, multiple lessons in parallel
+- ToonBee PRO paywall for styles → Chapterhouse uses whichever Replicate/Kling model is already configured per character
+
+**The comparative advantage in one sentence:**
+ToonBee makes great one-off cartoon videos. Chapterhouse makes 168 curriculum-aligned Gimli videos for a full course, automatically, while Scott sleeps.
+
+---
+
+### ToonBee BeeGuide — Remaining Steps (Continued from Screenshots, March 24, 2026)
+
+#### Step 2 — Review Your Storyboard
+
+After "Creating Your Masterpiece" loading completes, the Review step shows the full generated storyboard:
+
+- Header: "Review Your Storyboard — 7 scenes • 3 characters"
+- "Show Prompts" link (reveals the full image prompts for each scene)
+- **Project Source | Copy Idea | Copy Script** toolbar — Copy Script exports the entire narration script as text
+
+**Characters section** — ToonBee auto-detected 3 characters from the story: Gimli, Ninja Master, Time-Traveling Elf. Each character card shows:
+- Character portrait (Gimli had one from prior projects — auto-populated ✓ Ready)
+- Ninja Master and Time-Traveling Elf: "Add character image" with Library / Upload options, "Skip this to auto-generate using AI in the next step"
+- "+ Add Character" button for extras
+
+**Scenes section** — 7 scene cards with:
+- One-line narration text per scene (cinematic, short). Examples:
+  - Scene 1: *"High in the misted peaks, he chose discipline over destiny, and began again."*
+  - Scene 2: *"Under a silent master, he learned to move like smoke and strike like stone."*
+  - Scene 3: *"When his meteor-forged blades finally obeyed, the coming fight stopped feeling impossible."*
+- Character avatar icons showing which characters appear in each scene
+- Edit (pencil) and delete (trash) icons per scene
+- "Drag scenes to reorder" affordance
+- "+ None assigned" prompt on scenes with no character yet
+
+"Next Step: Generate Characters" button proceeds.
+
+**Auto-generated project name:** ToonBee named the project **"Mist Dojo Vendetta"** — it created a cinematic title from the story content automatically.
+
+---
+
+#### Step 3 — Generate Characters
+
+Two states captured:
+
+**Before generation (1/3 ready):**
+- Gimli: ✓ Ready (had image from prior project, shown)
+- Ninja Master: "Generate or add image" → Generate / Library / Upload buttons
+- Time-Traveling E...: same options
+- "Skip this to auto-generate using AI in the next step" note on empty cards
+
+**Generate Character modal (for Ninja Master):**
+- **"Image Reference As Style"** — critical feature. Two options:
+  - "No Image Refer..." (blank) — use a style preset instead
+  - "Gimli" (with thumbnail ✓ selected) — use Gimli's visual style as the consistency anchor for this new character
+- Orange banner: *"✨ The new image will match the style of the selected character. Select 'No Image Reference' to select a visual style instead."*
+- Image Prompt (editable): full cinematic portrait description of Ninja Master ("elderly human male martial arts master, lean and wiry build, late 60s to 70s, tan skin, sharp cheekbones, calm piercing eyes, long silver hair tied into a topknot...")
+- Generate costs **1 credit**
+
+**After generation (3/3 ready):**
+- Gimli: ✓ Ready — husky/malamute in colorful flower garden, 3D Pixar style
+- Ninja Master: ✓ Ready — dark ninja figure in dim interior
+- Time-Traveling E...: ✓ Ready — armored female warrior, silver-haired
+
+**"Select Existing Character" library modal** — when clicking Library button to pull from prior projects:
+- Search bar: "Search by name or project..."
+- Yellow banner: "Only characters in the same aspect ratio as your project will be shown"
+- Shows ALL characters across ALL projects, grid view:
+  - Mischievous Squirrel (Gimli's Sound Quest)
+  - Cartoon Cat / Middle-aged man (Gimli's Sound Quest, Galactic Learning Quest) — bald professor type
+  - Gimli × 2 — one from each prior project (slight variation between them)
+  - **scott** (from "gimli" project) — a real photo of Scott himself, bald, beard, dark background
+  - Additional professor/teacher characters visible below
+- Confirms: ToonBee builds a cross-project character library over time. Reuse is built-in.
+
+---
+
+#### Step 4 — Generate Scene Images
+
+**Before generation:**
+- "Generate All Images" button (badge: **7cr** = 1 credit per image × 7 scenes)
+- Each scene card has: image placeholder, upload icon, "Generate" button, image prompt (truncated), character avatars
+
+**During/after generation:**
+- Most scenes: "Ready" green badge with generated image
+- Scene 3: "Failed" orange badge with retry button
+- "Generate Failed Images (1)" button prominently shown — regenerate only the failed scenes, not the whole batch
+
+**After all complete:**
+- "Images Complete — All images have been generated." success screen (blue checkmark icon)
+- Yellow note: "You can add new scenes or remove scenes, by going to the Review step. Regenerate individual images via the button on each scene card."
+
+**Credit cost:** 7 images × 1cr each = **7 credits total**. Not per provider — image generation cost is separate from video generation.
+
+---
+
+#### Step 5 — Voice & Music Studio
+
+- **"Generate Voice & Music — 0/7 voiceovers"**
+
+**Choose Your Narrator** (scrollable row of voice cards):
+| Voice | Description |
+|---|---|
+| Clara (selected ✓) | Warm and friendly female voice |
+| Marcus | Deep and authoritative male voice |
+| Austin | Soft and soothing storyteller |
+| Zara | Bright and energetic |
+| Patrick | Classic narrator voice |
+| + more (scroll right) | — |
+
+**Speaking Style** (pill toggles): Standard • Warm & Friendly • Professional • Energetic • Calm • Dramatic • **Educational** • Podcast  
+Freeform text area below: "Speak in a serious, cinematic tone with calm intensity and clear pacing."
+
+**"Generate Voiceovers (7)"** → 7 credits, generates narration for all 7 scenes at once.
+
+**Background Music section:**
+- Style presets: Standard (selected) • Cinematic • Upbeat • Lo-Fi • Emotional • Tech • Peaceful • Jazz • Retro
+- AI generates a description: *"Cinematic hybrid score: taiko drums, low strings, airy chorus, subtle synth pulses, rising tension into percussive action, then warm resolved chords."* 
+- "Generate Music" button (credit cost not shown in screenshot) + "Upload Music" button (bring your own)
+
+**Scenes shown below** with auto-generated voiceover text per scene (ready for individual editing).
+
+**Credit cost estimate:** 7 voiceovers × 1cr = **7 credits** (based on pattern from images step).
+
+---
+
+#### Step 6 — Generate Videos
+
+**"Generate Videos — 0/7 videos"**
+
+**Provider selection dropdown** — full list with credit costs:
+
+| Provider | Type | Credits/video | Notes |
+|---|---|---|---|
+| **WAN - Fast, Affordable** | Free | ⚡ 3.0 | Selected by default ✓ |
+| Hailuo 2.3 Fast | Free | ⚡ 6.0 | Recommended |
+| Seedance 1 PRO fast | Free | ⚡ 6.0 | Recommended |
+| Seedance 1.5 PRO | Free | ⚡ 8.0 | Top Choice - Great Quality |
+| PixVerse 5 | PRO | ⚡ 12.0 | PRO tier required |
+| **Kling 2.1** | PRO | ⚡ 14.0 | PRO tier required |
+| Grok | PRO | ⚡ 15.0 | Has Sound Effects - Top Quality |
+
+**Per-project cost math:**
+- WAN (default): 7 videos × 3cr = **21 credits/project**
+- Kling 2.1: 7 videos × 14cr = **98 credits/project** (~2.3 projects from Scott's 226 credit balance)
+- At 168 sci-g1 videos: WAN = **504 credits total** | Kling 2.1 = **2,352 credits total**
+
+**Scene list with video prompts** — AI generated a video motion description per scene (different from the image prompt). Examples:
+- Scene 1: *"...the secluded dojo nestled among ancient trees. Mist drifts steadily between trunks and over the roofline..."*
+- Scene 2: *"A gentle push in toward the training pair as the elderly robot master performs one smooth, controlled sequence of hand and foot movements, then side-steps..."*
+- Scene 3: *"A slow dolly in as the dwarf warrior performs a short, precise dagger drill: one controlled cross-slice, a tight pivot, then both blades return to a guarded..."*
+
+Each scene has a separate IMAGE prompt and a separate VIDEO MOTION prompt — two layers of AI direction.
+
+---
+
+#### BeeStudio — The Video Editor
+
+After all assets are generated, ToonBee drops into a full NLE-style editor:
+
+- **Project name:** "Mist Dojo Vendetta" (auto-generated, editable)
+- **Status:** `RESEARCH • Auto-saved`
+- **Top bar:** Characters (3) | Background Music | Export button
+
+**Main viewport:** Full-width scene preview (1280×720 landscape). Scene 1 shows the cinematic dojo image with mist — photorealistic, dark/moody atmosphere even in "3D Pixar" style.
+
+**Right panel — Inspector (Scene 1):**
+- Scene Image (✓ Ready dropdown)
+- Scene Video (expandable)
+- Voice Settings (expandable)
+- **CONTENT section:**
+  - Script & Captions
+  - Text & Image Layers
+- **TIMING & EFFECTS section:**
+  - Scene Duration: **6.0s** (default — editable)
+  - Scene Image Effects
+  - End Of Scene Transition
+
+**Bottom timeline:**
+- 7 scene thumbnails in sequence
+- Total: **7 scenes • ~42s** (7 scenes × 6.0s default)
+- "Add Scene" button at end
+- Playback controls: ← | ▶ | →
+
+**Top search bar:** "Ask anything about ToonBee..." — in-app AI help
+
+**Export button** — orange, top right — final render to video file.
+
+---
+
+### Revised Phase 4 Design Implications (Complete Picture)
+
+Now that the full 6-step pipeline is documented, the Phase 4 rebuild has a complete reference model.
+
+**Credit economics — key insight:**
+ToonBee's WAN model (3cr/video) makes 168 sci-g1 videos cost ~504 credits. At ToonBee pricing, that's a real spend. For Chapterhouse, the equivalent is Replicate compute costs — check if WAN model is available via Replicate API before defaulting to Kling.
+
+**Kling 2.1 is PRO tier on ToonBee (14cr)** — this is why it was expensive in Scott's testing. If Chapterhouse calls the Kling API directly (not through ToonBee), per-second billing likely undercuts ToonBee's credit markup significantly.
+
+**The dual-prompt system is worth replicating:**
+- Image prompt → what the scene looks like (static)
+- Video motion prompt → how the camera/scene moves (dynamic)
+Claude should generate both, separately, for every scene in the course pipeline.
+
+**Scene duration default = 6.0s per scene, 7 scenes = 42s total video.**
+For a curriculum lesson, 7 scenes × 6s = 42s introduction video. That's correct for a hook/intro. Full lesson sections would need longer (15–30s per scene).
+
+**The Character Library cross-project reuse is the sleeper feature.**
+ToonBee remembers every character Scott has ever created across all projects. When starting a new project, you pull from that history. Scott's Gimli has already appeared in 6 projects — each one slightly refining the visual. Chapterhouse's `characters` table plus `reference_images[]` is the architectural equivalent, but it needs to surface reuse proactively ("You've used Gimli in 6 prior projects — use the same reference?").
+
+**The style-reference-for-new-characters feature should ship with Phase 3.**
+When generating a new character (e.g., a student character for a lesson), the user should be able to select Gimli as the style reference so the new character lives in the same visual world. This is the `imagePrompts[0]` pattern in Leonardo or the `image` reference in Replicate flux-dev — it's already half-wired.
+
+
+
 
