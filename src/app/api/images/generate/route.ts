@@ -237,6 +237,7 @@ async function generateLeonardo(
   height: number,
   referenceImages?: string[],
   stylePreset?: string, // e.g. "RENDER_3D", "ILLUSTRATION", "CINEMATIC" — defaults to RENDER_3D when refs present
+  loraModelId?: string, // custom model ID when character LoRA is trained; overrides Phoenix base
 ): Promise<{ url: string; model: string }> {
   const key = process.env.LEONARDO_API_KEY ?? process.env.LEONARDO_AI_API_KEY;
   if (!key) throw new Error("LEONARDO_API_KEY not configured");
@@ -266,7 +267,7 @@ async function generateLeonardo(
     width,
     height,
     num_images: 1,
-    modelId: "6b645e3a-d64f-4341-a6d8-7a3690fbf042", // Leonardo Phoenix
+    modelId: loraModelId ?? "6b645e3a-d64f-4341-a6d8-7a3690fbf042", // LoRA model when trained, Phoenix base as fallback
     alchemy: true,
   };
   if (imagePrompts) genBody.imagePrompts = imagePrompts;
@@ -399,6 +400,8 @@ export async function POST(req: Request) {
           width,
           height,
           character?.reference_images ?? undefined,
+          undefined, // stylePreset — auto-detected from presence of refs
+          character?.lora_model_id ?? undefined, // use trained LoRA model when available
         );
         break;
     }

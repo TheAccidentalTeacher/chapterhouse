@@ -213,7 +213,7 @@ async function generateImageLeonardo(prompt: string, character?: Character): Pro
     width: 1024,
     height: 1024,
     num_images: 1,
-    modelId: "6b645e3a-d64f-4341-a6d8-7a3690fbf042", // Leonardo Phoenix
+    modelId: character?.lora_model_id ?? "6b645e3a-d64f-4341-a6d8-7a3690fbf042", // LoRA model when trained, Phoenix base as fallback
     alchemy: true,
     presetStyle: "RENDER_3D", // 3D cartoon — consistent with ToonBee art direction
   };

@@ -69,7 +69,7 @@ Phase 7 (Voice Studio Narration)  ───────── needs Phase 5
 | Claude prompt enhancement | Every image/video prompt passes through Claude before going to provider. |
 | Text overlay strategy | Cloudinary URL transforms (e.g. `l_text:Arial_40_bold:Hello/fl_relative`) on clean images — never bake text into generated images. |
 | Image providers | GPT Image 1, Stability AI, Flux (Replicate), Leonardo.ai — all selectable in UI. Leonardo is NOT the default and NOT the character consistency engine. |
-| Character consistency | LoRA fine-tuning via Replicate (FLUX LoRA trainer) for production. Reference injection (Gimli ToonBee image → Flux image-to-image) as bridge while LoRA trains. **No Leonardo ControlNet dependency.** ToonBee retired as a workflow — ToonBee images become the LoRA training set. |
+| Character consistency | LoRA fine-tuning via **Leonardo Custom Model** (Phoenix fine-tune, `modelType: CHARACTERS`). Upload 10–20 ToonBee reference images → create Leonardo dataset → `POST /api/rest/v1/models` (sd_version: PHOENIX) → trained `modelId` stored in `characters.lora_model_id` → all future generations use LoRA model ID in place of Phoenix base. Reference injection (ToonBee refs as `imagePrompts`, weight 0.75) serves as live bridge until training completes. Trigger token = character slug in UPPER_CASE (e.g. `GIMLI`). Repeatable for every new character. Full workflow in Phase 3.5. |
 | Video providers | **Kling AI first** (animated clips: Gimli in motion — primary animated provider), D-ID second (talking head: lip-sync Gimli/Scott — secondary), Runway Gen-3, Pika. **HeyGen = Scott Mr. S avatar ONLY.** Not for Gimli. Not the default. ToonBee retired — 45 min/video is not viable. Build Kling before D-ID in Phase 4. |
 | Review Queue | Non-negotiable. All content (posts, images, videos) through human approval. |
 | Bundle data | **Option C** — `bundles` table in CoursePlatform's Supabase. Both apps share it. |
@@ -1010,31 +1010,26 @@ export async function POST(request: Request) {
 
 ## Step 3.5 — Wire prompt enhancer into image generation route
 
-> **✅ DECISION LOCKED (Q-3-2): Character consistency uses LoRA via Replicate — no Leonardo ControlNet dependency. Blocker cleared.**
+> **✅ DECISION LOCKED (Q-3-2): Character consistency uses Leonardo Custom Model fine-tune (Phoenix, `modelType: CHARACTERS`). Blocker cleared.**
 >
 > **Two-layer approach (both live in the same `characters` record):**
-> - **Bridge (immediate, no training):** Pass `character.primary_reference_url` as the `image` input to Replicate Flux image-to-image. Low `strength` value (0.65–0.75) gives Gimli consistency while respecting the scene prompt.
-> - **Production (identity-level):** Train a FLUX LoRA on ToonBee Gimli images via `ostris/flux-dev-lora-trainer` on Replicate (~20 min, one-time per character). Trained model ID stored as `lora_model_id` in characters table.
+> - **Bridge (immediate, no training):** Pass `character.reference_images` as `imagePrompts` (weight 0.75) to Leonardo Phoenix. Works now. Output quality: "good 3D cartoon dog, not quite Gimli."
+> - **Production (identity-level):** Train a Leonardo Custom Model on ToonBee Gimli images. Trained `modelId` stored in `characters.lora_model_id`. Generation uses the LoRA model ID instead of Phoenix base. Output quality: "this looks like my actual dog."
 >
-> **Bridge implementation (when `character.reference_images.length > 0` and `lora_model_id` is null):**
+> **Bridge implementation (when `lora_model_id` is null — already live):**
 > ```typescript
-> const output = await replicate.run('black-forest-labs/flux-dev', {
->   input: {
->     prompt: enhancedPrompt,
->     image: character.primary_reference_url,  // Cloudinary URL of Gimli ToonBee ref
->     strength: 0.7,
->   }
-> })
+> // Leonardo generation with imagePrompts reference injection
+> imagePrompts = validIds.map((imagePromptId) => ({ imagePromptId, weight: 0.75 }));
+> genBody.modelId = "6b645e3a-d64f-4341-a6d8-7a3690fbf042"; // Phoenix base
 > ```
 >
 > **LoRA implementation (when `lora_model_id` is set — identity-level consistency):**
 > ```typescript
-> const output = await replicate.run(character.lora_model_id, {
->   input: { prompt: enhancedPrompt }
-> })
+> genBody.modelId = character.lora_model_id; // Fine-tuned on Gimli ToonBee images
+> // imagePrompts reference injection still applies on top of LoRA for extra lock
 > ```
 >
-> **To train:** Upload 10-20 ToonBee Gimli images to Replicate → run `ostris/flux-dev-lora-trainer` → store returned model version as `lora_model_id`. One-time per character.
+> **To train:** Upload 10-20 ToonBee Gimli images to Leonardo → train Custom Model (Phoenix, Characters, Medium strength) → store returned model UUID as `lora_model_id`. One-time per character. Full workflow in Phase 3.5.
 
 **File to modify:** `src/app/api/images/generate/route.ts`
 
@@ -1166,6 +1161,260 @@ After deciding:
 4. Generate with Replicate (flux-schnell or flux-dev + reference image if set) — should use Gimli's physical description in the actual API call
 5. Check `generated_images` table in Supabase — should have `character_id`, `prompt_original`, `prompt_enhanced` all populated
 6. `prompt_enhanced` should mention Gimli's malamute description
+
+---
+
+---
+
+# PHASE 3.5 — CHARACTER LORA TRAINING
+
+**WHAT:** Fine-tune Leonardo Phoenix on a character's reference images to produce a character-specific model. Every image generated with the LoRA model looks like *that specific character* regardless of scene, prompt, or run — not just "similar style."
+
+**WHY:** Reference injection (imagePrompts, weight 0.75) is the bridge — it helps, but Phoenix doesn't truly *learn* Gimli. A fine-tuned custom model bakes character identity into the weights. The difference is "good 3D cartoon dog" (bridge) vs. "this is my actual dog" (LoRA). With 168 lesson slides in sci-g1 alone, that difference compounds fast.
+
+**The repeatable pattern — works for every character:**
+```
+New character created → upload 10–20 reference images → kick off training →
+wait ~20 min → store returned modelId → lora_model_id set →
+all future generations use LoRA, both Creative Studio and Course Asset pipeline
+```
+
+**BEFORE:**
+- `characters.lora_model_id` = NULL for all characters
+- All Leonardo generations use Phoenix base model + imagePrompts reference injection
+- Output: consistent 3D cartoon style but character identity drifts across scenes
+
+**AFTER:**
+- `characters.lora_model_id` = Leonardo custom model UUID per trained character
+- All Leonardo generations for that character use the fine-tuned model
+- Output: character identity locked regardless of scene prompt variation
+
+---
+
+## Step 3.5.1 — Collect training images
+
+Gather 10–20 ToonBee Gimli illustrations. Quality beats quantity here.
+
+**What makes a good training image:**
+- Different angles: front, 3/4, side, slight overhead
+- Different expressions: neutral, happy, confused, cross-eyed (his signature)
+- Consistent character, varying backgrounds — that is the exact goal
+- All ToonBee cartoon style — no photos, no other art styles mixed in
+- Minimum 512×512; 768×768 or 1024×1024 preferred
+- No watermarks, no text, no other characters cropped into frame
+
+You already have several from ToonBee. Generate remaining poses if needed before training.
+
+---
+
+## Step 3.5.2 — Train the LoRA via Leonardo web UI (Gimli, one-time)
+
+The web UI is the fastest path for Gimli. For all future characters, use the programmatic API route in Step 3.5.5 — one button click from inside Chapterhouse.
+
+1. Go to [leonardo.ai](https://leonardo.ai) → **Finetuning** (left sidebar)
+2. Click **Train a Custom Model**
+3. Settings:
+   - **Name:** `Gimli — Alaskan Malamute K-5 Mascot`
+   - **Description:** `ToonBee-style cartoon Alaskan Malamute. Curriculum explainer for SomersSchool K-5.`
+   - **Resolution:** 768
+   - **Base Model:** Phoenix
+   - **Model Type:** Characters
+   - **Training Strength:** Medium
+4. Upload your 10–20 ToonBee Gimli images
+5. **Instance Prompt:** `GIMLI` — this is the trigger token; include it in generation prompts for strongest activation (e.g. `GIMLI teaching fractions at a chalkboard`)
+6. Click **Start Training** — ~15–25 minutes
+7. When complete, go to **My Models** → click the new model → copy its **Model ID** (UUID format)
+
+**Cost:** ~$5–10 Leonardo credits. One-time per character.
+
+---
+
+## Step 3.5.3 — Store the model ID in Supabase
+
+Run in Supabase Dashboard → SQL Editor:
+
+```sql
+UPDATE characters
+SET lora_model_id = '{YOUR_LEONARDO_MODEL_UUID}'
+WHERE slug = 'gimli';
+```
+
+That's the entire integration. Both generation routes (`src/app/api/images/generate/route.ts` and `worker/src/jobs/course-slide-images.ts`) already check `character.lora_model_id` and substitute it for the Phoenix base model ID when set. No deploy needed.
+
+---
+
+## Step 3.5.4 — How the code uses it (already wired — March 24, 2026)
+
+Both generation routes implement the same pattern:
+
+```typescript
+// LoRA model wins over Phoenix base when set
+modelId: character?.lora_model_id ?? "6b645e3a-d64f-4341-a6d8-7a3690fbf042"
+```
+
+When `lora_model_id` is NULL → Phoenix base + reference injection bridge.
+When `lora_model_id` is set → fine-tuned model (reference injection still applies on top for extra lock).
+
+No additional code changes needed when you store a new model ID. SQL update → immediate effect on all future generations.
+
+---
+
+## Step 3.5.5 — Programmatic training route (for all future characters)
+
+Build a "Train LoRA" button in the Character Library Settings panel. One click kicks off the whole training pipeline without leaving Chapterhouse.
+
+**File to create:** `src/app/api/characters/[id]/train-lora/route.ts`
+
+```typescript
+// POST /api/characters/[id]/train-lora
+// 1. Creates a Leonardo dataset
+// 2. Uploads all character.reference_images to the dataset (presigned S3 upload)
+// 3. Triggers Phoenix fine-tune training (modelType: CHARACTERS)
+// 4. Returns {training_model_id, status: 'training', expected_minutes: 20}
+
+export async function POST(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const supabase = await createClient();
+  if (!supabase) return Response.json({ error: "DB unavailable" }, { status: 500 });
+
+  const key = process.env.LEONARDO_API_KEY ?? process.env.LEONARDO_AI_API_KEY;
+  if (!key) return Response.json({ error: "LEONARDO_API_KEY not configured" }, { status: 500 });
+
+  const { data: char } = await supabase
+    .from("characters")
+    .select("slug, name, reference_images")
+    .eq("id", id)
+    .single();
+
+  if (!char) return Response.json({ error: "Character not found" }, { status: 404 });
+  if (!char.reference_images?.length || char.reference_images.length < 5) {
+    return Response.json({ error: "Upload at least 5 reference images before training" }, { status: 400 });
+  }
+
+  // 1. Create dataset
+  const dsRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/datasets", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ name: `${char.name} LoRA Training Set` }),
+  });
+  const dsData = await dsRes.json() as { insert_datasets_one?: { id: string } };
+  const datasetId = dsData.insert_datasets_one?.id;
+  if (!datasetId) return Response.json({ error: "Failed to create Leonardo dataset" }, { status: 500 });
+
+  // 2. Upload reference images to dataset
+  await Promise.all(
+    char.reference_images.map(async (imgUrl: string) => {
+      const uploadRes = await fetch(
+        `https://cloud.leonardo.ai/api/rest/v1/datasets/${datasetId}/upload`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ extension: "jpg" }),
+        }
+      );
+      const uploadData = await uploadRes.json() as { uploadDatasetImage?: { url: string; fields: string } };
+      const { url, fields } = uploadData.uploadDatasetImage ?? {};
+      if (!url || !fields) return;
+      const imgBlob = await (await fetch(imgUrl)).blob();
+      const fieldsObj: Record<string, string> = JSON.parse(fields);
+      const formData = new FormData();
+      for (const [k, v] of Object.entries(fieldsObj)) formData.append(k, v);
+      formData.append("file", imgBlob, "ref.jpg");
+      await fetch(url, { method: "POST", body: formData });
+    })
+  );
+
+  // 3. Kick off training
+  const triggerWord = char.slug.toUpperCase().replace(/-/g, "_"); // 'gimli' → 'GIMLI'
+  const trainRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/models", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: `${char.name} Character LoRA`,
+      description: `Character LoRA for ${char.name} — SomersSchool curriculum asset`,
+      modelType: "CHARACTERS",
+      nsfw: false,
+      notSafeForWork: false,
+      resolution: 768,
+      datasetId,
+      num_train_epochs: 10,
+      learning_rate: 0.0001,
+      instance_prompt: triggerWord,
+      sd_version: "PHOENIX",
+      strength: "MEDIUM",
+    }),
+  });
+  const trainData = await trainRes.json() as { sdTrainingJob?: { customModelId?: string } };
+  const trainingModelId = trainData.sdTrainingJob?.customModelId;
+  if (!trainingModelId) return Response.json({ error: "Training failed to start" }, { status: 500 });
+
+  return Response.json({
+    training_model_id: trainingModelId,
+    status: "training",
+    expected_minutes: 20,
+    trigger_word: triggerWord,
+    next_step: `Poll GET /api/characters/${id}/lora-status?modelId=${trainingModelId} until status = COMPLETE`,
+  });
+}
+```
+
+**File to create:** `src/app/api/characters/[id]/lora-status/route.ts`
+
+```typescript
+// GET /api/characters/[id]/lora-status?modelId={trainingModelId}
+// Polls Leonardo for training status. When COMPLETE, auto-writes lora_model_id to characters table.
+
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const { searchParams } = new URL(req.url);
+  const modelId = searchParams.get("modelId");
+  if (!modelId) return Response.json({ error: "modelId param required" }, { status: 400 });
+
+  const key = process.env.LEONARDO_API_KEY ?? process.env.LEONARDO_AI_API_KEY;
+  if (!key) return Response.json({ error: "LEONARDO_API_KEY not configured" }, { status: 500 });
+
+  const res = await fetch(`https://cloud.leonardo.ai/api/rest/v1/models/${modelId}`, {
+    headers: { Authorization: `Bearer ${key}` },
+  });
+  const data = await res.json() as { custom_models_by_pk?: { status: string } };
+  const status = data.custom_models_by_pk?.status ?? "PENDING";
+
+  if (status === "COMPLETE") {
+    const supabase = await createClient();
+    if (supabase) {
+      await supabase.from("characters").update({ lora_model_id: modelId }).eq("id", id);
+    }
+    return Response.json({
+      status: "COMPLETE",
+      lora_model_id: modelId,
+      message: "lora_model_id saved to character — all future generations use this model",
+    });
+  }
+
+  return Response.json({ status, lora_model_id: null });
+}
+```
+
+**UI hook in Character Library settings panel:** Poll `lora-status` every 30 seconds after training kicks off. Show a progress spinner. When status = COMPLETE, show "✅ LoRA trained — {trigger_word} is locked" and update the character card.
+
+---
+
+## Phase 3.5 SMOKE TEST
+
+1. Train Gimli LoRA via Leonardo web UI (Step 3.5.2) — copy the model UUID
+2. Run SQL: `UPDATE characters SET lora_model_id = '{uuid}' WHERE slug = 'gimli';`
+3. Open Creative Studio → select Gimli → type "GIMLI teaching fractions at a chalkboard" → Generate
+4. Compare to prior generations — Gimli's face, body proportions, and fur pattern should be significantly more consistent with your ToonBee references
+5. Generate 3 more different scenes — confirm character identity holds across all of them
+6. Check `generated_images` table — `model` column should contain the custom model UUID, not `"6b645e3a-d64f-4341-a6d8-7a3690fbf042"`
+
+**For future characters:** POST to `/api/characters/{id}/train-lora` → 20 min → GET `/api/characters/{id}/lora-status?modelId={id}` until `status: COMPLETE` → character is locked.
 
 ---
 
