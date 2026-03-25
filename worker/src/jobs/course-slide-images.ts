@@ -43,8 +43,11 @@ interface Bundle {
 interface Character {
   id: string;
   name: string;
+  physical_description?: string;  // used to seed the scene prompt (approximates enhancePrompt)
+  art_style?: string;             // injected alongside physical_description
   lora_model_id?: string | null;   // Tier 1: LoRA model version hash on Replicate
   reference_images?: string[];     // Tier 2: URL(s) for flux-dev image reference
+  preferred_provider?: string | null; // 'leonardo' | 'replicate' (from characters table)
 }
 
 // ── Replicate Image Generation (REST API — no extra package needed) ────────────
@@ -148,6 +151,103 @@ async function generateImageReplicate(
   throw new Error("Replicate generation timed out after 3 minutes");
 }
 
+// ── Leonardo Image Generation ─────────────────────────────────────────────────
+// Used when character.preferred_provider === 'leonardo'.
+// RENDER_3D style preset gives the 3D cartoon look closest to ToonBee's art direction.
+// Character reference images are uploaded as imagePrompts (weight 0.75) for identity lock.
+// Physical description is prepended to the scene prompt — approximates enhancePrompt
+// without requiring a Claude API call in the Railway worker.
+
+async function uploadRefToLeonardo(imageUrl: string, apiKey: string): Promise<string | null> {
+  try {
+    const initRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/init-images", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ extension: "png" }),
+    });
+    if (!initRes.ok) return null;
+    const { uploadInitImage } = await initRes.json();
+    const { id, url, fields } = uploadInitImage ?? {};
+    if (!id || !url || !fields) return null;
+
+    const imgRes = await fetch(imageUrl);
+    if (!imgRes.ok) return null;
+    const imgBlob = await imgRes.blob();
+
+    const fieldsObj: Record<string, string> = JSON.parse(fields);
+    const formData = new FormData();
+    for (const [k, v] of Object.entries(fieldsObj)) formData.append(k, v);
+    formData.append("file", imgBlob, "reference.png");
+    await fetch(url, { method: "POST", body: formData });
+
+    return id as string;
+  } catch {
+    return null; // Non-fatal — fall through to text-only generation
+  }
+}
+
+async function generateImageLeonardo(prompt: string, character?: Character): Promise<string> {
+  const key = process.env.LEONARDO_API_KEY ?? process.env.LEONARDO_AI_API_KEY;
+  if (!key) throw new Error("LEONARDO_API_KEY not configured");
+
+  // Prepend physical description to the scene prompt for character identity.
+  // This approximates what prompt-enhancer.ts does via Claude Haiku in the Vercel route,
+  // without needing a Claude API call in the Railway worker context.
+  const fullPrompt = character?.physical_description
+    ? `${character.physical_description}. ${character.art_style ?? ""}. ${prompt}`.replace(/\.\s*\./g, ".").trim()
+    : prompt;
+
+  let imagePrompts: { imagePromptId: string; weight: number }[] | undefined;
+  if (character?.reference_images?.length) {
+    const ids = await Promise.all(
+      character.reference_images.slice(0, 3).map((u) => uploadRefToLeonardo(u, key))
+    );
+    const valid = ids.filter(Boolean) as string[];
+    if (valid.length > 0) {
+      imagePrompts = valid.map((imagePromptId) => ({ imagePromptId, weight: 0.75 }));
+    }
+  }
+
+  const genBody: Record<string, unknown> = {
+    prompt: fullPrompt,
+    width: 1024,
+    height: 1024,
+    num_images: 1,
+    modelId: "6b645e3a-d64f-4341-a6d8-7a3690fbf042", // Leonardo Phoenix
+    alchemy: true,
+    presetStyle: "RENDER_3D", // 3D cartoon — consistent with ToonBee art direction
+  };
+  if (imagePrompts) genBody.imagePrompts = imagePrompts;
+
+  const genRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/generations", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify(genBody),
+  });
+  if (!genRes.ok) {
+    const err = await genRes.text();
+    throw new Error(`Leonardo error (${genRes.status}): ${err}`);
+  }
+
+  const genData = await genRes.json();
+  const generationId = genData.sdGenerationJob?.generationId;
+  if (!generationId) throw new Error("No generation ID from Leonardo");
+
+  // Poll up to 3 minutes (60 × 3 s)
+  for (let i = 0; i < 60; i++) {
+    await new Promise((r) => setTimeout(r, 3000));
+    const poll = await fetch(
+      `https://cloud.leonardo.ai/api/rest/v1/generations/${generationId}`,
+      { headers: { Authorization: `Bearer ${key}` } }
+    );
+    const result = await poll.json();
+    const images = result.generations_by_pk?.generated_images;
+    if (images?.length > 0) return images[0].url as string;
+  }
+
+  throw new Error("Leonardo generation timed out after 3 minutes");
+}
+
 // ── Cloudinary Upload ─────────────────────────────────────────────────────────
 
 async function uploadToCloudinary(
@@ -225,7 +325,7 @@ export async function runCourseSlideImages(
     try {
       const { data: charData } = await chapterhouseSupabase
         .from("characters")
-        .select("id, name, lora_model_id, reference_images")
+        .select("id, name, physical_description, art_style, lora_model_id, reference_images, preferred_provider")
         .eq("id", characterId)
         .single<Character>();
       if (charData) character = charData;
@@ -343,8 +443,13 @@ export async function runCourseSlideImages(
         : `somerschool/slides/${bundleId}/section-${ref.sectionKey}-${ref.idx}`;
 
     try {
-      // 1. Generate image via Replicate (Tier 1 LoRA / Tier 2 Bridge / Tier 3 Free)
-      const rawUrl = await generateImageReplicate(ref.label, character);
+      // 1. Generate image — provider selected based on character.preferred_provider.
+      // Leonardo + RENDER_3D gives consistent 3D cartoon style across all slides in a job.
+      // Replicate (Tier 1 LoRA / Tier 2 Bridge / Tier 3 Free) used when character prefers it.
+      const useProvider = character?.preferred_provider === "leonardo" ? "leonardo" : "replicate";
+      const rawUrl = useProvider === "leonardo"
+        ? await generateImageLeonardo(ref.label, character)
+        : await generateImageReplicate(ref.label, character);
 
       // 2. Upload to Cloudinary — get permanent delivery URL
       const deliveryUrl = await uploadToCloudinary(rawUrl, publicId);

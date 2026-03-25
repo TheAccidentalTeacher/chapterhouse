@@ -235,7 +235,8 @@ async function generateLeonardo(
   prompt: string,
   width: number,
   height: number,
-  referenceImages?: string[], // all character reference images for max consistency
+  referenceImages?: string[],
+  stylePreset?: string, // e.g. "RENDER_3D", "ILLUSTRATION", "CINEMATIC" — defaults to RENDER_3D when refs present
 ): Promise<{ url: string; model: string }> {
   const key = process.env.LEONARDO_API_KEY ?? process.env.LEONARDO_AI_API_KEY;
   if (!key) throw new Error("LEONARDO_API_KEY not configured");
@@ -249,10 +250,16 @@ async function generateLeonardo(
     );
     const validIds = uploadResults.filter(Boolean) as string[];
     if (validIds.length > 0) {
-      // Weight 1.0 = maximum character reference influence in Leonardo Phoenix
-      imagePrompts = validIds.map((imagePromptId) => ({ imagePromptId, weight: 1.0 }));
+      // Weight 0.75 — character identity preserved without fighting the style preset.
+      // (1.0 was tested and found to overwhelm RENDER_3D, producing inconsistent style results)
+      imagePrompts = validIds.map((imagePromptId) => ({ imagePromptId, weight: 0.75 }));
     }
   }
+
+  // RENDER_3D style preset produces the 3D cartoon look closest to ToonBee's art direction.
+  // Applied automatically when character reference images are present.
+  // Scott's within-job consistency principle: same style preset locked for the whole run.
+  const resolvedStyle = stylePreset ?? (imagePrompts ? "RENDER_3D" : undefined);
 
   const genBody: Record<string, unknown> = {
     prompt,
@@ -260,9 +267,10 @@ async function generateLeonardo(
     height,
     num_images: 1,
     modelId: "6b645e3a-d64f-4341-a6d8-7a3690fbf042", // Leonardo Phoenix
-    alchemy: true,           // Higher fidelity mode — better character consistency
+    alchemy: true,
   };
   if (imagePrompts) genBody.imagePrompts = imagePrompts;
+  if (resolvedStyle) genBody.presetStyle = resolvedStyle;
 
   const response = await fetch(
     "https://cloud.leonardo.ai/api/rest/v1/generations",
@@ -336,7 +344,7 @@ export async function POST(req: Request) {
     if (body.characterId && supabase) {
       const { data } = await supabase
         .from("characters")
-        .select("slug, name, physical_description, art_style, negative_prompt, reference_images")
+        .select("slug, name, physical_description, art_style, negative_prompt, reference_images, preferred_provider")
         .eq("id", body.characterId)
         .eq("is_active", true)
         .single();
@@ -356,19 +364,12 @@ export async function POST(req: Request) {
       body.negativePrompt,
     ].filter(Boolean).join(", ");
 
-    // ── Character Consistency: img2img with reference image (Replicate only) ──
-    let effectiveModel = body.model;
-    let referenceImageUrl: string | null = null;
-
-    if (character && character.reference_images?.length > 0) {
-      if (provider === "replicate") {
-        // Flux Dev img2img: use first reference as anchor.
-        // generateReplicate auto-switches to flux-dev when referenceImageUrl is set.
-        referenceImageUrl = character.reference_images[0];
-        effectiveModel = effectiveModel || "black-forest-labs/flux-dev";
-      }
-      // Leonardo: all reference images uploaded inside generateLeonardo for max consistency
-    }
+    // Replicate uses text-only generation — the enhanced prompt front-loads the character's
+    // physical description verbatim, which is sufficient for text-to-image consistency.
+    // Flux Dev img2img was tested and found to copy the reference image composition rather
+    // than treating it as style guidance. Leonardo is the recommended provider for
+    // character-consistent generation (imagePrompts + RENDER_3D style preset).
+    const effectiveModel = body.model;
 
     let result: { url: string; model: string };
 
@@ -390,7 +391,6 @@ export async function POST(req: Request) {
           width,
           height,
           effectiveModel,
-          referenceImageUrl ?? undefined,
         );
         break;
       case "leonardo":
@@ -419,7 +419,6 @@ export async function POST(req: Request) {
         metadata: {
           style: body.style,
           negativePrompt: finalNegative,
-          referenceImageUrl,
           context: body.context,
         },
       });
