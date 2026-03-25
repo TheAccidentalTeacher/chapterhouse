@@ -70,7 +70,7 @@ Phase 7 (Voice Studio Narration)  ───────── needs Phase 5
 | Text overlay strategy | Cloudinary URL transforms (e.g. `l_text:Arial_40_bold:Hello/fl_relative`) on clean images — never bake text into generated images. |
 | Image providers | GPT Image 1, Stability AI, Flux (Replicate), Leonardo.ai — all selectable in UI. Leonardo is NOT the default and NOT the character consistency engine. |
 | Character consistency | LoRA fine-tuning via **Leonardo Custom Model** (Phoenix fine-tune, `modelType: CHARACTERS`). Upload 10–20 ToonBee reference images → create Leonardo dataset → `POST /api/rest/v1/models` (sd_version: PHOENIX) → trained `modelId` stored in `characters.lora_model_id` → all future generations use LoRA model ID in place of Phoenix base. Reference injection (ToonBee refs as `imagePrompts`, weight 0.75) serves as live bridge until training completes. Trigger token = character slug in UPPER_CASE (e.g. `GIMLI`). Repeatable for every new character. Full workflow in Phase 3.5. |
-| Video providers | **Kling AI first** (animated clips: Gimli in motion — primary animated provider), D-ID second (talking head: lip-sync Gimli/Scott — secondary), Runway Gen-3, Pika. **HeyGen = Scott Mr. S avatar ONLY.** Not for Gimli. Not the default. ToonBee retired — 45 min/video is not viable. Build Kling before D-ID in Phase 4. |
+| Video providers | **Leonardo Video tab first** — evaluate for Gimli animated clips BEFORE committing to Kling. Scott has Premium ($24/mo, already active). Native image→video inside Leonardo feeds from LoRA-trained Gimli image. If quality is sufficient → skip Kling subscription ($29.99/mo saved). Kling AI second if Leonardo Video is inadequate. D-ID third (talking-head lip-sync). **HeyGen = Scott Mr. S avatar ONLY.** Not for Gimli. ToonBee retired — superseded by Leonardo LoRA + Video tab. Evaluate before Phase 4 build. |
 | Review Queue | Non-negotiable. All content (posts, images, videos) through human approval. |
 | Bundle data | **Option C** — `bundles` table in CoursePlatform's Supabase. Both apps share it. |
 | Asset Dashboard scope | Lesson grid, 5 status dots (Bundle / Images / Audio / Video / Worksheet), "Generate All Missing" button. |
@@ -1424,7 +1424,7 @@ export async function GET(
 
 **WHAT:** Tear out the HeyGen-only video form. Replace with a character-first, multi-provider video generation system. Character selected first. Provider chosen second. Claude enhances the scene description. Video lands in a Review Queue panel.
 
-**WHY:** HeyGen is $29/mo and requires a pre-built avatar ID + voice ID. For Gimli content (K-5 animated clips), Kling AI is the right tool. For talking-head "Scott explains" videos, D-ID works. Having a character-first architecture means the same workflow generates both types.
+**WHY:** HeyGen is $29/mo and requires a pre-built avatar ID + voice ID. For Gimli content (K-5 animated clips), **evaluate Leonardo Video tab FIRST** — Scott has Premium ($24/mo, already active). Leonardo takes a LoRA-trained Gimli image and animates it natively inside the same platform where images are generated. If Leonardo Video is sufficient → skip the Kling AI subscription entirely ($29.99/mo saved). Kling AI is the second-line provider if Leonardo Video is inadequate. D-ID handles talking-head lip-sync for Scott + Gimli. Having a character-first architecture means the same workflow generates both types.
 
 **BEFORE:**
 - `src/components/video-generator.tsx`: HeyGen-only form with `avatarId`, `voiceId`, dimension picker

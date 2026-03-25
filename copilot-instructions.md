@@ -165,7 +165,7 @@ From Mike Judge's *Beavis and Butt-Head*. Two teenage idiots who sit on a couch 
 | AI — secondary | OpenAI GPT-5.4 (Responses API) + GPT-5-mini (bulk) |
 | AI — fast/free | Groq (Llama 3.3 70B, 500 tok/s) + Gemini 2.0 Flash (1M tok/day free) |
 | AI — Azure | Azure AI Foundry (Content Safety, Doc Intelligence, Azure OpenAI FERPA layer) |
-| Images | GPT Image 1 (text-in-images) + Stability AI + Leonardo.ai (Gimli) |
+| Images | GPT Image 1 (text-in-images) + Stability AI + **Leonardo.ai Premium** (primary — Gimli LoRA + Video pipeline + Blueprints) + Replicate (Flux fallback) |
 | Voice | ElevenLabs TTS (scoped keys per project) |
 | TTS bulk/STT | Azure Speech (SomerSchool1, westus) |
 | Translation | Azure Translator (SomerSchooltranslator, westus3) |
@@ -497,7 +497,7 @@ The end state: every major decision — product, architecture, curriculum, marke
 
 **The two-layer Gimli architecture:**
 - **Layer 1 — Establish Gimli:** Commission or AI-generate a cartoon illustration of Gimli in 5-8 poses (sitting, pointing, confused, excited, cross-eyed, sleeping). This asset is reused in every video. Never regenerate from scratch.
-- **Layer 2 — Deploy Gimli:** Use asset-based tools (Doodly Smart Draw) for perfect consistency, AI-generative tools (ToonBee, Kling) for expressiveness.
+- **Layer 2 — Deploy Gimli:** **Leonardo.ai Premium** is the primary engine — LoRA fine-tune on Phoenix locks character identity across all scenes. Video via Leonardo Video tab (native, evaluate before committing to Phase 4 Kling decision). Doodly Smart Draw available for whiteboard-style assets if needed.
 
 **Gimli voice guidelines for script writing:**
 - Reluctant but competent. He sighs before explaining.
@@ -517,14 +517,15 @@ The end state: every major decision — product, architecture, curriculum, marke
 | **Minvo** | ✅ Yes | $3.49-19.99 | Repurpose long lessons → TikTok/Reel clips for course promotion | N/A |
 | **Lordicon PRO** | ✅ Yes | $8 | Animated icons in Next.js apps (Lottie/GIF/SVG) | N/A |
 | **Doodly (Voomly Cloud)** | 🔴 Get this | ~$50-97 | Whiteboard Gimli via Smart Draw — perfect consistency, draws him on screen | ★★★★★ |
-| **ToonBee** | ✅ Buy it | $77 | AI cartoon Gimli — Character Consistency Engine; faith + education explicitly supported. **Confirmed for SomerSchool K-5 lessons.** | ★★★★☆ |
-| **Kling AI** | 🟡 Consider | ~$29.99 | Motion-rich Gimli — rebuilt 3.0 architecture for cross-scene visual identity binding | ★★★★☆ |
-| **Animaker Pro** | 🔵 Option | $43 | Volume production — 30 custom characters, commercial rights, 2K exports | ★★★☆☆ |
+| **Leonardo.ai** | ✅ Premium ($24/mo) | $24 | **PRIMARY Gimli platform.** Images (Phoenix LoRA, Nano Banana 2, FLUX.2 Pro, GPT Image-1.5 via API), native Video tab (image→video, evaluate for Phase 4 before Kling), Blueprints (Consistent Character, Instant Animate, Model in Scene Video), Flow State (1 token/image — rapid iteration/testing), Universal Upscaler (2x built-in), Models & Training under "More" menu. Account: HubCodeLab9202 | ★★★★★ |
+| **ToonBee** | ⚫ Retired as generator | $0 (keep PNGs) | Superseded by Leonardo LoRA. Existing ToonBee PNG exports = LoRA training data to upload to Leonardo. Do NOT subscribe ($77/mo). Do NOT generate. Keep all existing Gimli PNGs. | N/A |
+| **Kling AI** | 🟡 Evaluate post-Phase-4 | ~$29.99 | Evaluate ONLY after testing Leonardo native Video tab for Gimli clip quality. If Leonardo Video is sufficient, Kling is not needed. Decision gate: Phase 4 smoke test. | TBD |
+| **Animaker Pro** | ⚫ Skip | — | Superseded by Leonardo Premium. | — |
 
 **Full-stack curriculum production pipeline:**
-`Descript (record/edit) → HeyGen (avatar intro) → Doodly/ToonBee (Gimli explains) → Flixier (assemble/caption) → Minvo (clip for social)`
+`Descript (record/edit) → HeyGen (avatar intro) → Leonardo.ai (Gimli LoRA image + Video tab animated clip) → Flixier (assemble/caption) → Minvo (clip for social)`
 
-**ToonBee:** ✅ Confirmed — buy it. Gimli character for K-5 SomerSchool lessons. **HeyGen = Scott avatar (all grades). Do NOT use HeyGen for Gimli.** These are two separate video roles.
+**Leonardo.ai Premium:** ✅ Confirmed — $24/mo active. Gimli images AND video via Leonardo (LoRA + Phoenix + Video tab). **HeyGen = Scott Mr. S avatar ONLY (all grades). Do NOT use HeyGen for Gimli.** These are two separate video roles. ToonBee is retired as an active generation tool — existing ToonBee PNGs are LoRA training data only.
 
 ---
 
@@ -710,9 +711,10 @@ Month 7–12: Compound
 | Repurpose.io | Content Distribution | 🔴 Preferred | Auto-distribute HeyGen/lesson clips to TikTok, Reels, YouTube Shorts. Scott's preferred tool over Minvo for repurposing. |
 | Lordicon PRO | Animated Icon Library | ✅ Scott has it | 32,700 animated icons. Lottie/GIF/SVG exports. React/JS native. Use in all Next.js apps. |
 | Doodly (Voomly Cloud) | Whiteboard Animation | 🔴 Get this | Smart Draw = upload Gimli illustration → system draws him on whiteboard. Includes Toonly, Talkia, Voomly hosting. |
-| ToonBee | AI Cartoon Generator | 🟡 Trial first | Character Consistency Engine. Education + faith use cases explicit. $77/mo. Test: same dog across 2 scenes? |
-| Kling AI | AI Cinematic Video | 🟡 Consider | 3.0 architecture rebuilt for cross-scene visual identity consistency. ~$29.99/mo. Best $/character-consistency. |
-| Animaker Pro | 2D Animation Platform | 🔵 Option | 30 custom characters, commercial rights, 2K video, #1 rated design product. $43/mo. |
+| **Leonardo.ai** | AI Image + Video Platform | ✅ Scott has it (Premium $24/mo) | **PRIMARY platform for all Gimli work.** 25K fast tokens/mo, 20 custom LoRA models/mo. Tools: Image (Phoenix LoRA, Nano Banana 2, FLUX.2 Pro, GPT Image-1.5 via API), native Video tab (image→video, evaluate for Phase 4), Blueprints (Consistent Character + Instant Animate + Model in Scene Video), Flow State (1 token/image — rapid iteration), Universal Upscaler (2x built-in), Models & Training under "More" menu (where LoRA training lives). Account: HubCodeLab9202 / scosom@gmail.com. |
+| ToonBee | AI Cartoon Generator | ⚫ Retired — keep PNGs | Superseded by Leonardo LoRA. Existing ToonBee PNG exports = LoRA training data to upload when training Gimli LoRA. Do NOT subscribe ($77/mo). All future Gimli generation through Leonardo. |
+| Kling AI | AI Cinematic Video | 🟡 Evaluate post-Phase-4 | 3.0 architecture, ~$29.99/mo. Evaluate ONLY after testing Leonardo native Video tab for Gimli clip quality. If Leonardo Video is sufficient, Kling is not needed. Decision gate: Phase 4 smoke test. |
+| Animaker Pro | 2D Animation Platform | ⚫ Skip | Superseded by Leonardo Premium. |
 | Superhuman | AI Email | ⚫ Skip | Email client, $30/mo. Cloudflare catch-all + Brevo covers Scott's needs for free. |
 | **daily.dev** | Dev Feed / Intel | ✅ Active | Personalized dev news feed — Chapterhouse brief ingestion. **Requires Plus ($7/mo) for API access.** Base URL: `https://api.daily.dev/public/v1`. Auth: Bearer token. Working endpoints: `GET /feeds/foryou` (NO hyphen — `/for-you` returns 404), `/feeds/popular`, `/feeds/discussed`, `/feeds/tag/{tag}`. All accept `limit` (1–50) + `cursor`. Rate limit: 60 req/min. |
 
