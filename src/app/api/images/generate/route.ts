@@ -260,9 +260,7 @@ async function generateLeonardo(
     height,
     num_images: 1,
     modelId: "6b645e3a-d64f-4341-a6d8-7a3690fbf042", // Leonardo Phoenix
-    alchemy: true,           // Higher fidelity mode — required for consistent character rendering
-    highContrast: true,      // Sharpens character features
-    contrastRatio: 0.5,
+    alchemy: true,           // Higher fidelity mode — better character consistency
   };
   if (imagePrompts) genBody.imagePrompts = imagePrompts;
 
