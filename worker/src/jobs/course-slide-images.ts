@@ -166,8 +166,8 @@ async function uploadRefToLeonardo(imageUrl: string, apiKey: string): Promise<st
       body: JSON.stringify({ extension: "png" }),
     });
     if (!initRes.ok) return null;
-    const { uploadInitImage } = await initRes.json();
-    const { id, url, fields } = uploadInitImage ?? {};
+    const initData = await initRes.json() as { uploadInitImage?: { id: string; url: string; fields: string } };
+    const { id, url, fields } = initData.uploadInitImage ?? {};
     if (!id || !url || !fields) return null;
 
     const imgRes = await fetch(imageUrl);
@@ -229,7 +229,7 @@ async function generateImageLeonardo(prompt: string, character?: Character): Pro
     throw new Error(`Leonardo error (${genRes.status}): ${err}`);
   }
 
-  const genData = await genRes.json();
+  const genData = await genRes.json() as { sdGenerationJob?: { generationId?: string } };
   const generationId = genData.sdGenerationJob?.generationId;
   if (!generationId) throw new Error("No generation ID from Leonardo");
 
@@ -240,7 +240,7 @@ async function generateImageLeonardo(prompt: string, character?: Character): Pro
       `https://cloud.leonardo.ai/api/rest/v1/generations/${generationId}`,
       { headers: { Authorization: `Bearer ${key}` } }
     );
-    const result = await poll.json();
+    const result = await poll.json() as { generations_by_pk?: { generated_images?: { url: string }[] } };
     const images = result.generations_by_pk?.generated_images;
     if (images?.length > 0) return images[0].url as string;
   }
