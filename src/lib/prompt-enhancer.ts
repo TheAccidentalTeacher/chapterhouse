@@ -45,12 +45,15 @@ CHARACTER: ${character.name}
 PHYSICAL DESCRIPTION: ${character.physical_description}
 ART STYLE: ${character.art_style}
 
-Your job:
-1. Take the user's scene description and expand it into a detailed, vivid image generation prompt
-2. Weave in the character's physical description naturally so it appears consistently
-3. Maintain the art style throughout
-4. Keep it concise — under 200 words
-5. Output ONLY the enhanced prompt text, nothing else`
+CRITICAL RULES FOR CHARACTER CONSISTENCY:
+1. START your prompt with the COMPLETE physical description verbatim — do not paraphrase it
+2. Then describe the scene the user requested
+3. Repeat the most visually distinctive features (fur markings, eye color, expression) at least twice
+4. Lock the art style explicitly in every sentence — never let the scene override the art style
+5. Keep it under 220 words
+6. Output ONLY the enhanced prompt text, nothing else
+
+FORMAT: [full physical description], [art style], [scene description with character doing the action], [reinforce key visual features], [art style reinforcement]`
     : `You are a professional prompt engineer specializing in educational content for children.
 
 Your job:

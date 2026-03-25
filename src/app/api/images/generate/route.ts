@@ -129,12 +129,14 @@ async function generateReplicate(
   const [owner, name] = modelSlug.split("/");
   const endpoint = `https://api.replicate.com/v1/models/${owner}/${name}/predictions`;
 
-  // Build input — img2img when reference image provided
+  // Build input — img2img when reference image provided.
+  // prompt_strength: 0 = exact copy of reference image, 1 = pure text generation.
+  // At 0.45 the character's visual identity dominates while the scene still changes.
   const input: Record<string, unknown> = referenceImageUrl
     ? {
         prompt,
         image: referenceImageUrl,
-        prompt_strength: 0.75, // 0 = copy reference, 1 = ignore reference
+        prompt_strength: 0.45,
         num_outputs: 1,
       }
     : {
@@ -233,17 +235,22 @@ async function generateLeonardo(
   prompt: string,
   width: number,
   height: number,
-  referenceImageUrl?: string,
+  referenceImages?: string[], // all character reference images for max consistency
 ): Promise<{ url: string; model: string }> {
   const key = process.env.LEONARDO_API_KEY ?? process.env.LEONARDO_AI_API_KEY;
   if (!key) throw new Error("LEONARDO_API_KEY not configured");
 
-  // Attempt to upload the character reference image for visual consistency
+  // Upload all reference images in parallel for maximum character consistency.
+  // Leonardo supports multiple imagePrompts — more references = better identity lock.
   let imagePrompts: { imagePromptId: string; weight: number }[] | undefined;
-  if (referenceImageUrl) {
-    const imagePromptId = await uploadRefImageToLeonardo(referenceImageUrl, key);
-    if (imagePromptId) {
-      imagePrompts = [{ imagePromptId, weight: 0.8 }];
+  if (referenceImages && referenceImages.length > 0) {
+    const uploadResults = await Promise.all(
+      referenceImages.slice(0, 3).map((url) => uploadRefImageToLeonardo(url, key)),
+    );
+    const validIds = uploadResults.filter(Boolean) as string[];
+    if (validIds.length > 0) {
+      // Weight 1.0 = maximum character reference influence in Leonardo Phoenix
+      imagePrompts = validIds.map((imagePromptId) => ({ imagePromptId, weight: 1.0 }));
     }
   }
 
@@ -253,6 +260,9 @@ async function generateLeonardo(
     height,
     num_images: 1,
     modelId: "6b645e3a-d64f-4341-a6d8-7a3690fbf042", // Leonardo Phoenix
+    alchemy: true,           // Higher fidelity mode — required for consistent character rendering
+    highContrast: true,      // Sharpens character features
+    contrastRatio: 0.5,
   };
   if (imagePrompts) genBody.imagePrompts = imagePrompts;
 
@@ -353,13 +363,13 @@ export async function POST(req: Request) {
     let referenceImageUrl: string | null = null;
 
     if (character && character.reference_images?.length > 0) {
-      // Use first reference image as visual anchor for character consistency
-      referenceImageUrl = character.reference_images[0];
       if (provider === "replicate") {
-        // Flux Schnell doesn't support img2img — generateReplicate will auto-switch to flux-dev
+        // Flux Dev img2img: use first reference as anchor.
+        // generateReplicate auto-switches to flux-dev when referenceImageUrl is set.
+        referenceImageUrl = character.reference_images[0];
         effectiveModel = effectiveModel || "black-forest-labs/flux-dev";
       }
-      // Leonardo: referenceImageUrl gets uploaded inside generateLeonardo
+      // Leonardo: all reference images uploaded inside generateLeonardo for max consistency
     }
 
     let result: { url: string; model: string };
@@ -390,7 +400,7 @@ export async function POST(req: Request) {
           finalPrompt,
           width,
           height,
-          referenceImageUrl ?? undefined,
+          character?.reference_images ?? undefined,
         );
         break;
     }
