@@ -251,16 +251,17 @@ async function generateLeonardo(
     );
     const validIds = uploadResults.filter(Boolean) as string[];
     if (validIds.length > 0) {
-      // Weight 0.75 — character identity preserved without fighting the style preset.
-      // (1.0 was tested and found to overwhelm RENDER_3D, producing inconsistent style results)
-      imagePrompts = validIds.map((imagePromptId) => ({ imagePromptId, weight: 0.75 }));
+      // Weight 1.0 — maximum character identity lock, same approach as ToonBee's
+      // "choose this picture as model" feature (IP-Adapter reference at inference time).
+      // Multiple reference images compound the consistency effect.
+      imagePrompts = validIds.map((imagePromptId) => ({ imagePromptId, weight: 1.0 }));
     }
   }
 
-  // RENDER_3D style preset produces the 3D cartoon look closest to ToonBee's art direction.
-  // Applied automatically when character reference images are present.
-  // Scott's within-job consistency principle: same style preset locked for the whole run.
-  const resolvedStyle = stylePreset ?? (imagePrompts ? "RENDER_3D" : undefined);
+  // When character reference images are present, let the images drive the style rather
+  // than forcing a preset that fights the character reference.
+  // ToonBee equivalent: no style preset — the reference image IS the style anchor.
+  const resolvedStyle = stylePreset ?? undefined;
 
   // Leonardo Elements (LoRA fine-tunes) are NOT modelIds — they go in a separate elements[] array.
   // When an Element is present: use Flux Dev as the base (same model the Element was trained on).
