@@ -267,18 +267,24 @@ async function generateLeonardo(
   // When no Element: fall back to Phoenix base for general generations.
   // Flux Dev model ID in Leonardo: b2614463-296c-462a-b22d-e6bb4fc6b92b
   // Phoenix model ID in Leonardo:  6b645e3a-d64f-4341-a6d8-7a3690fbf042
+  // NOTE: Alchemy is incompatible with Flux Dev — only enable for Phoenix generations.
+  const isValidUUID = (s: string) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+  const effectiveLoraId = loraModelId && isValidUUID(loraModelId) ? loraModelId : undefined;
+  const useFluxDev = !!effectiveLoraId;
+
   const genBody: Record<string, unknown> = {
     prompt,
     width,
     height,
     num_images: 1,
-    modelId: loraModelId
+    modelId: useFluxDev
       ? "b2614463-296c-462a-b22d-e6bb4fc6b92b"  // Flux Dev — matches Element training base
       : "6b645e3a-d64f-4341-a6d8-7a3690fbf042", // Phoenix — default for non-character generations
-    alchemy: true,
+    alchemy: !useFluxDev,  // Alchemy only works with Phoenix; Flux Dev ignores/rejects it
   };
   // Inject Element (LoRA) — akUUID references the trained character Element, not a model ID
-  if (loraModelId) genBody.elements = [{ akUUID: loraModelId, weight: 0.75 }];
+  if (effectiveLoraId) genBody.elements = [{ akUUID: effectiveLoraId, weight: 0.75 }];
   if (imagePrompts) genBody.imagePrompts = imagePrompts;
   if (resolvedStyle) genBody.presetStyle = resolvedStyle;
 
