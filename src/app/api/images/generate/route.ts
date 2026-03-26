@@ -237,7 +237,7 @@ async function generateLeonardo(
   height: number,
   referenceImages?: string[],
   stylePreset?: string, // e.g. "RENDER_3D", "ILLUSTRATION", "CINEMATIC" — defaults to RENDER_3D when refs present
-  loraModelId?: string, // custom model ID when character LoRA is trained; overrides Phoenix base
+  loraModelId?: string, // Element akUUID when character LoRA is trained; goes in elements[] not modelId
 ): Promise<{ url: string; model: string }> {
   const key = process.env.LEONARDO_API_KEY ?? process.env.LEONARDO_AI_API_KEY;
   if (!key) throw new Error("LEONARDO_API_KEY not configured");
@@ -262,14 +262,23 @@ async function generateLeonardo(
   // Scott's within-job consistency principle: same style preset locked for the whole run.
   const resolvedStyle = stylePreset ?? (imagePrompts ? "RENDER_3D" : undefined);
 
+  // Leonardo Elements (LoRA fine-tunes) are NOT modelIds — they go in a separate elements[] array.
+  // When an Element is present: use Flux Dev as the base (same model the Element was trained on).
+  // When no Element: fall back to Phoenix base for general generations.
+  // Flux Dev model ID in Leonardo: b2614463-296c-462a-b22d-e6bb4fc6b92b
+  // Phoenix model ID in Leonardo:  6b645e3a-d64f-4341-a6d8-7a3690fbf042
   const genBody: Record<string, unknown> = {
     prompt,
     width,
     height,
     num_images: 1,
-    modelId: loraModelId ?? "6b645e3a-d64f-4341-a6d8-7a3690fbf042", // LoRA model when trained, Phoenix base as fallback
+    modelId: loraModelId
+      ? "b2614463-296c-462a-b22d-e6bb4fc6b92b"  // Flux Dev — matches Element training base
+      : "6b645e3a-d64f-4341-a6d8-7a3690fbf042", // Phoenix — default for non-character generations
     alchemy: true,
   };
+  // Inject Element (LoRA) — akUUID references the trained character Element, not a model ID
+  if (loraModelId) genBody.elements = [{ akUUID: loraModelId, weight: 0.75 }];
   if (imagePrompts) genBody.imagePrompts = imagePrompts;
   if (resolvedStyle) genBody.presetStyle = resolvedStyle;
 

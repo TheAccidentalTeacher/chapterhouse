@@ -208,15 +208,22 @@ async function generateImageLeonardo(prompt: string, character?: Character): Pro
     }
   }
 
+  // Leonardo Elements (LoRA fine-tunes) are NOT modelIds — they go in a separate elements[] array.
+  // When an Element is present: use Flux Dev (same base the Element was trained on).
+  // When no Element: fall back to Phoenix.
   const genBody: Record<string, unknown> = {
     prompt: fullPrompt,
     width: 1024,
     height: 1024,
     num_images: 1,
-    modelId: character?.lora_model_id ?? "6b645e3a-d64f-4341-a6d8-7a3690fbf042", // LoRA model when trained, Phoenix base as fallback
+    modelId: character?.lora_model_id
+      ? "b2614463-296c-462a-b22d-e6bb4fc6b92b"  // Flux Dev — matches Element training base
+      : "6b645e3a-d64f-4341-a6d8-7a3690fbf042", // Phoenix — fallback
     alchemy: true,
-    presetStyle: "RENDER_3D", // 3D cartoon — consistent with ToonBee art direction
+    presetStyle: "RENDER_3D", // 3D cartoon — consistent with training art style
   };
+  // Inject Element (LoRA) — akUUID references the trained character Element, not a model ID
+  if (character?.lora_model_id) genBody.elements = [{ akUUID: character.lora_model_id, weight: 0.75 }];
   if (imagePrompts) genBody.imagePrompts = imagePrompts;
 
   const genRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/generations", {
