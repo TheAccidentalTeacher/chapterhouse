@@ -354,7 +354,7 @@ export async function POST(req: Request) {
     if (body.characterId && supabase) {
       const { data } = await supabase
         .from("characters")
-        .select("slug, name, physical_description, art_style, negative_prompt, reference_images, preferred_provider, lora_model_id")
+        .select("slug, name, physical_description, art_style, negative_prompt, reference_images, preferred_provider, lora_model_id, trigger_word")
         .eq("id", body.characterId)
         .eq("is_active", true)
         .single();

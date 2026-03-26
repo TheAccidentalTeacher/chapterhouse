@@ -11,6 +11,7 @@ const createCharacterSchema = z.object({
   reference_images: z.array(z.string().url()).max(10).default([]),
   hero_image_url: z.string().url().nullable().optional(),
   preferred_provider: z.enum(["openai", "stability", "replicate", "leonardo"]).default("replicate"),
+  trigger_word: z.string().max(100).nullable().optional(),
 });
 
 export async function GET() {

@@ -9,6 +9,7 @@ export interface CharacterRef {
   art_style: string;
   negative_prompt: string;
   reference_images: string[];
+  trigger_word?: string | null; // Leonardo LoRA trigger word — prepended to prompt to activate the Element
 }
 
 export interface EnhancedPrompt {
@@ -86,19 +87,29 @@ Your job:
         ? `Expanded prompt with character details and art style (${rawPrompt.length} → ${enhanced.length} chars)`
         : `Minor refinements applied (${rawPrompt.length} → ${enhanced.length} chars)`;
 
+    // Prepend Leonardo LoRA trigger word when present.
+    // A Leonardo Element (fine-tuned LoRA) only activates when its trigger word appears
+    // in the generation prompt. Without it, the Element UUID in elements[] does nothing.
+    const triggerWord = character?.trigger_word;
+    const finalEnhanced = triggerWord ? `${triggerWord}, ${enhanced}` : enhanced;
+    const triggerNote = triggerWord ? ` Trigger word '${triggerWord}' prepended for LoRA activation.` : "";
+
     return {
-      enhanced,
+      enhanced: finalEnhanced,
       negative: character?.negative_prompt ?? "",
-      notes,
+      notes: notes + triggerNote,
       original: rawPrompt,
     };
   } catch (err) {
     // Non-fatal: fallback to raw prompt on any API error
     console.error("[prompt-enhancer] Claude Haiku failed, using raw prompt:", err);
+    // Still prepend trigger word even on fallback — it must be in the prompt
+    const triggerWord = character?.trigger_word;
+    const fallbackPrompt = triggerWord ? `${triggerWord}, ${rawPrompt}` : rawPrompt;
     return {
-      enhanced: rawPrompt,
+      enhanced: fallbackPrompt,
       negative: character?.negative_prompt ?? "",
-      notes: `Enhancement failed: ${err instanceof Error ? err.message : "unknown error"}`,
+      notes: `Enhancement failed: ${err instanceof Error ? err.message : "unknown error"}${triggerWord ? ` Trigger word '${triggerWord}' prepended.` : ""}`,
       original: rawPrompt,
     };
   }

@@ -45,8 +45,9 @@ interface Character {
   name: string;
   physical_description?: string;  // used to seed the scene prompt (approximates enhancePrompt)
   art_style?: string;             // injected alongside physical_description
-  lora_model_id?: string | null;   // Tier 1: LoRA model version hash on Replicate
-  reference_images?: string[];     // Tier 2: URL(s) for flux-dev image reference
+  lora_model_id?: string | null;   // Leonardo Element akUUID (LoRA fine-tune)
+  trigger_word?: string | null;    // Leonardo LoRA trigger word — must appear in prompt to activate Element
+  reference_images?: string[];     // Tier 2: URL(s) for reference injection
   preferred_provider?: string | null; // 'leonardo' | 'replicate' (from characters table)
 }
 
@@ -190,12 +191,14 @@ async function generateImageLeonardo(prompt: string, character?: Character): Pro
   const key = process.env.LEONARDO_API_KEY ?? process.env.LEONARDO_AI_API_KEY;
   if (!key) throw new Error("LEONARDO_API_KEY not configured");
 
-  // Prepend physical description to the scene prompt for character identity.
-  // This approximates what prompt-enhancer.ts does via Claude Haiku in the Vercel route,
-  // without needing a Claude API call in the Railway worker context.
-  const fullPrompt = character?.physical_description
-    ? `${character.physical_description}. ${character.art_style ?? ""}. ${prompt}`.replace(/\.\s*\./g, ".").trim()
-    : prompt;
+  // Prepend trigger word + physical description to the scene prompt.
+  // Trigger word MUST come first — it activates the Leonardo LoRA Element.
+  // Physical description approximates what prompt-enhancer.ts does via Claude Haiku.
+  const triggerPrefix = character?.trigger_word ? `${character.trigger_word}, ` : "";
+  const descPrefix = character?.physical_description
+    ? `${character.physical_description}. ${character.art_style ?? ""}. `
+    : "";
+  const fullPrompt = `${triggerPrefix}${descPrefix}${prompt}`.replace(/\.\s*\./g, ".").trim();
 
   let imagePrompts: { imagePromptId: string; weight: number }[] | undefined;
   if (character?.reference_images?.length) {
@@ -332,7 +335,7 @@ export async function runCourseSlideImages(
     try {
       const { data: charData } = await chapterhouseSupabase
         .from("characters")
-        .select("id, name, physical_description, art_style, lora_model_id, reference_images, preferred_provider")
+        .select("id, name, physical_description, art_style, lora_model_id, trigger_word, reference_images, preferred_provider")
         .eq("id", characterId)
         .single<Character>();
       if (charData) character = charData;
