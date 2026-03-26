@@ -29,11 +29,15 @@ export async function GET() {
 
     // Step 2: fire all candidate REST endpoints in parallel
     const endpoints: string[] = [
-      `https://cloud.leonardo.ai/api/rest/v1/elements`,
+      // POST-only endpoints — try as GET to see what we get
+      `https://cloud.leonardo.ai/api/rest/v1/loras`,
+      `https://cloud.leonardo.ai/api/rest/v1/user-elements`,
+      `https://cloud.leonardo.ai/api/rest/v1/me/loras`,
+      `https://cloud.leonardo.ai/api/rest/v1/trainings`,
       ...(userId ? [
-        `https://cloud.leonardo.ai/api/rest/v1/elements?userId=${userId}`,
-        `https://cloud.leonardo.ai/api/rest/v1/user/${userId}/elements`,
-        `https://cloud.leonardo.ai/api/rest/v1/models?userId=${userId}`,
+        `https://cloud.leonardo.ai/api/rest/v1/user/${userId}/loras`,
+        `https://cloud.leonardo.ai/api/rest/v1/user/${userId}/models`,
+        `https://cloud.leonardo.ai/api/rest/v1/user/${userId}/trainings`,
       ] : []),
     ];
 
@@ -48,18 +52,28 @@ export async function GET() {
     // Step 3: GraphQL query for user loras
     let gqlData: unknown = null;
     try {
-      const gqlRes = await fetch("https://cloud.leonardo.ai/api/graphql", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          query: `{
-            get_user_loras(limit: 20) {
-              id akUUID name instancePrompt baseModel status
-            }
-          }`,
-        }),
-      });
-      gqlData = await gqlRes.json();
+      // Try both known GraphQL endpoints  
+      const gqlUrls = [
+        "https://app.leonardo.ai/api/graphql",
+        "https://api.leonardo.ai/graphql",
+      ];
+      for (const gqlUrl of gqlUrls) {
+        const gqlRes = await fetch(gqlUrl, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            query: `{
+              get_user_loras(limit: 20) {
+                id akUUID name instancePrompt baseModel status
+              }
+            }`,
+          }),
+        });
+        const text = await gqlRes.text();
+        try { gqlData = { url: gqlUrl, status: gqlRes.status, body: JSON.parse(text) }; }
+        catch { gqlData = { url: gqlUrl, status: gqlRes.status, body: text.slice(0, 300) }; }
+        if (gqlRes.status === 200) break;
+      }
     } catch (e) {
       gqlData = { error: String(e) };
     }
