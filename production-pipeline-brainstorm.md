@@ -853,34 +853,68 @@ Step 7  Voice Studio narration: alongside Step 6
 
 ---
 
-## 🔴 SESSION STATUS — March 24, 2026
+## � SESSION STATUS — March 25, 2026
 
 ### Where We Are RIGHT NOW
 
-**Gimli LoRA is actively training in Leonardo.ai as of this session.**
+**Gimli LoRA training is COMPLETE. Element exists on Leonardo. Trigger word confirmed.**
 
 | Decision | Value |
 |---|---|
 | Art style | **Option A — 3D Render (Pixar-style)** — clean white background, volumetric fur, warm lighting |
-| Training source | Newly generated 3D-render malamute images via Leonardo Image tab (RENDER_3D preset) |
-| ToonBee images | NOT used — ToonBee is retired. Different art style. Those PNGs are archived only. |
-| Base model | **Flux Dev (1024×1024)** — NOT Phoenix (Phoenix not available as LoRA base in Leonardo UI) |
-| Model name | `Gimli` |
-| Description | `Gimli First Try` |
+| Base model | **Flux Dev (1024×1024)** |
+| Element name | `Gimli` (Description: "Gimli First Try") |
 | Category | Character ✅ |
-| Instance prompt | `GIMLI` |
-| Cost | 2 Leonardo tokens |
-| Status | 🔴 TRAINING NOW (~15–25 min) |
+| **Trigger word** | **`foil`** ← THIS IS THE CRITICAL PIECE |
+| Status | ✅ TRAINED — waiting for UUID + Supabase update |
 
-### What Happens When Training Completes
+### ⚠️ The Root Cause — Why the Element Didn't Work
 
-1. Go to Leonardo.ai → More → Models & Training
-2. Click the `Gimli` model → copy the **Model ID** (UUID format)
-3. Run in Supabase Dashboard → SQL Editor:
-   ```sql
-   UPDATE characters SET lora_model_id = '{YOUR_UUID}' WHERE slug = 'gimli';
-   ```
-4. No deploy needed — both generation routes already check `character.lora_model_id` and switch from Phoenix to the LoRA model automatically
+Leonardo LoRA Elements only activate when the **trigger word appears in the generation prompt**. The trigger word for the Gimli Element is `foil`. Without `foil` in the prompt, Leonardo completely ignores the Element UUID in `elements[]` — the fine-tune never activates. This is standard LoRA behavior.
+
+**Previous code:** Passed the Element UUID but never injected the trigger word → Element silently ignored → "doesn't look any different."
+
+**Fix shipped (March 25, commit `98cb307`):**
+- `prompt-enhancer.ts` — prepends `trigger_word` before the Claude-enhanced prompt. Also runs in fallback path (no API key).
+- `generate/route.ts` — fetches `trigger_word` from Supabase `characters` table
+- `course-slide-images.ts` (worker) — prepends `trigger_word` before `physical_description` prefix
+- `characters/route.ts` — POST schema accepts `trigger_word`
+- Migration `20260325_025_add_trigger_word.sql` — adds `trigger_word TEXT` column
+
+**The new prompt flow:**
+```
+"foil, A large fluffy Alaskan Malamute dog... [Claude enhancement]... RENDER_3D style..."
+```
+
+### What To Do Next
+
+**Step 1 — Run migration 025 in Supabase Dashboard:**
+```sql
+ALTER TABLE characters ADD COLUMN IF NOT EXISTS trigger_word TEXT;
+```
+
+**Step 2 — Get the Element UUID.** Vercel just deployed the list-elements route. Visit:
+`https://chapterhouse.vercel.app/api/characters/list-elements`
+
+Find the Gimli entry. Copy the `id` field (UUID format).
+
+**Step 3 — Update Gimli in Supabase:**
+```sql
+UPDATE characters 
+SET lora_model_id = '{PASTE-UUID-HERE}',
+    trigger_word = 'foil',
+    preferred_provider = 'leonardo'
+WHERE slug = 'gimli';
+```
+
+**Step 4 — Test in Creative Studio:**
+- Select Gimli character
+- Select Leonardo.ai provider
+- Type: "Gimli teaching a class about volcanoes, standing at a whiteboard"
+- Generate. The prompt will now contain: `foil, A large fluffy Alaskan Malamute dog...`
+- The Element activates. First real Gimli consistency test.
+
+### Phase Status As Of This Session
 
 ### Phase Status As Of This Session
 
