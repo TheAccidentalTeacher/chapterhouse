@@ -3,51 +3,78 @@ import { NextResponse } from "next/server";
 // One-time utility: find YOUR trained Gimli Element UUID from Leonardo.
 // Visit: /api/characters/list-elements
 export async function GET() {
-  const key = process.env.LEONARDO_API_KEY ?? process.env.LEONARDO_AI_API_KEY;
-  if (!key) return NextResponse.json({ error: "LEONARDO_API_KEY not configured" }, { status: 500 });
+  try {
+    const key = process.env.LEONARDO_API_KEY ?? process.env.LEONARDO_AI_API_KEY;
+    if (!key) return NextResponse.json({ error: "LEONARDO_API_KEY not configured" }, { status: 500 });
 
-  const headers = { Authorization: `Bearer ${key}`, "Content-Type": "application/json" };
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+    };
 
-  // Step 1: get the user's ID
-  const meRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/me", { headers });
-  const meData = await meRes.json();
-  const userId = meData?.user_details?.[0]?.user?.id ?? meData?.id ?? null;
-
-  // Step 2: try every plausible endpoint for user-trained Elements/LoRAs
-  const endpoints: string[] = [
-    `https://cloud.leonardo.ai/api/rest/v1/elements?userId=${userId}`,
-    `https://cloud.leonardo.ai/api/rest/v1/user/${userId}/elements`,
-    `https://cloud.leonardo.ai/api/rest/v1/models?userId=${userId}`,
-    `https://cloud.leonardo.ai/api/rest/v1/dataset`,
-    `https://cloud.leonardo.ai/api/rest/v1/training`,
-  ];
-
-  // Step 3: also try GraphQL — most reliable way to get user elements
-  const gqlRes = await fetch("https://cloud.leonardo.ai/api/graphql", {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-      query: `{
-        get_user_loras(where: {userId: {_eq: "${userId}"}}, limit: 10) {
-          id akUUID name instancePrompt baseModel status
-        }
-      }`,
-    }),
-  });
-  const gqlData = await gqlRes.json();
-
-  const results: Record<string, unknown> = { me: { status: meRes.status, userId, raw: meData } };
-  for (const url of endpoints) {
-    if (!userId && url.includes("undefined")) continue;
+    // Step 1: get user ID from /me
+    let userId: string | null = null;
+    let meData: unknown = null;
     try {
-      const res = await fetch(url, { headers });
-      const body = await res.json();
-      results[url] = { status: res.status, body };
+      const meRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/me", { headers });
+      meData = await meRes.json();
+      const d = meData as Record<string, unknown>;
+      userId =
+        (d?.user_details as Array<{user: {id: string}}>)?.[0]?.user?.id ??
+        (d?.id as string) ??
+        null;
     } catch (e) {
-      results[url] = { error: String(e) };
+      meData = { error: String(e) };
     }
-  }
-  results["graphql_user_loras"] = { status: gqlRes.status, body: gqlData };
 
-  return NextResponse.json({ userId, results });
+    // Step 2: fire all candidate REST endpoints in parallel
+    const endpoints: string[] = [
+      `https://cloud.leonardo.ai/api/rest/v1/elements`,
+      ...(userId ? [
+        `https://cloud.leonardo.ai/api/rest/v1/elements?userId=${userId}`,
+        `https://cloud.leonardo.ai/api/rest/v1/user/${userId}/elements`,
+        `https://cloud.leonardo.ai/api/rest/v1/models?userId=${userId}`,
+      ] : []),
+    ];
+
+    const restResults = await Promise.allSettled(
+      endpoints.map(async (url) => {
+        const res = await fetch(url, { headers });
+        const body = await res.json().catch(() => "(non-JSON)");
+        return { url, status: res.status, body };
+      })
+    );
+
+    // Step 3: GraphQL query for user loras
+    let gqlData: unknown = null;
+    try {
+      const gqlRes = await fetch("https://cloud.leonardo.ai/api/graphql", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          query: `{
+            get_user_loras(limit: 20) {
+              id akUUID name instancePrompt baseModel status
+            }
+          }`,
+        }),
+      });
+      gqlData = await gqlRes.json();
+    } catch (e) {
+      gqlData = { error: String(e) };
+    }
+
+    const restFormatted: Record<string, unknown> = {};
+    for (const r of restResults) {
+      if (r.status === "fulfilled") {
+        restFormatted[r.value.url] = { status: r.value.status, body: r.value.body };
+      } else {
+        restFormatted[String(r.reason)] = { error: String(r.reason) };
+      }
+    }
+
+    return NextResponse.json({ userId, me: meData, rest: restFormatted, graphql: gqlData });
+  } catch (e) {
+    return NextResponse.json({ error: String(e) }, { status: 500 });
+  }
 }
