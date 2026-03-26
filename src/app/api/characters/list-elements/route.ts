@@ -1,38 +1,53 @@
 import { NextResponse } from "next/server";
 
-// One-time utility: fetch YOUR custom trained Leonardo Elements (user LoRAs).
-// Tries /custom-models first (documented endpoint), then /user-loras as fallback.
+// One-time utility: find YOUR trained Gimli Element UUID from Leonardo.
 // Visit: /api/characters/list-elements
 export async function GET() {
   const key = process.env.LEONARDO_API_KEY ?? process.env.LEONARDO_AI_API_KEY;
   if (!key) return NextResponse.json({ error: "LEONARDO_API_KEY not configured" }, { status: 500 });
 
-  const headers = { Authorization: `Bearer ${key}` };
+  const headers = { Authorization: `Bearer ${key}`, "Content-Type": "application/json" };
 
-  // Try the two most likely endpoints for user-trained Elements
-  const endpoints = [
-    "https://cloud.leonardo.ai/api/rest/v1/custom-models",
-    "https://cloud.leonardo.ai/api/rest/v1/user-loras",
-    "https://cloud.leonardo.ai/api/rest/v1/elements?userId=me",
+  // Step 1: get the user's ID
+  const meRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/me", { headers });
+  const meData = await meRes.json();
+  const userId = meData?.user_details?.[0]?.user?.id ?? meData?.id ?? null;
+
+  // Step 2: try every plausible endpoint for user-trained Elements/LoRAs
+  const endpoints: string[] = [
+    `https://cloud.leonardo.ai/api/rest/v1/elements?userId=${userId}`,
+    `https://cloud.leonardo.ai/api/rest/v1/user/${userId}/elements`,
+    `https://cloud.leonardo.ai/api/rest/v1/models?userId=${userId}`,
+    `https://cloud.leonardo.ai/api/rest/v1/dataset`,
+    `https://cloud.leonardo.ai/api/rest/v1/training`,
   ];
 
-  const results: Record<string, unknown> = {};
+  // Step 3: also try GraphQL — most reliable way to get user elements
+  const gqlRes = await fetch("https://cloud.leonardo.ai/api/graphql", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      query: `{
+        get_user_loras(where: {userId: {_eq: "${userId}"}}, limit: 10) {
+          id akUUID name instancePrompt baseModel status
+        }
+      }`,
+    }),
+  });
+  const gqlData = await gqlRes.json();
 
+  const results: Record<string, unknown> = { me: { status: meRes.status, userId, raw: meData } };
   for (const url of endpoints) {
+    if (!userId && url.includes("undefined")) continue;
     try {
       const res = await fetch(url, { headers });
-      const text = await res.text();
-      let parsed: unknown;
-      try { parsed = JSON.parse(text); } catch { parsed = text; }
-      results[url] = { status: res.status, body: parsed };
+      const body = await res.json();
+      results[url] = { status: res.status, body };
     } catch (e) {
       results[url] = { error: String(e) };
     }
   }
+  results["graphql_user_loras"] = { status: gqlRes.status, body: gqlData };
 
-  return NextResponse.json({
-    note: "Raw responses from all candidate endpoints — find your Gimli UUID here. Alternatively: in Leonardo UI click the Gimli card and copy the UUID from the URL bar.",
-    results,
-    sql_template: `UPDATE characters SET lora_model_id = 'PASTE-UUID-HERE', trigger_word = 'foil', preferred_provider = 'leonardo' WHERE slug = 'gimli';`,
-  });
+  return NextResponse.json({ userId, results });
 }
