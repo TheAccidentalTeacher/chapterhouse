@@ -4,6 +4,17 @@
 
 ---
 
+## Pre-Flight: Read These Files First
+
+**REQUIRED at session start — read both before touching any code:**
+
+1. `.github/copilot-instructions.md` — Full identity brain: Scott's background, all 47 repos, three business tracks, Council personas (complete), locked decisions, tool evaluations, AI landscape intel, video production stack, NCHO store status, pending actions.
+2. `.github/instructions/scott-dev-process.instructions.md` — Dream Floor process: pre-flight reading, known issues inventory, architecture-before-coding, spec discipline, session close requirements.
+
+These files are the source of truth for who Scott is and how he builds. The global `~/.claude/CLAUDE.md` has a compressed summary — the files above have the full context. When in doubt, read the files.
+
+---
+
 ## Who This Is For
 
 You are the AI agent working inside `TheAccidentalTeacher/chapterhouse`.
