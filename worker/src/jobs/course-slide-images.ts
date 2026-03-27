@@ -339,11 +339,12 @@ async function uploadToCloudinary(
 
   const result = (await uploadRes.json()) as { public_id?: string; version?: number };
   const finalPublicId = result.public_id ?? publicId;
-  // Include version in delivery URL so the URL changes on every regen —
-  // this busts browser cache and CDN cache for the same public_id.
+  // Cloudinary URL structure: upload/{transformations}/{version}/{public_id}
+  // Version MUST come after transformations — putting it before causes 404s.
+  // Including version busts browser + CDN cache on every regen of the same public_id.
   const versionSegment = result.version ? `v${result.version}/` : "";
 
-  return `https://res.cloudinary.com/${cloudName}/image/upload/${versionSegment}q_auto/f_webp/${finalPublicId}`;
+  return `https://res.cloudinary.com/${cloudName}/image/upload/q_auto/f_webp/${versionSegment}${finalPublicId}`;
 }
 
 // ── Slide counting helper ─────────────────────────────────────────────────────
