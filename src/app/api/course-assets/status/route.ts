@@ -30,9 +30,30 @@ export async function GET(req: Request) {
   let supabase;
   try {
     supabase = createCourseAdmin();
-  } catch {
+  } catch (error) {
+    let courseUrlHost: string | null = null;
+    try {
+      const raw = process.env.COURSE_SUPABASE_URL;
+      courseUrlHost = raw ? new URL(raw).host : null;
+    } catch {
+      courseUrlHost = "invalid-url";
+    }
+
     return Response.json(
-      { error: "CoursePlatform DB not configured — set COURSE_SUPABASE_URL and COURSE_SUPABASE_SERVICE_ROLE_KEY" },
+      {
+        error: "CoursePlatform DB not configured — set COURSE_SUPABASE_URL and COURSE_SUPABASE_SERVICE_ROLE_KEY",
+        diagnostics: {
+          vercelEnv: process.env.VERCEL_ENV ?? null,
+          nodeEnv: process.env.NODE_ENV ?? null,
+          hasCourseSupabaseUrl: Boolean(process.env.COURSE_SUPABASE_URL),
+          hasCourseServiceRoleKey: Boolean(
+            process.env.COURSE_SUPABASE_SERVICE_ROLE_KEY
+          ),
+          courseSupabaseUrlHost: courseUrlHost,
+          createCourseAdminError:
+            error instanceof Error ? error.message : "unknown",
+        },
+      },
       { status: 503 }
     );
   }
