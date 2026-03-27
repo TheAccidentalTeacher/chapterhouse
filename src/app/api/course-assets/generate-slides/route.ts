@@ -6,6 +6,7 @@ import { z } from "zod";
 const schema = z.object({
   bundleId: z.string().min(1),
   characterId: z.string().optional(), // optional character UUID — used for Replicate LoRA/bridge reference injection
+  model: z.enum(["replicate-schnell", "replicate-dev", "leonardo", "gpt-image"]).optional(),
 });
 
 export async function POST(req: Request) {
@@ -21,7 +22,7 @@ export async function POST(req: Request) {
     return Response.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { bundleId, characterId } = parsed.data;
+  const { bundleId, characterId, model } = parsed.data;
 
   // Validate bundle exists in CoursePlatform
   let courseSupabase;
@@ -57,8 +58,8 @@ export async function POST(req: Request) {
     .from("jobs")
     .insert({
       type: "course_slide_images",
-      label: `Slides: ${(bundle as { title?: string }).title ?? bundleId}`,
-      input_payload: { bundleId, ...(characterId ? { characterId } : {}) },
+      label: `Slides: ${(bundle as { title?: string }).title ?? bundleId}${model ? ` [${model}]` : ""}`,
+      input_payload: { bundleId, ...(characterId ? { characterId } : {}), ...(model ? { model } : {}) },
       status: "queued",
     })
     .select()

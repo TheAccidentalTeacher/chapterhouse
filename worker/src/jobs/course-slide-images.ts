@@ -5,12 +5,20 @@ import { supabase as chapterhouseSupabase } from "../lib/supabase";
 
 export interface CourseSlideImagesPayload {
   bundleId: string;
-  characterId?: string; // optional character UUID from Chapterhouse characters table (Phase 3+)
+  characterId?: string;       // optional character UUID from Chapterhouse characters table (Phase 3+)
+  singleSlide?: {             // regenerate one slide only (used by /api/course-assets/regenerate-slide)
+    sectionKey: "intro" | number;
+    idx: number;
+  };
+  model?: "replicate-schnell" | "replicate-dev" | "leonardo" | "gpt-image"; // override provider
+  customPrompt?: string;      // override auto-generated prompt
 }
 
 interface Slide {
   label: string;
   image_url?: string | null;
+  prompt_used?: string;   // full prompt sent to the model — stored for inspection/regeneration
+  model_used?: string;    // which model/tier generated this image
 }
 
 interface Section {
@@ -36,6 +44,9 @@ interface Bundle {
   content: BundleContent | null;
   slides_count: number;
   slides_generated: number;
+  grade?: number;
+  subject_code?: string;
+  title?: string;
 }
 
 // ── Character interface (Chapterhouse characters table — populated in Phase 3) ──
@@ -51,6 +62,26 @@ interface Character {
   preferred_provider?: string | null; // 'leonardo' | 'replicate' (from characters table)
 }
 
+// ── Prompt template ───────────────────────────────────────────────────────────
+// Wraps a raw slide label into a proper image generation prompt.
+// Raw labels ("Animals Need Food") produce garbage without style guidance.
+
+function buildSlidePrompt(label: string, grade = 1, subjectCode = "sci"): string {
+  const subjectMap: Record<string, string> = {
+    sci: "science", ela: "language arts", mth: "mathematics", hst: "social studies",
+  };
+  const subject = subjectMap[subjectCode] ?? "general education";
+  const ageRange = grade <= 2 ? "5-7 year olds" : grade <= 5 ? "8-11 year olds" : "11-14 year olds";
+  return (
+    `Children's educational illustration for Grade ${grade} ${subject}. ` +
+    `Topic: "${label}". ` +
+    `Friendly cartoon style, warm bright colors, diverse child characters aged ${ageRange}. ` +
+    `Simple clear composition with a single main subject. ` +
+    `Flat 2D children's book illustration style. ` +
+    `No text, labels, or words in the image. Clean light background.`
+  );
+}
+
 // ── Replicate Image Generation (REST API — no extra package needed) ────────────
 //
 // Three-tier selection:
@@ -62,7 +93,8 @@ interface Character {
 
 async function generateImageReplicate(
   prompt: string,
-  character?: Character
+  character?: Character,
+  forceModel?: "replicate-schnell" | "replicate-dev"
 ): Promise<string> {
   const token = process.env.REPLICATE_API_TOKEN ?? process.env.REPLICATE_TOKEN;
   if (!token) throw new Error("REPLICATE_API_TOKEN / REPLICATE_TOKEN not configured");
@@ -76,14 +108,14 @@ async function generateImageReplicate(
   let endpoint: string;
   let body: Record<string, unknown>;
 
-  if (character?.lora_model_id) {
+  if (character?.lora_model_id && !forceModel) {
     // Tier 1: run a specific LoRA model version
     endpoint = "https://api.replicate.com/v1/predictions";
     body = {
       version: character.lora_model_id,
       input: { prompt, width: 1024, height: 1024, num_outputs: 1 },
     };
-  } else if (character?.reference_images?.length) {
+  } else if (character?.reference_images?.length && !forceModel) {
     // Tier 2: flux-dev image-to-image reference (strength 0.7 = ~70% character fidelity)
     endpoint = "https://api.replicate.com/v1/models/black-forest-labs/flux-dev/predictions";
     body = {
@@ -96,8 +128,12 @@ async function generateImageReplicate(
         num_outputs: 1,
       },
     };
+  } else if (forceModel === "replicate-dev") {
+    // Explicit flux-dev request (no reference — just the better model)
+    endpoint = "https://api.replicate.com/v1/models/black-forest-labs/flux-dev/predictions";
+    body = { input: { prompt, width: 1024, height: 1024, num_outputs: 1 } };
   } else {
-    // Tier 3: flux-schnell — free-tier, fastest, no character consistency
+    // Tier 3: flux-schnell — fast/cheap, no character consistency
     endpoint = "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions";
     body = { input: { prompt, width: 1024, height: 1024, num_outputs: 1 } };
   }
@@ -325,7 +361,7 @@ export async function runCourseSlideImages(
   jobId: string,
   payload: CourseSlideImagesPayload
 ) {
-  const { bundleId, characterId } = payload;
+  const { bundleId, characterId, singleSlide, model: payloadModel, customPrompt } = payload;
 
   // ── Look up character from Chapterhouse Supabase (Phase 3+) ────────────────
   // Graceful fallback: if characterId not provided, or characters table doesn't
@@ -366,7 +402,7 @@ export async function runCourseSlideImages(
 
   const { data: bundle, error: fetchErr } = await courseSupabase
     .from("bundles")
-    .select("id, content, slides_count, slides_generated")
+    .select("id, content, slides_count, slides_generated, grade, subject_code, title")
     .eq("id", bundleId)
     .single<Bundle>();
 
@@ -419,7 +455,19 @@ export async function runCourseSlideImages(
     });
   });
 
-  if (missing.length === 0) {
+  // If singleSlide is set, regenerate only that slide (even if it already has an image)
+  const toProcess: SlideRef[] = singleSlide
+    ? (() => {
+        const key = singleSlide.sectionKey;
+        const slide = key === "intro"
+          ? lessonScript.intro_slides?.[singleSlide.idx]
+          : lessonScript.sections?.[key as number]?.slides?.[singleSlide.idx];
+        if (!slide) return [];
+        return [{ sectionKey: key, idx: singleSlide.idx, label: slide.label }];
+      })()
+    : missing;
+
+  if (toProcess.length === 0) {
     await updateProgress(
       jobId,
       100,
@@ -438,13 +486,13 @@ export async function runCourseSlideImages(
   let generated = 0;
   const slideErrors: { label: string; error: string }[] = [];
 
-  for (const ref of missing) {
+  for (const ref of toProcess) {
     // Progress: 10% start → 95% end, distributed across slides
-    const pct = Math.round(10 + (generated / missing.length) * 85);
+    const pct = Math.round(10 + (generated / toProcess.length) * 85);
     await updateProgress(
       jobId,
       pct,
-      `Generating slide ${generated + 1}/${missing.length}: ${ref.label}`
+      `Generating slide ${generated + 1}/${toProcess.length}: ${ref.label}`
     );
 
     // Cloudinary public_id — no file extension in public_id
@@ -454,30 +502,52 @@ export async function runCourseSlideImages(
         : `somerschool/slides/${bundleId}/section-${ref.sectionKey}-${ref.idx}`;
 
     try {
-      // 1. Generate image — provider selected based on character.preferred_provider.
-      // Leonardo + RENDER_3D gives consistent 3D cartoon style across all slides in a job.
-      // Replicate (Tier 1 LoRA / Tier 2 Bridge / Tier 3 Free) used when character prefers it.
-      const useProvider = character?.preferred_provider === "leonardo" ? "leonardo" : "replicate";
-      const rawUrl = useProvider === "leonardo"
-        ? await generateImageLeonardo(ref.label, character)
-        : await generateImageReplicate(ref.label, character);
+      // 1. Build the image prompt — use customPrompt if provided, otherwise use template
+      const prompt = customPrompt ?? buildSlidePrompt(
+        ref.label,
+        bundle.grade ?? 1,
+        bundle.subject_code ?? "sci"
+      );
 
-      // 2. Upload to Cloudinary — get permanent delivery URL
+      // 2. Provider selection — payload model overrides character preference
+      let rawUrl: string;
+      let modelUsed: string;
+      if (payloadModel === "leonardo") {
+        rawUrl = await generateImageLeonardo(prompt, character);
+        modelUsed = "leonardo";
+      } else if (payloadModel === "replicate-dev") {
+        rawUrl = await generateImageReplicate(prompt, character, "replicate-dev");
+        modelUsed = "replicate-dev";
+      } else if (payloadModel === "replicate-schnell") {
+        rawUrl = await generateImageReplicate(prompt, character, "replicate-schnell");
+        modelUsed = "replicate-schnell";
+      } else {
+        // Default: character-based provider selection
+        const useProvider = character?.preferred_provider === "leonardo" ? "leonardo" : "replicate";
+        rawUrl = useProvider === "leonardo"
+          ? await generateImageLeonardo(prompt, character)
+          : await generateImageReplicate(prompt, character);
+        modelUsed = useProvider === "leonardo" ? "leonardo" : "replicate-auto";
+      }
+
+      // 3. Upload to Cloudinary — get permanent delivery URL
       const deliveryUrl = await uploadToCloudinary(rawUrl, publicId);
 
-      // 3. Patch in-memory content
+      // 4. Patch in-memory content (image_url + prompt_used + model_used for auditability)
       if (ref.sectionKey === "intro") {
-        updatedContent.lesson_script.intro_slides[ref.idx].image_url =
-          deliveryUrl;
+        updatedContent.lesson_script.intro_slides[ref.idx].image_url = deliveryUrl;
+        updatedContent.lesson_script.intro_slides[ref.idx].prompt_used = prompt;
+        updatedContent.lesson_script.intro_slides[ref.idx].model_used = modelUsed;
       } else {
-        updatedContent.lesson_script.sections[
-          ref.sectionKey as number
-        ].slides[ref.idx].image_url = deliveryUrl;
+        const sIdx = ref.sectionKey as number;
+        updatedContent.lesson_script.sections[sIdx].slides[ref.idx].image_url = deliveryUrl;
+        updatedContent.lesson_script.sections[sIdx].slides[ref.idx].prompt_used = prompt;
+        updatedContent.lesson_script.sections[sIdx].slides[ref.idx].model_used = modelUsed;
       }
 
       generated++;
 
-      // 4. Write back after every successful slide (so partial progress survives failures)
+      // 5. Write back after every successful slide (so partial progress survives failures)
       const currentCount = countSlidesWithImages(updatedContent.lesson_script);
       await courseSupabase
         .from("bundles")
@@ -506,12 +576,12 @@ export async function runCourseSlideImages(
     })
     .eq("id", bundleId);
 
-  const allFailed = generated === 0 && missing.length > 0;
+  const allFailed = generated === 0 && toProcess.length > 0;
   const statusMsg = allFailed
-    ? `Failed — 0/${missing.length} slides generated. First error: ${slideErrors[0]?.error ?? "unknown"}`
+    ? `Failed — 0/${toProcess.length} slides generated. First error: ${slideErrors[0]?.error ?? "unknown"}`
     : slideErrors.length > 0
-    ? `Partial — ${generated}/${missing.length} slides generated. ${slideErrors.length} failed.`
-    : `Done — ${generated}/${missing.length} slides generated`;
+    ? `Partial — ${generated}/${toProcess.length} slides generated. ${slideErrors.length} failed.`
+    : `Done — ${generated}/${toProcess.length} slides generated`;
 
   await updateProgress(
     jobId,
@@ -521,7 +591,7 @@ export async function runCourseSlideImages(
     {
       bundleId,
       generated,
-      total: missing.length,
+      total: toProcess.length,
       slidesGenerated: finalCount,
       errors: slideErrors,
     }

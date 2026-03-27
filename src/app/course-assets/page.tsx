@@ -1,9 +1,19 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { PageFrame } from "@/components/page-frame";
-import { RefreshCw, Play, Loader2, CheckCircle2, XCircle, AlertCircle, ChevronDown, ChevronRight, ImageIcon } from "lucide-react";
+import { RefreshCw, Play, Loader2, CheckCircle2, XCircle, AlertCircle, ChevronDown, ChevronRight, ImageIcon, Wand2, X } from "lucide-react";
+
+// ── Model options ────────────────────────────────────────────────────────────
+
+type SlideModel = "replicate-schnell" | "replicate-dev" | "leonardo";
+
+const MODEL_OPTIONS: { value: SlideModel; label: string; hint: string }[] = [
+  { value: "replicate-schnell", label: "Flux Schnell", hint: "Fast, cheap — lowest quality" },
+  { value: "replicate-dev",     label: "Flux Dev",     hint: "Slower, better quality" },
+  { value: "leonardo",          label: "Leonardo",     hint: "Best cartoon / 3D style" },
+];
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -38,51 +48,184 @@ interface SlideImage {
   label: string;
   image_url: string | null | undefined;
   section: string;
+  sectionKey: "intro" | number;
+  idx: number;
+  prompt_used?: string;
+  model_used?: string;
 }
 
 interface BundleDetail {
   content?: {
     lesson_script?: {
-      intro_slides?: { label: string; image_url?: string | null }[];
-      sections?: { title?: string; slides?: { label: string; image_url?: string | null }[] }[];
+      intro_slides?: { label: string; image_url?: string | null; prompt_used?: string; model_used?: string }[];
+      sections?: { title?: string; slides?: { label: string; image_url?: string | null; prompt_used?: string; model_used?: string }[] }[];
     };
   };
 }
 
+// ── Slide editor panel ───────────────────────────────────────────────────────
+
+interface SlideEditorProps {
+  slide: SlideImage;
+  bundleId: string;
+  defaultModel: SlideModel;
+  onClose: () => void;
+  onRegenStarted: (jobId: string) => void;
+}
+
+function SlideEditor({ slide, bundleId, defaultModel, onClose, onRegenStarted }: SlideEditorProps) {
+  const [prompt, setPrompt] = useState(slide.prompt_used ?? slide.label);
+  const [model, setModel] = useState<SlideModel>(defaultModel);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleRegen = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/course-assets/regenerate-slide", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bundleId,
+          sectionKey: slide.sectionKey,
+          idx: slide.idx,
+          model,
+          customPrompt: prompt.trim() !== slide.label ? prompt : undefined,
+        }),
+      });
+      const data = await res.json() as { jobId?: string; error?: string };
+      if (!res.ok || !data.jobId) {
+        setError(data.error ?? "Failed to start regeneration");
+      } else {
+        onRegenStarted(data.jobId);
+        onClose();
+      }
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="col-span-full rounded-lg border border-amber-600/40 bg-zinc-950 p-4 mt-1 mb-3">
+      <div className="flex items-start gap-4">
+        {/* Image preview */}
+        <div className="w-40 h-40 shrink-0 rounded-lg overflow-hidden border border-zinc-800 bg-zinc-900 flex items-center justify-center">
+          {slide.image_url ? (
+            <img src={slide.image_url} alt={slide.label} className="w-full h-full object-cover" />
+          ) : (
+            <ImageIcon className="w-8 h-8 text-zinc-600" />
+          )}
+        </div>
+
+        {/* Editor fields */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-medium text-zinc-200">{slide.label}</p>
+            <button onClick={onClose} className="text-zinc-600 hover:text-zinc-400">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {slide.model_used && (
+            <p className="text-xs text-zinc-600 mb-3">
+              Last generated with: <span className="text-zinc-400">{slide.model_used}</span>
+            </p>
+          )}
+
+          {/* Prompt editor */}
+          <label className="block text-xs text-zinc-500 mb-1">Prompt</label>
+          <textarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            rows={3}
+            className="w-full bg-zinc-900 border border-zinc-700 text-zinc-200 text-xs rounded px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-amber-500 mb-3"
+          />
+
+          {/* Model picker */}
+          <div className="flex items-center gap-3 mb-3">
+            <label className="text-xs text-zinc-500 shrink-0">Model</label>
+            <div className="flex gap-1.5">
+              {MODEL_OPTIONS.map((m) => (
+                <button
+                  key={m.value}
+                  onClick={() => setModel(m.value)}
+                  title={m.hint}
+                  className={`text-xs px-2.5 py-1 rounded border transition-colors ${
+                    model === m.value
+                      ? "bg-amber-600 border-amber-500 text-zinc-900 font-medium"
+                      : "bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-zinc-500"
+                  }`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {error && <p className="text-xs text-red-400 mb-2">{error}</p>}
+
+          <button
+            onClick={() => void handleRegen()}
+            disabled={loading}
+            className="flex items-center gap-1.5 text-sm bg-amber-600 hover:bg-amber-500 text-zinc-900 font-medium rounded px-4 py-1.5 transition-colors disabled:opacity-50"
+          >
+            {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+            Regenerate
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Bundle slide preview panel ────────────────────────────────────────────────
 
-function BundleSlideGrid({ bundleId }: { bundleId: string }) {
+interface BundleSlideGridProps {
+  bundleId: string;
+  defaultModel: SlideModel;
+  refreshKey?: number;
+  onRegenStarted: (bundleId: string, jobId: string) => void;
+}
+
+function BundleSlideGrid({ bundleId, defaultModel, refreshKey, onRegenStarted }: BundleSlideGridProps) {
   const [slides, setSlides] = useState<SlideImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [selectedSlide, setSelectedSlide] = useState<{ section: string; idx: number } | null>(null);
+
+  const loadSlides = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/course-assets/bundle/${bundleId}`);
+      const data = await res.json() as { bundle?: BundleDetail; error?: string };
+      if (!res.ok || !data.bundle) {
+        setErr(data.error ?? "Failed to load bundle");
+        return;
+      }
+      const ls = data.bundle.content?.lesson_script;
+      const collected: SlideImage[] = [];
+      (ls?.intro_slides ?? []).forEach((s, idx) =>
+        collected.push({ label: s.label, image_url: s.image_url, section: "Intro", sectionKey: "intro", idx, prompt_used: s.prompt_used, model_used: s.model_used })
+      );
+      (ls?.sections ?? []).forEach((sec, sNum) => {
+        (sec.slides ?? []).forEach((s, idx) =>
+          collected.push({ label: s.label, image_url: s.image_url, section: sec.title ?? `Section ${sNum + 1}`, sectionKey: sNum, idx, prompt_used: s.prompt_used, model_used: s.model_used })
+        );
+      });
+      setSlides(collected);
+    } catch (e) {
+      setErr(String(e));
+    } finally {
+      setLoading(false);
+    }
+  }, [bundleId]);
 
   useEffect(() => {
-    void (async () => {
-      try {
-        const res = await fetch(`/api/course-assets/bundle/${bundleId}`);
-        const data = await res.json() as { bundle?: BundleDetail; error?: string };
-        if (!res.ok || !data.bundle) {
-          setErr(data.error ?? "Failed to load bundle");
-          return;
-        }
-        const ls = data.bundle.content?.lesson_script;
-        const collected: SlideImage[] = [];
-        (ls?.intro_slides ?? []).forEach((s) =>
-          collected.push({ label: s.label, image_url: s.image_url, section: "Intro" })
-        );
-        (ls?.sections ?? []).forEach((sec, i) => {
-          (sec.slides ?? []).forEach((s) =>
-            collected.push({ label: s.label, image_url: s.image_url, section: sec.title ?? `Section ${i + 1}` })
-          );
-        });
-        setSlides(collected);
-      } catch (e) {
-        setErr(String(e));
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [bundleId]);
+    void loadSlides();
+  }, [loadSlides, refreshKey]);
 
   if (loading) return (
     <div className="flex items-center gap-2 text-zinc-500 text-xs py-4 px-4">
@@ -112,37 +255,60 @@ function BundleSlideGrid({ bundleId }: { bundleId: string }) {
         <div key={secName} className="mb-5 last:mb-0">
           <p className="text-xs text-zinc-500 font-medium uppercase tracking-wide mb-3">{secName}</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-            {secSlides.map((slide, idx) => (
-              <div key={idx} className="group/card relative rounded-lg overflow-hidden border border-zinc-800 bg-zinc-900">
-                {slide.image_url ? (
-                  <>
+            {secSlides.map((slide, gridIdx) => {
+              const isSelected = selectedSlide?.section === secName && selectedSlide.idx === gridIdx;
+              return (
+                <div key={gridIdx} className={`group/card relative rounded-lg overflow-hidden border transition-colors cursor-pointer ${
+                  isSelected ? "border-amber-500 ring-1 ring-amber-500/50" : "border-zinc-800 hover:border-zinc-600 bg-zinc-900"
+                }`}
+                onClick={() => setSelectedSlide(isSelected ? null : { section: secName, idx: gridIdx })}
+                >
+                  {slide.image_url ? (
                     <img
                       src={slide.image_url}
                       alt={slide.label}
                       className="w-full aspect-square object-cover"
                     />
-                    <a
-                      href={slide.image_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="absolute inset-0 opacity-0 group-hover/card:opacity-100 bg-black/50 flex items-center justify-center text-xs text-white transition-opacity"
-                    >
-                      Open ↗
-                    </a>
-                  </>
-                ) : (
-                  <div className="w-full aspect-square flex flex-col items-center justify-center gap-1.5 text-zinc-600">
-                    <ImageIcon className="w-6 h-6" />
-                    <span className="text-xs">No image</span>
+                  ) : (
+                    <div className="w-full aspect-square flex flex-col items-center justify-center gap-1.5 text-zinc-600 bg-zinc-900">
+                      <ImageIcon className="w-6 h-6" />
+                      <span className="text-xs">No image</span>
+                    </div>
+                  )}
+                  <div className="px-2 py-1.5 bg-zinc-900 border-t border-zinc-800">
+                    <p className="text-xs text-zinc-400 leading-tight truncate" title={slide.label}>
+                      {slide.label}
+                    </p>
+                    {slide.model_used && (
+                      <p className="text-[10px] text-zinc-600 truncate mt-0.5">{slide.model_used}</p>
+                    )}
                   </div>
-                )}
-                <div className="px-2 py-1.5 bg-zinc-900 border-t border-zinc-800">
-                  <p className="text-xs text-zinc-400 leading-tight truncate" title={slide.label}>
-                    {slide.label}
-                  </p>
+                  {!isSelected && (
+                    <div className="absolute top-1.5 right-1.5 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                      <span className="bg-zinc-900/80 text-zinc-400 rounded px-1.5 py-0.5 text-[10px]">Edit</span>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
+            {/* Slide editor panel — shows full-width after the selected slide's row */}
+            {selectedSlide?.section === secName && (() => {
+              const slide = secSlides[selectedSlide.idx];
+              if (!slide) return null;
+              return (
+                <SlideEditor
+                  key={`editor-${selectedSlide.section}-${selectedSlide.idx}`}
+                  slide={slide}
+                  bundleId={bundleId}
+                  defaultModel={defaultModel}
+                  onClose={() => setSelectedSlide(null)}
+                  onRegenStarted={(jobId) => {
+                    onRegenStarted(bundleId, jobId);
+                    setSelectedSlide(null);
+                  }}
+                />
+              );
+            })()}
           </div>
         </div>
       ))}
@@ -228,12 +394,15 @@ export default function CourseAssetsPage() {
   const [bundles, setBundles] = useState<BundleRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState<SlideModel>("replicate-dev");
 
   // Map of bundleId → active job state
   const [jobs, setJobs] = useState<Record<string, JobState>>({});
   const [generating, setGenerating] = useState<Record<string, boolean>>({});
   const [generateAllRunning, setGenerateAllRunning] = useState(false);
   const [expandedBundle, setExpandedBundle] = useState<string | null>(null);
+  // Increment to force BundleSlideGrid to re-fetch after a regen completes
+  const [refreshKeys, setRefreshKeys] = useState<Record<string, number>>({});
 
   // ── Fetch bundles ──────────────────────────────────────────────────────────
 
@@ -304,6 +473,8 @@ export default function CourseAssetsPage() {
               delete next[bundleId];
               return next;
             });
+            // Bump refreshKey for this bundle so BundleSlideGrid re-fetches
+            setRefreshKeys((prev) => ({ ...prev, [bundleId]: (prev[bundleId] ?? 0) + 1 }));
             void fetchBundles();
           }
         }
@@ -317,13 +488,13 @@ export default function CourseAssetsPage() {
 
   // ── Generate slides for one bundle ────────────────────────────────────────
 
-  const generateSlides = useCallback(async (bundleId: string) => {
+  const generateSlides = useCallback(async (bundleId: string, model?: SlideModel) => {
     setGenerating((prev) => ({ ...prev, [bundleId]: true }));
     try {
       const res = await fetch("/api/course-assets/generate-slides", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bundleId }),
+        body: JSON.stringify({ bundleId, model: model ?? selectedModel }),
       });
       const data = await res.json() as { jobId?: string; error?: string };
       if (!res.ok || !data.jobId) {
@@ -353,6 +524,16 @@ export default function CourseAssetsPage() {
         return next;
       });
     }
+  }, [selectedModel]);
+
+  // ── Handle a regen job kicked off from a slide editor ─────────────────────
+
+  const handleRegenStarted = useCallback((bundleId: string, jobId: string) => {
+    setGenerating((prev) => ({ ...prev, [bundleId]: true }));
+    setJobs((prev) => ({
+      ...prev,
+      [bundleId]: { jobId, progress: 0, message: "Queued...", status: "queued" },
+    }));
   }, []);
 
   // ── Generate All Missing ───────────────────────────────────────────────────
@@ -365,12 +546,12 @@ export default function CourseAssetsPage() {
 
     setGenerateAllRunning(true);
     for (const bundle of missing) {
-      await generateSlides(bundle.id);
+      await generateSlides(bundle.id, selectedModel);
       // Brief pause between job submissions to avoid overwhelming QStash
       await new Promise((r) => setTimeout(r, 300));
     }
     setGenerateAllRunning(false);
-  }, [bundles, generating, generateSlides]);
+  }, [bundles, generating, generateSlides, selectedModel]);
 
   // ── Counts ────────────────────────────────────────────────────────────────
 
@@ -420,6 +601,24 @@ export default function CourseAssetsPage() {
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
           Refresh
         </button>
+
+        {/* Model picker */}
+        <div className="flex items-center gap-1.5 border border-zinc-700 rounded overflow-hidden">
+          {MODEL_OPTIONS.map((m) => (
+            <button
+              key={m.value}
+              onClick={() => setSelectedModel(m.value)}
+              title={m.hint}
+              className={`text-xs px-3 py-1.5 transition-colors ${
+                selectedModel === m.value
+                  ? "bg-amber-600 text-zinc-900 font-medium"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+              }`}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
 
         <div className="flex-1" />
 
@@ -646,7 +845,12 @@ export default function CourseAssetsPage() {
                   {expandedBundle === bundle.id && (
                     <tr key={`${bundle.id}-expanded`} className="border-b border-zinc-800">
                       <td colSpan={7}>
-                        <BundleSlideGrid bundleId={bundle.id} />
+                        <BundleSlideGrid
+                          bundleId={bundle.id}
+                          defaultModel={selectedModel}
+                          refreshKey={refreshKeys[bundle.id] ?? 0}
+                          onRegenStarted={handleRegenStarted}
+                        />
                       </td>
                     </tr>
                   )}
