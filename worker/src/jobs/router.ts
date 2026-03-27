@@ -2,6 +2,9 @@ import { runCurriculumFactory, type CurriculumJobPayload } from "./curriculum-fa
 import { runSocialBatch, type SocialBatchPayload } from "./social-batch";
 import { runYoutubeTranscript, type YoutubeTranscriptPayload } from "./youtube-transcript";
 import { runCourseSlideImages, type CourseSlideImagesPayload } from "./course-slide-images";
+import { runGenerateSegmentAudio, type GenerateSegmentAudioPayload } from "./generate-segment-audio";
+import { runGenerateSegmentVideo, type GenerateSegmentVideoPayload } from "./generate-segment-video";
+import { runLessonVideoPipeline, type LessonVideoPipelinePayload } from "./lesson-video-pipeline";
 import { updateProgress } from "../lib/progress";
 
 export async function processJob(
@@ -40,6 +43,18 @@ export async function processJob(
 
     case "course_slide_images":
       await runCourseSlideImages(jobId, payload as unknown as CourseSlideImagesPayload);
+      break;
+
+    case "generate_segment_audio":
+      await runGenerateSegmentAudio(jobId, payload as unknown as GenerateSegmentAudioPayload);
+      break;
+
+    case "generate_segment_video":
+      await runGenerateSegmentVideo(jobId, payload as unknown as GenerateSegmentVideoPayload);
+      break;
+
+    case "lesson_video_pipeline":
+      await runLessonVideoPipeline(jobId, payload as unknown as LessonVideoPipelinePayload);
       break;
 
     default:

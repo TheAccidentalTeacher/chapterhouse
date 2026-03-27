@@ -376,9 +376,15 @@ export async function POST(req: Request) {
 
     // Use enhanced prompt; merge negative prompts
     const finalPrompt = enhanced.enhanced;
+    // Anatomy guard is always included when a character is selected — prevents the
+    // "5th limb" artifacts that occur when IP-Adapter reference weight is high.
+    const anatomyGuard = character
+      ? "extra limbs, malformed anatomy, fused fingers, bad anatomy, extra fingers, missing limbs, mutated hands, disfigured"
+      : undefined;
     const finalNegative = [
       enhanced.negative,
       body.negativePrompt,
+      anatomyGuard,
     ].filter(Boolean).join(", ");
 
     // Replicate uses text-only generation — the enhanced prompt front-loads the character's
