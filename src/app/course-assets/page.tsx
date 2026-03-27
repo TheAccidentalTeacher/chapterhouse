@@ -407,20 +407,24 @@ export default function CourseAssetsPage() {
                     {/* Title */}
                     <td className="px-4 py-2.5 text-zinc-200 font-medium">
                       {bundle.title}
-                      {isGenerating && activeJob && (
+                      {(isGenerating || jobComplete || jobFailed) && activeJob && (
                         <div className="mt-1">
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-amber-500 transition-all duration-300"
-                                style={{ width: `${activeJob.progress}%` }}
-                              />
+                          {isGenerating && (
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <div className="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-amber-500 transition-all duration-300"
+                                  style={{ width: `${activeJob.progress}%` }}
+                                />
+                              </div>
+                              <span className="text-xs text-zinc-500 tabular-nums shrink-0">
+                                {activeJob.progress}%
+                              </span>
                             </div>
-                            <span className="text-xs text-zinc-500 tabular-nums shrink-0">
-                              {activeJob.progress}%
-                            </span>
-                          </div>
-                          <p className="text-xs text-zinc-500 mt-0.5 truncate max-w-xs">
+                          )}
+                          <p className={`text-xs mt-0.5 truncate max-w-xs ${
+                            jobFailed ? "text-red-400" : jobComplete ? "text-green-400" : "text-zinc-500"
+                          }`}>
                             {activeJob.message}
                           </p>
                         </div>
@@ -477,24 +481,36 @@ export default function CourseAssetsPage() {
 
                     {/* Actions */}
                     <td className="px-4 py-2.5">
-                      {isGenerating ? (
-                        <span className="flex items-center gap-1.5 text-xs text-amber-400">
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                          Generating...
-                        </span>
-                      ) : bundle.slides_generated < bundle.slides_count ? (
-                        <button
-                          onClick={() => void generateSlides(bundle.id)}
-                          className="flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 transition-colors opacity-0 group-hover:opacity-100"
-                        >
-                          <Play className="w-3 h-3" />
-                          Generate Slides
-                        </button>
-                      ) : (
-                        <span className="text-xs text-zinc-600 opacity-0 group-hover:opacity-100">
-                          All slides done
-                        </span>
-                      )}
+                      <div className="flex flex-col gap-1">
+                        {isGenerating ? (
+                          <span className="flex items-center gap-1.5 text-xs text-amber-400">
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            Generating...
+                          </span>
+                        ) : bundle.slides_generated < bundle.slides_count ? (
+                          <button
+                            onClick={() => void generateSlides(bundle.id)}
+                            className="flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 transition-colors opacity-0 group-hover:opacity-100"
+                          >
+                            <Play className="w-3 h-3" />
+                            Generate Slides
+                          </button>
+                        ) : (
+                          <span className="text-xs text-zinc-600 opacity-0 group-hover:opacity-100">
+                            All slides done
+                          </span>
+                        )}
+                        {activeJob && (
+                          <a
+                            href={`/jobs?highlight=${activeJob.jobId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors opacity-0 group-hover:opacity-100"
+                          >
+                            View job →
+                          </a>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
