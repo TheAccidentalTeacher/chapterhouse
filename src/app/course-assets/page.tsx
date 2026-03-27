@@ -188,9 +188,11 @@ interface BundleSlideGridProps {
   defaultModel: SlideModel;
   refreshKey?: number;
   onRegenStarted: (bundleId: string, jobId: string) => void;
+  onRegenAll: () => void;
+  isGenerating?: boolean;
 }
 
-function BundleSlideGrid({ bundleId, defaultModel, refreshKey, onRegenStarted }: BundleSlideGridProps) {
+function BundleSlideGrid({ bundleId, defaultModel, refreshKey, onRegenStarted, onRegenAll, isGenerating }: BundleSlideGridProps) {
   const [slides, setSlides] = useState<SlideImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
@@ -251,6 +253,24 @@ function BundleSlideGrid({ bundleId, defaultModel, refreshKey, onRegenStarted }:
 
   return (
     <div className="px-4 py-4 bg-zinc-950 border-t border-zinc-800">
+      {/* Regenerate All toolbar */}
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-xs text-zinc-600">
+          Click any slide card to edit its prompt and model before regenerating.
+        </p>
+        <button
+          onClick={onRegenAll}
+          disabled={isGenerating}
+          className="flex items-center gap-1.5 text-xs bg-amber-600 hover:bg-amber-500 text-zinc-900 font-medium rounded px-3 py-1.5 transition-colors disabled:opacity-50"
+        >
+          {isGenerating ? (
+            <Loader2 className="w-3 h-3 animate-spin" />
+          ) : (
+            <RefreshCw className="w-3 h-3" />
+          )}
+          Regenerate All
+        </button>
+      </div>
       {Object.entries(sections).map(([secName, secSlides]) => (
         <div key={secName} className="mb-5 last:mb-0">
           <p className="text-xs text-zinc-500 font-medium uppercase tracking-wide mb-3">{secName}</p>
@@ -523,6 +543,32 @@ export default function CourseAssetsPage() {
         delete next[bundleId];
         return next;
       });
+    }
+  }, [selectedModel]);
+
+  // ── Regen all slides in a bundle (force=true) ─────────────────────────────
+
+  const regenAllSlides = useCallback(async (bundleId: string) => {
+    setGenerating((prev) => ({ ...prev, [bundleId]: true }));
+    try {
+      const res = await fetch("/api/course-assets/generate-slides", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bundleId, model: selectedModel, force: true }),
+      });
+      const data = await res.json() as { jobId?: string; error?: string };
+      if (!res.ok || !data.jobId) {
+        console.error("[course-assets] regen-all error:", data.error);
+        setGenerating((prev) => { const next = { ...prev }; delete next[bundleId]; return next; });
+      } else {
+        setJobs((prev) => ({
+          ...prev,
+          [bundleId]: { jobId: data.jobId!, progress: 0, message: "Queued...", status: "queued" },
+        }));
+      }
+    } catch (e) {
+      console.error("[course-assets] regen-all:", e);
+      setGenerating((prev) => { const next = { ...prev }; delete next[bundleId]; return next; });
     }
   }, [selectedModel]);
 
@@ -850,6 +896,8 @@ export default function CourseAssetsPage() {
                           defaultModel={selectedModel}
                           refreshKey={refreshKeys[bundle.id] ?? 0}
                           onRegenStarted={handleRegenStarted}
+                          onRegenAll={() => void regenAllSlides(bundle.id)}
+                          isGenerating={!!generating[bundle.id]}
                         />
                       </td>
                     </tr>

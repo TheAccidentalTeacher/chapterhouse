@@ -12,6 +12,7 @@ export interface CourseSlideImagesPayload {
   };
   model?: "replicate-schnell" | "replicate-dev" | "leonardo" | "gpt-image"; // override provider
   customPrompt?: string;      // override auto-generated prompt
+  force?: boolean;            // when true, regenerate ALL slides even if they already have images
 }
 
 interface Slide {
@@ -361,7 +362,7 @@ export async function runCourseSlideImages(
   jobId: string,
   payload: CourseSlideImagesPayload
 ) {
-  const { bundleId, characterId, singleSlide, model: payloadModel, customPrompt } = payload;
+  const { bundleId, characterId, singleSlide, model: payloadModel, customPrompt, force } = payload;
 
   // ── Look up character from Chapterhouse Supabase (Phase 3+) ────────────────
   // Graceful fallback: if characterId not provided, or characters table doesn't
@@ -455,7 +456,21 @@ export async function runCourseSlideImages(
     });
   });
 
-  // If singleSlide is set, regenerate only that slide (even if it already has an image)
+  // Build the all-slides list (used when force=true)
+  const allSlides: SlideRef[] = [];
+  (lessonScript.intro_slides ?? []).forEach((slide, idx) =>
+    allSlides.push({ sectionKey: "intro", idx, label: slide.label })
+  );
+  (lessonScript.sections ?? []).forEach((section, sNum) => {
+    (section.slides ?? []).forEach((slide, idx) =>
+      allSlides.push({ sectionKey: sNum, idx, label: slide.label })
+    );
+  });
+
+  // Determine which slides to process:
+  // singleSlide → just that one slide (even if it has an image)
+  // force       → all slides (regenerate everything)
+  // default     → only missing slides
   const toProcess: SlideRef[] = singleSlide
     ? (() => {
         const key = singleSlide.sectionKey;
@@ -465,7 +480,9 @@ export async function runCourseSlideImages(
         if (!slide) return [];
         return [{ sectionKey: key, idx: singleSlide.idx, label: slide.label }];
       })()
-    : missing;
+    : force
+      ? allSlides
+      : missing;
 
   if (toProcess.length === 0) {
     await updateProgress(

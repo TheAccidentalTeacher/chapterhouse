@@ -7,6 +7,7 @@ const schema = z.object({
   bundleId: z.string().min(1),
   characterId: z.string().optional(), // optional character UUID — used for Replicate LoRA/bridge reference injection
   model: z.enum(["replicate-schnell", "replicate-dev", "leonardo", "gpt-image"]).optional(),
+  force: z.boolean().optional(), // when true, regenerate ALL slides even if they already have images
 });
 
 export async function POST(req: Request) {
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
     return Response.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { bundleId, characterId, model } = parsed.data;
+  const { bundleId, characterId, model, force } = parsed.data;
 
   // Validate bundle exists in CoursePlatform
   let courseSupabase;
@@ -58,8 +59,8 @@ export async function POST(req: Request) {
     .from("jobs")
     .insert({
       type: "course_slide_images",
-      label: `Slides: ${(bundle as { title?: string }).title ?? bundleId}${model ? ` [${model}]` : ""}`,
-      input_payload: { bundleId, ...(characterId ? { characterId } : {}), ...(model ? { model } : {}) },
+      label: `${force ? "Regen All" : "Slides"}: ${(bundle as { title?: string }).title ?? bundleId}${model ? ` [${model}]` : ""}`,
+      input_payload: { bundleId, ...(characterId ? { characterId } : {}), ...(model ? { model } : {}), ...(force ? { force: true } : {}) },
       status: "queued",
     })
     .select()
