@@ -436,6 +436,7 @@ export async function runCourseSlideImages(
   );
 
   let generated = 0;
+  const slideErrors: { label: string; error: string }[] = [];
 
   for (const ref of missing) {
     // Progress: 10% start → 95% end, distributed across slides
@@ -486,10 +487,11 @@ export async function runCourseSlideImages(
         })
         .eq("id", bundleId);
     } catch (slideErr) {
+      const errMsg = slideErr instanceof Error ? slideErr.message : String(slideErr);
       console.error(
-        `[course-slide-images] Slide failed: "${ref.label}"`,
-        slideErr
+        `[course-slide-images] Slide failed: "${ref.label}" — ${errMsg}`
       );
+      slideErrors.push({ label: ref.label, error: errMsg });
       // Continue to next slide — partial completion is better than aborting
     }
   }
@@ -504,16 +506,24 @@ export async function runCourseSlideImages(
     })
     .eq("id", bundleId);
 
+  const allFailed = generated === 0 && missing.length > 0;
+  const statusMsg = allFailed
+    ? `Failed — 0/${missing.length} slides generated. First error: ${slideErrors[0]?.error ?? "unknown"}`
+    : slideErrors.length > 0
+    ? `Partial — ${generated}/${missing.length} slides generated. ${slideErrors.length} failed.`
+    : `Done — ${generated}/${missing.length} slides generated`;
+
   await updateProgress(
     jobId,
     100,
-    `Done — ${generated}/${missing.length} slides generated`,
-    "completed",
+    statusMsg,
+    allFailed ? "failed" : "completed",
     {
       bundleId,
       generated,
       total: missing.length,
       slidesGenerated: finalCount,
+      errors: slideErrors,
     }
   );
 }
