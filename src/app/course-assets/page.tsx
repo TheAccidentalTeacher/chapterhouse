@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { PageFrame } from "@/components/page-frame";
-import { BookOpen, RefreshCw, Play, Loader2, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { RefreshCw, Play, Loader2, CheckCircle2, XCircle, AlertCircle, ChevronDown, ChevronRight, ImageIcon } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -30,6 +30,124 @@ interface JobState {
   progress: number;
   message: string;
   status: string;
+}
+
+// ── Slide image types ────────────────────────────────────────────────────────
+
+interface SlideImage {
+  label: string;
+  image_url: string | null | undefined;
+  section: string;
+}
+
+interface BundleDetail {
+  content?: {
+    lesson_script?: {
+      intro_slides?: { label: string; image_url?: string | null }[];
+      sections?: { title?: string; slides?: { label: string; image_url?: string | null }[] }[];
+    };
+  };
+}
+
+// ── Bundle slide preview panel ────────────────────────────────────────────────
+
+function BundleSlideGrid({ bundleId }: { bundleId: string }) {
+  const [slides, setSlides] = useState<SlideImage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await fetch(`/api/course-assets/bundle/${bundleId}`);
+        const data = await res.json() as { bundle?: BundleDetail; error?: string };
+        if (!res.ok || !data.bundle) {
+          setErr(data.error ?? "Failed to load bundle");
+          return;
+        }
+        const ls = data.bundle.content?.lesson_script;
+        const collected: SlideImage[] = [];
+        (ls?.intro_slides ?? []).forEach((s) =>
+          collected.push({ label: s.label, image_url: s.image_url, section: "Intro" })
+        );
+        (ls?.sections ?? []).forEach((sec, i) => {
+          (sec.slides ?? []).forEach((s) =>
+            collected.push({ label: s.label, image_url: s.image_url, section: sec.title ?? `Section ${i + 1}` })
+          );
+        });
+        setSlides(collected);
+      } catch (e) {
+        setErr(String(e));
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [bundleId]);
+
+  if (loading) return (
+    <div className="flex items-center gap-2 text-zinc-500 text-xs py-4 px-4">
+      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+      Loading slide images...
+    </div>
+  );
+
+  if (err) return (
+    <div className="text-red-400 text-xs py-4 px-4">{err}</div>
+  );
+
+  if (slides.length === 0) return (
+    <div className="text-zinc-500 text-xs py-4 px-4">No slides found in bundle content.</div>
+  );
+
+  // Group by section
+  const sections: Record<string, SlideImage[]> = {};
+  slides.forEach((s) => {
+    if (!sections[s.section]) sections[s.section] = [];
+    sections[s.section].push(s);
+  });
+
+  return (
+    <div className="px-4 py-4 bg-zinc-950 border-t border-zinc-800">
+      {Object.entries(sections).map(([secName, secSlides]) => (
+        <div key={secName} className="mb-5 last:mb-0">
+          <p className="text-xs text-zinc-500 font-medium uppercase tracking-wide mb-3">{secName}</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            {secSlides.map((slide, idx) => (
+              <div key={idx} className="group/card relative rounded-lg overflow-hidden border border-zinc-800 bg-zinc-900">
+                {slide.image_url ? (
+                  <>
+                    <img
+                      src={slide.image_url}
+                      alt={slide.label}
+                      className="w-full aspect-square object-cover"
+                    />
+                    <a
+                      href={slide.image_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="absolute inset-0 opacity-0 group-hover/card:opacity-100 bg-black/50 flex items-center justify-center text-xs text-white transition-opacity"
+                    >
+                      Open ↗
+                    </a>
+                  </>
+                ) : (
+                  <div className="w-full aspect-square flex flex-col items-center justify-center gap-1.5 text-zinc-600">
+                    <ImageIcon className="w-6 h-6" />
+                    <span className="text-xs">No image</span>
+                  </div>
+                )}
+                <div className="px-2 py-1.5 bg-zinc-900 border-t border-zinc-800">
+                  <p className="text-xs text-zinc-400 leading-tight truncate" title={slide.label}>
+                    {slide.label}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 // ── Status dot ───────────────────────────────────────────────────────────────
@@ -115,6 +233,7 @@ export default function CourseAssetsPage() {
   const [jobs, setJobs] = useState<Record<string, JobState>>({});
   const [generating, setGenerating] = useState<Record<string, boolean>>({});
   const [generateAllRunning, setGenerateAllRunning] = useState(false);
+  const [expandedBundle, setExpandedBundle] = useState<string | null>(null);
 
   // ── Fetch bundles ──────────────────────────────────────────────────────────
 
@@ -379,6 +498,7 @@ export default function CourseAssetsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-zinc-800 bg-zinc-900/60">
+                <th className="w-8" />
                 <th className="text-left text-xs text-zinc-500 font-medium px-4 py-2 w-10">#</th>
                 <th className="text-left text-xs text-zinc-500 font-medium px-4 py-2">Title</th>
                 <th className="text-left text-xs text-zinc-500 font-medium px-4 py-2">ID</th>
@@ -395,10 +515,18 @@ export default function CourseAssetsPage() {
                 const jobFailed = activeJob?.status === "failed";
 
                 return (
+                  <>
                   <tr
                     key={bundle.id}
-                    className="border-b border-zinc-800/60 hover:bg-zinc-900/40 transition-colors group"
+                    className="border-b border-zinc-800/60 hover:bg-zinc-900/40 transition-colors group cursor-pointer"
+                    onClick={() => setExpandedBundle(expandedBundle === bundle.id ? null : bundle.id)}
                   >
+                    {/* Expand toggle */}
+                    <td className="pl-3 pr-0 py-2.5 text-zinc-600 w-8">
+                      {expandedBundle === bundle.id
+                        ? <ChevronDown className="w-3.5 h-3.5" />
+                        : <ChevronRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100" />}
+                    </td>
                     {/* # */}
                     <td className="px-4 py-2.5 text-zinc-600 tabular-nums">
                       {bundle.bundle_number}
@@ -489,7 +617,7 @@ export default function CourseAssetsPage() {
                           </span>
                         ) : bundle.slides_generated < bundle.slides_count ? (
                           <button
-                            onClick={() => void generateSlides(bundle.id)}
+                            onClick={(e) => { e.stopPropagation(); void generateSlides(bundle.id); }}
                             className="flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 transition-colors opacity-0 group-hover:opacity-100"
                           >
                             <Play className="w-3 h-3" />
@@ -505,6 +633,7 @@ export default function CourseAssetsPage() {
                             href={`/jobs?highlight=${activeJob.jobId}`}
                             target="_blank"
                             rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
                             className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors opacity-0 group-hover:opacity-100"
                           >
                             View job →
@@ -513,7 +642,16 @@ export default function CourseAssetsPage() {
                       </div>
                     </td>
                   </tr>
-                );
+                  {/* Expanded slide image grid */}
+                  {expandedBundle === bundle.id && (
+                    <tr key={`${bundle.id}-expanded`} className="border-b border-zinc-800">
+                      <td colSpan={7}>
+                        <BundleSlideGrid bundleId={bundle.id} />
+                      </td>
+                    </tr>
+                  )}
+                  </>
+              );
               })}
             </tbody>
           </table>
