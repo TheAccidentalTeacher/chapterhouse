@@ -64,8 +64,8 @@ async function generateImageReplicate(
   prompt: string,
   character?: Character
 ): Promise<string> {
-  const token = process.env.REPLICATE_API_TOKEN;
-  if (!token) throw new Error("REPLICATE_API_TOKEN not configured");
+  const token = process.env.REPLICATE_API_TOKEN ?? process.env.REPLICATE_TOKEN;
+  if (!token) throw new Error("REPLICATE_API_TOKEN / REPLICATE_TOKEN not configured");
 
   const headers = {
     Authorization: `Bearer ${token}`,
