@@ -310,8 +310,10 @@ async function uploadToCloudinary(
   const [, apiKey, apiSecret, cloudName] = match;
 
   const timestamp = Math.floor(Date.now() / 1000);
-  // IMPORTANT: params must be sorted alphabetically for Cloudinary sig
-  const paramsToSign = `public_id=${publicId}&timestamp=${timestamp}`;
+  // IMPORTANT: params must be sorted alphabetically for Cloudinary sig.
+  // Include overwrite + invalidate so forced regeneration actually replaces the asset
+  // and busts CDN caches — without these, Cloudinary silently no-ops on duplicate public_id.
+  const paramsToSign = `invalidate=1&overwrite=1&public_id=${publicId}&timestamp=${timestamp}`;
   const signature = createHash("sha1")
     .update(paramsToSign + apiSecret)
     .digest("hex");
@@ -322,6 +324,8 @@ async function uploadToCloudinary(
   form.append("timestamp", timestamp.toString());
   form.append("signature", signature);
   form.append("public_id", publicId);
+  form.append("overwrite", "true");
+  form.append("invalidate", "true");
 
   const uploadRes = await fetch(
     `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
@@ -333,12 +337,13 @@ async function uploadToCloudinary(
     throw new Error(`Cloudinary upload error: ${err}`);
   }
 
-  const result = (await uploadRes.json()) as { public_id?: string };
+  const result = (await uploadRes.json()) as { public_id?: string; version?: number };
   const finalPublicId = result.public_id ?? publicId;
+  // Include version in delivery URL so the URL changes on every regen —
+  // this busts browser cache and CDN cache for the same public_id.
+  const versionSegment = result.version ? `v${result.version}/` : "";
 
-  // Delivery URL with quality auto + WebP transform
-  // ⚠️ KaraokePlayer uses onError → setHidden(true) silently — must be exact format
-  return `https://res.cloudinary.com/${cloudName}/image/upload/q_auto/f_webp/${finalPublicId}`;
+  return `https://res.cloudinary.com/${cloudName}/image/upload/${versionSegment}q_auto/f_webp/${finalPublicId}`;
 }
 
 // ── Slide counting helper ─────────────────────────────────────────────────────
