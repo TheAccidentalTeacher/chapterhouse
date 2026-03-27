@@ -423,7 +423,8 @@ export async function POST(req: Request) {
           height,
           character?.reference_images ?? undefined,
           undefined, // stylePreset — auto-detected from presence of refs
-          character?.lora_model_id ?? undefined, // use trained LoRA model when available
+          // lora_model_id intentionally NOT passed — provider choice is always free.
+          // Prompt enhancement front-loads the physical description for consistency.
         );
         break;
     }

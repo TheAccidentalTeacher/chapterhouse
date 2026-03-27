@@ -114,7 +114,7 @@ async function generateImageReplicate(
     endpoint = "https://api.replicate.com/v1/predictions";
     body = {
       version: character.lora_model_id,
-      input: { prompt, width: 1024, height: 1024, num_outputs: 1 },
+      input: { prompt, width: 1024, height: 1024, num_outputs: 1, lora_scale: 0.85 },
     };
   } else if (character?.reference_images?.length && !forceModel) {
     // Tier 2: flux-dev image-to-image reference (strength 0.7 = ~70% character fidelity)

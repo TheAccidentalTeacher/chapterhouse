@@ -25,6 +25,8 @@ interface Character {
   description: string;
   hero_image_url: string | null;
   preferred_provider: Provider;
+  generation_strategy?: "kontext" | "lora" | "ip_adapter";
+  lora_training_status?: "none" | "queued" | "training" | "succeeded" | "failed";
 }
 
 interface GeneratedImage {
@@ -133,6 +135,15 @@ export default function ImageGenerationStudio() {
   const [upscaling, setUpscaling] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+
+  // ── Save as Character state ────────────────────────────────────────────────
+  const [saveAsCharOpen, setSaveAsCharOpen] = useState(false);
+  const [saveAsCharImageUrl, setSaveAsCharImageUrl] = useState<string | null>(null);
+  const [saveAsCharName, setSaveAsCharName] = useState("");
+  const [saveAsCharTrigger, setSaveAsCharTrigger] = useState("");
+  const [saveAsCharTrainLora, setSaveAsCharTrainLora] = useState(false);
+  const [saveAsCharSaving, setSaveAsCharSaving] = useState(false);
+  const [saveAsCharSuccess, setSaveAsCharSuccess] = useState("");
 
   // ── Tab ────────────────────────────────────────────────────────────────────
   const [tab, setTab] = useState<"generate" | "stock">("generate");
@@ -245,6 +256,75 @@ export default function ImageGenerationStudio() {
     }
   }
 
+  // ── Save as Character ──────────────────────────────────────────────────────
+  function openSaveAsChar(imageUrl: string) {
+    setSaveAsCharImageUrl(imageUrl);
+    setSaveAsCharName("");
+    setSaveAsCharTrigger("");
+    setSaveAsCharTrainLora(false);
+    setSaveAsCharSuccess("");
+    setSaveAsCharOpen(true);
+  }
+
+  async function handleSaveAsChar() {
+    if (!saveAsCharImageUrl || !saveAsCharName.trim()) return;
+    setSaveAsCharSaving(true);
+    try {
+      // Ensure image is saved to Cloudinary first
+      let cdnUrl = saveAsCharImageUrl;
+      if (!saveAsCharImageUrl.includes("cloudinary")) {
+        const saveRes = await fetch("/api/images/save", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageUrl: saveAsCharImageUrl }),
+        });
+        const saveData = await saveRes.json();
+        if (saveRes.ok && saveData.url) cdnUrl = saveData.url;
+      }
+
+      const slug = saveAsCharName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      const triggerWord = saveAsCharTrigger.trim() || slug.toUpperCase();
+
+      const createRes = await fetch("/api/characters", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: saveAsCharName.trim(),
+          slug,
+          trigger_word: triggerWord,
+          hero_image_url: cdnUrl,
+          reference_images: [cdnUrl],
+          generation_strategy: "kontext",
+        }),
+      });
+      const charData = await createRes.json();
+      if (!createRes.ok) throw new Error(charData.error || "Character save failed");
+
+      const charId = (charData.character as { id: string }).id;
+
+      if (saveAsCharTrainLora) {
+        // Kick off LoRA training in background (non-blocking)
+        fetch(`/api/characters/${charId}/train-lora`, { method: "POST" }).catch(() => {});
+      }
+
+      setSaveAsCharSuccess(
+        saveAsCharTrainLora
+          ? `${saveAsCharName} saved — LoRA training queued. Check Jobs page for status.`
+          : `${saveAsCharName} saved and ready with FLUX Kontext."`
+      );
+      // Refresh characters list
+      fetch("/api/characters")
+        .then((r) => r.json())
+        .then((d) => { if (d.characters) setCharacters(d.characters); })
+        .catch(() => {});
+      setTimeout(() => setSaveAsCharOpen(false), 2500);
+    } catch (err) {
+      setSaveAsCharSuccess(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setSaveAsCharSaving(false);
+    }
+  }
+
   // ── Save to Cloudinary ─────────────────────────────────────────────────────
   async function handleSave(imageUrl: string) {
     setSaving(imageUrl);
@@ -334,6 +414,14 @@ export default function ImageGenerationStudio() {
                         />
                       )}
                       {c.name}
+                      {/* Strategy badge */}
+                      {c.lora_training_status === "training" || c.lora_training_status === "queued" ? (
+                        <span className="ml-1 rounded-full bg-amber-500/20 px-1.5 py-0.5 text-xs text-amber-400 animate-pulse">Training…</span>
+                      ) : c.generation_strategy === "lora" ? (
+                        <span className="ml-1 rounded-full bg-green-500/20 px-1.5 py-0.5 text-xs text-green-400">LoRA</span>
+                      ) : (
+                        <span className="ml-1 rounded-full bg-blue-500/20 px-1.5 py-0.5 text-xs text-blue-400">Kontext</span>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -510,6 +598,14 @@ export default function ImageGenerationStudio() {
                               )}
                               {saveSuccess === img.url ? "Saved!" : "Save to CDN"}
                             </button>
+                            <button
+                              onClick={() => openSaveAsChar(img.url)}
+                              className="inline-flex items-center gap-1 rounded-full border border-border/70 px-2 py-1 text-xs text-muted hover:text-green-400 hover:border-green-400/40 transition"
+                              title="Save this image as a Character for consistent generation"
+                            >
+                              <Dog className="h-3 w-3" />
+                              Save as Character
+                            </button>
                           </>
                         )}
                       </div>
@@ -636,6 +732,98 @@ export default function ImageGenerationStudio() {
               </p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── SAVE AS CHARACTER MODAL ─────────────────────────────────────── */}
+      {saveAsCharOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="glass-panel rounded-3xl p-6 w-full max-w-sm space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <Dog className="h-4 w-4 text-green-400" />
+                Save as Character
+              </h3>
+              <button
+                onClick={() => setSaveAsCharOpen(false)}
+                className="text-muted hover:text-foreground text-lg leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            {saveAsCharSuccess ? (
+              <div className="rounded-xl bg-green-500/10 border border-green-500/20 p-3 text-xs text-green-400">
+                {saveAsCharSuccess}
+              </div>
+            ) : (
+              <>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted">Character name</label>
+                  <input
+                    type="text"
+                    value={saveAsCharName}
+                    onChange={(e) => {
+                      setSaveAsCharName(e.target.value);
+                      if (!saveAsCharTrigger) {
+                        setSaveAsCharTrigger(
+                          e.target.value.toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/^_|_$/g, "")
+                        );
+                      }
+                    }}
+                    placeholder="e.g. Gimli"
+                    className="w-full rounded-xl bg-white/5 border border-border/50 px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:border-accent/50"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted">Trigger word</label>
+                  <input
+                    type="text"
+                    value={saveAsCharTrigger}
+                    onChange={(e) => setSaveAsCharTrigger(e.target.value)}
+                    placeholder="e.g. GIMLI"
+                    className="w-full rounded-xl bg-white/5 border border-border/50 px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:border-accent/50"
+                  />
+                  <p className="text-[10px] text-muted">Used in prompts to activate the character style</p>
+                </div>
+
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={saveAsCharTrainLora}
+                    onChange={(e) => setSaveAsCharTrainLora(e.target.checked)}
+                    className="rounded accent-accent"
+                  />
+                  <span className="text-xs text-muted group-hover:text-foreground transition">
+                    Train LoRA now (needs 5+ reference images first — adds consistency)
+                  </span>
+                </label>
+
+                <div className="flex gap-2 pt-1">
+                  <button
+                    onClick={() => setSaveAsCharOpen(false)}
+                    className="flex-1 rounded-xl border border-border/60 py-2 text-xs text-muted hover:text-foreground transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveAsChar}
+                    disabled={saveAsCharSaving || !saveAsCharName.trim()}
+                    className="flex-1 rounded-xl bg-green-500/20 border border-green-500/30 py-2 text-xs text-green-400 hover:bg-green-500/30 transition disabled:opacity-50"
+                  >
+                    {saveAsCharSaving ? (
+                      <span className="flex items-center justify-center gap-1">
+                        <Loader2 className="h-3 w-3 animate-spin" /> Saving…
+                      </span>
+                    ) : (
+                      "Save Character"
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>

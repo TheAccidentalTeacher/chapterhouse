@@ -1,21 +1,21 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useCallback } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { PageFrame } from "@/components/page-frame";
-import { RefreshCw, Play, Loader2, CheckCircle2, XCircle, AlertCircle, ChevronDown, ChevronRight, ImageIcon, Wand2, X } from "lucide-react";
+import { RefreshCw, Play, Loader2, CheckCircle2, XCircle, AlertCircle, ChevronDown, ChevronRight, ImageIcon, Wand2, X, Dog } from "lucide-react";
 
-// ── Model options ────────────────────────────────────────────────────────────
+// ΓöÇΓöÇ Model options ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 type SlideModel = "replicate-schnell" | "replicate-dev" | "leonardo";
 
 const MODEL_OPTIONS: { value: SlideModel; label: string; hint: string }[] = [
-  { value: "replicate-schnell", label: "Flux Schnell", hint: "Fast, cheap — lowest quality" },
+  { value: "replicate-schnell", label: "Flux Schnell", hint: "Fast, cheap ΓÇö lowest quality" },
   { value: "replicate-dev",     label: "Flux Dev",     hint: "Slower, better quality" },
   { value: "leonardo",          label: "Leonardo",     hint: "Best cartoon / 3D style" },
 ];
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇ Types ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 interface BundleRow {
   id: string;
@@ -42,7 +42,14 @@ interface JobState {
   status: string;
 }
 
-// ── Slide image types ────────────────────────────────────────────────────────
+interface CharacterOption {
+  id: string;
+  name: string;
+  generation_strategy?: string;
+  lora_training_status?: string;
+}
+
+// ΓöÇΓöÇ Slide image types ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 interface SlideImage {
   label: string;
@@ -63,7 +70,7 @@ interface BundleDetail {
   };
 }
 
-// ── Slide editor panel ───────────────────────────────────────────────────────
+// ΓöÇΓöÇ Slide editor panel ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 interface SlideEditorProps {
   slide: SlideImage;
@@ -181,7 +188,7 @@ function SlideEditor({ slide, bundleId, defaultModel, onClose, onRegenStarted }:
   );
 }
 
-// ── Bundle slide preview panel ────────────────────────────────────────────────
+// ΓöÇΓöÇ Bundle slide preview panel ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 interface BundleSlideGridProps {
   bundleId: string;
@@ -311,7 +318,7 @@ function BundleSlideGrid({ bundleId, defaultModel, refreshKey, onRegenStarted, o
                 </div>
               );
             })}
-            {/* Slide editor panel — shows full-width after the selected slide's row */}
+            {/* Slide editor panel ΓÇö shows full-width after the selected slide's row */}
             {selectedSlide?.section === secName && (() => {
               const slide = secSlides[selectedSlide.idx];
               if (!slide) return null;
@@ -336,7 +343,7 @@ function BundleSlideGrid({ bundleId, defaultModel, refreshKey, onRegenStarted, o
   );
 }
 
-// ── Status dot ───────────────────────────────────────────────────────────────
+// ΓöÇΓöÇ Status dot ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 type DotColor = "green" | "amber" | "red" | "gray";
 
@@ -372,7 +379,7 @@ function boolDotColor(val: boolean): DotColor {
   return val ? "green" : "red";
 }
 
-// ── Aggregate progress bar ───────────────────────────────────────────────────
+// ΓöÇΓöÇ Aggregate progress bar ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 function AggregateProgressBar({ bundles }: { bundles: BundleRow[] }) {
   const totalExpected = bundles.reduce((s, b) => s + b.slides_count, 0);
@@ -395,7 +402,7 @@ function AggregateProgressBar({ bundles }: { bundles: BundleRow[] }) {
   );
 }
 
-// ── Course / grade selectors ─────────────────────────────────────────────────
+// ΓöÇΓöÇ Course / grade selectors ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 const COURSES = [
   { label: "Science", value: "sci" },
@@ -406,7 +413,7 @@ const COURSES = [
 
 const GRADES = Array.from({ length: 12 }, (_, i) => i + 1);
 
-// ── Main page ────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇ Main page ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 export default function CourseAssetsPage() {
   const [course, setCourse] = useState("sci");
@@ -421,10 +428,16 @@ export default function CourseAssetsPage() {
   const [generating, setGenerating] = useState<Record<string, boolean>>({});
   const [generateAllRunning, setGenerateAllRunning] = useState(false);
   const [expandedBundle, setExpandedBundle] = useState<string | null>(null);
+
+  // Character scenes state
+  const [characters, setCharacters] = useState<CharacterOption[]>([]);
+  const [selectedSceneChar, setSelectedSceneChar] = useState<Record<string, string>>({});
+  const [sceneJobs, setSceneJobs] = useState<Record<string, JobState>>({});
+  const [sceneGenerating, setSceneGenerating] = useState<Record<string, boolean>>({});
   // Increment to force BundleSlideGrid to re-fetch after a regen completes
   const [refreshKeys, setRefreshKeys] = useState<Record<string, number>>({});
 
-  // ── Fetch bundles ──────────────────────────────────────────────────────────
+  // ΓöÇΓöÇ Fetch bundles ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
   const fetchBundles = useCallback(async () => {
     setLoading(true);
@@ -450,7 +463,16 @@ export default function CourseAssetsPage() {
     void fetchBundles();
   }, [fetchBundles]);
 
-  // ── Supabase Realtime — watch course_slide_images jobs ────────────────────
+  // ── Fetch characters ───────────────────────────────────────────────────────
+
+  useEffect(() => {
+    fetch("/api/characters")
+      .then((r) => r.json() as Promise<{ characters?: CharacterOption[] }>)
+      .then((d) => setCharacters(d.characters ?? []))
+      .catch(() => {/* silent */});
+  }, []);
+
+  // ΓöÇΓöÇ Supabase Realtime ΓÇö watch course_slide_images jobs ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -499,6 +521,39 @@ export default function CourseAssetsPage() {
           }
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "jobs",
+          filter: "type=eq.generate_character_scenes",
+        },
+        (payload: { new: Record<string, unknown> }) => {
+          const job = payload.new as {
+            id?: string;
+            input_payload?: { bundleId?: string };
+            progress?: number;
+            progress_message?: string;
+            status?: string;
+          };
+          const bundleId = job?.input_payload?.bundleId;
+          if (!bundleId || !job.id) return;
+          setSceneJobs((prev) => ({
+            ...prev,
+            [bundleId]: {
+              jobId: job.id!,
+              progress: job.progress ?? 0,
+              message: job.progress_message ?? "",
+              status: job.status ?? "running",
+            },
+          }));
+          if (job.status === "completed" || job.status === "failed") {
+            setSceneGenerating((prev) => { const n = { ...prev }; delete n[bundleId]; return n; });
+            void fetchBundles();
+          }
+        }
+      )
       .subscribe();
 
     return () => {
@@ -506,7 +561,7 @@ export default function CourseAssetsPage() {
     };
   }, [fetchBundles]);
 
-  // ── Generate slides for one bundle ────────────────────────────────────────
+  // ΓöÇΓöÇ Generate slides for one bundle ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
   const generateSlides = useCallback(async (bundleId: string, model?: SlideModel) => {
     setGenerating((prev) => ({ ...prev, [bundleId]: true }));
@@ -525,7 +580,7 @@ export default function CourseAssetsPage() {
           return next;
         });
       } else {
-        // Job is queued — Realtime will drive the rest
+        // Job is queued ΓÇö Realtime will drive the rest
         setJobs((prev) => ({
           ...prev,
           [bundleId]: {
@@ -546,7 +601,38 @@ export default function CourseAssetsPage() {
     }
   }, [selectedModel]);
 
-  // ── Regen all slides in a bundle (force=true) ─────────────────────────────
+  // ── Generate character scenes for a bundle ────────────────────────────────
+
+  const generateCharacterScenes = useCallback(async (bundleId: string, characterId: string) => {
+    setSceneGenerating((prev) => ({ ...prev, [bundleId]: true }));
+    setSceneJobs((prev) => ({
+      ...prev,
+      [bundleId]: { jobId: "", progress: 0, message: "Queued...", status: "queued" },
+    }));
+    try {
+      const res = await fetch("/api/course-assets/generate-character-scenes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bundleId, characterId }),
+      });
+      const data = await res.json() as { jobId?: string; error?: string };
+      if (!res.ok || !data.jobId) {
+        console.error("[course-assets] generate-character-scenes:", data.error);
+        setSceneGenerating((prev) => { const n = { ...prev }; delete n[bundleId]; return n; });
+        setSceneJobs((prev) => { const n = { ...prev }; delete n[bundleId]; return n; });
+      } else {
+        setSceneJobs((prev) => ({
+          ...prev,
+          [bundleId]: { jobId: data.jobId!, progress: 0, message: "Queued...", status: "queued" },
+        }));
+      }
+    } catch (e) {
+      console.error("[course-assets] generate-character-scenes:", e);
+      setSceneGenerating((prev) => { const n = { ...prev }; delete n[bundleId]; return n; });
+    }
+  }, []);
+
+  // ΓöÇΓöÇ Regen all slides in a bundle (force=true) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
   const regenAllSlides = useCallback(async (bundleId: string) => {
     setGenerating((prev) => ({ ...prev, [bundleId]: true }));
@@ -572,7 +658,7 @@ export default function CourseAssetsPage() {
     }
   }, [selectedModel]);
 
-  // ── Handle a regen job kicked off from a slide editor ─────────────────────
+  // ΓöÇΓöÇ Handle a regen job kicked off from a slide editor ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
   const handleRegenStarted = useCallback((bundleId: string, jobId: string) => {
     setGenerating((prev) => ({ ...prev, [bundleId]: true }));
@@ -582,7 +668,7 @@ export default function CourseAssetsPage() {
     }));
   }, []);
 
-  // ── Generate All Missing ───────────────────────────────────────────────────
+  // ΓöÇΓöÇ Generate All Missing ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
   const generateAllMissing = useCallback(async () => {
     const missing = bundles.filter(
@@ -599,21 +685,21 @@ export default function CourseAssetsPage() {
     setGenerateAllRunning(false);
   }, [bundles, generating, generateSlides, selectedModel]);
 
-  // ── Counts ────────────────────────────────────────────────────────────────
+  // ΓöÇΓöÇ Counts ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
   const missingSlidesCount = bundles.filter(
     (b) => b.slides_generated < b.slides_count
   ).length;
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // ΓöÇΓöÇ Render ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
   return (
     <PageFrame
       eyebrow="Course Assets"
-      title="Slide Images · Audio · Video"
+      title="Slide Images ┬╖ Audio ┬╖ Video"
       description="Generate and track lesson slide images, audio, and video for all SomersSchool courses."
     >
-      {/* ── Selectors ── */}
+      {/* ΓöÇΓöÇ Selectors ΓöÇΓöÇ */}
       <div className="flex flex-wrap items-center gap-3 mb-6">
         <select
           value={course}
@@ -684,14 +770,14 @@ export default function CourseAssetsPage() {
         )}
       </div>
 
-      {/* ── Aggregate progress ── */}
+      {/* ΓöÇΓöÇ Aggregate progress ΓöÇΓöÇ */}
       {bundles.length > 0 && (
         <div className="mb-6 p-4 bg-zinc-900 rounded-lg border border-zinc-800">
           <AggregateProgressBar bundles={bundles} />
         </div>
       )}
 
-      {/* ── Dot legend ── */}
+      {/* ΓöÇΓöÇ Dot legend ΓöÇΓöÇ */}
       <div className="flex items-center gap-5 text-xs text-zinc-500 mb-3 pl-1">
         <span className="flex items-center gap-1.5">
           <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-500" />
@@ -710,11 +796,11 @@ export default function CourseAssetsPage() {
           N/A
         </span>
         <span className="ml-4 text-zinc-600">
-          Dots: Bundle · Slides · Audio · Video · Worksheet
+          Dots: Bundle ┬╖ Slides ┬╖ Audio ┬╖ Video ┬╖ Worksheet
         </span>
       </div>
 
-      {/* ── Error ── */}
+      {/* ΓöÇΓöÇ Error ΓöÇΓöÇ */}
       {error && (
         <div className="flex items-center gap-2 text-red-400 text-sm mb-4 p-3 bg-red-900/20 rounded border border-red-800">
           <AlertCircle className="w-4 h-4 shrink-0" />
@@ -722,7 +808,7 @@ export default function CourseAssetsPage() {
         </div>
       )}
 
-      {/* ── Loading ── */}
+      {/* ΓöÇΓöÇ Loading ΓöÇΓöÇ */}
       {loading && bundles.length === 0 && (
         <div className="flex items-center gap-2 text-zinc-500 text-sm py-8 justify-center">
           <Loader2 className="w-4 h-4 animate-spin" />
@@ -730,14 +816,14 @@ export default function CourseAssetsPage() {
         </div>
       )}
 
-      {/* ── Empty state ── */}
+      {/* ΓöÇΓöÇ Empty state ΓöÇΓöÇ */}
       {!loading && bundles.length === 0 && !error && (
         <div className="text-zinc-600 text-sm py-8 text-center">
           No bundles found for {COURSES.find((c) => c.value === course)?.label} Grade {grade}
         </div>
       )}
 
-      {/* ── Bundle table ── */}
+      {/* ΓöÇΓöÇ Bundle table ΓöÇΓöÇ */}
       {bundles.length > 0 && (
         <div className="rounded-lg border border-zinc-800 overflow-hidden">
           <table className="w-full text-sm">
@@ -854,7 +940,8 @@ export default function CourseAssetsPage() {
 
                     {/* Actions */}
                     <td className="px-4 py-2.5">
-                      <div className="flex flex-col gap-1">
+                      <div className="flex flex-col gap-1.5">
+                        {/* Generate Slides */}
                         {isGenerating ? (
                           <span className="flex items-center gap-1.5 text-xs text-amber-400">
                             <Loader2 className="w-3 h-3 animate-spin" />
@@ -883,6 +970,49 @@ export default function CourseAssetsPage() {
                           >
                             View job →
                           </a>
+                        )}
+
+                        {/* Generate Character Scenes */}
+                        {characters.length > 0 && (
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <select
+                              value={selectedSceneChar[bundle.id] ?? ""}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                setSelectedSceneChar((prev) => ({ ...prev, [bundle.id]: e.target.value }));
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              className="bg-zinc-900 border border-zinc-700 text-zinc-300 text-xs rounded px-1.5 py-0.5 focus:outline-none"
+                            >
+                              <option value="">Character…</option>
+                              {characters.map((c) => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                              ))}
+                            </select>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const charId = selectedSceneChar[bundle.id];
+                                if (charId) void generateCharacterScenes(bundle.id, charId);
+                              }}
+                              disabled={!selectedSceneChar[bundle.id] || !!sceneGenerating[bundle.id]}
+                              title="Generate character scenes for this bundle"
+                              className="flex items-center gap-1 text-xs bg-green-900/40 hover:bg-green-900/60 text-green-400 border border-green-700/40 rounded px-2 py-0.5 transition-colors disabled:opacity-40"
+                            >
+                              {sceneGenerating[bundle.id] ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Dog className="w-3 h-3" />
+                              )}
+                              Scenes
+                            </button>
+                          </div>
+                        )}
+                        {sceneJobs[bundle.id] && (sceneJobs[bundle.id].status === "running" || sceneJobs[bundle.id].status === "queued") && (
+                          <div className="flex items-center gap-1.5 text-xs text-green-400">
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            <span className="truncate max-w-[100px]">{sceneJobs[bundle.id].message || "Scenes..."}</span>
+                          </div>
                         )}
                       </div>
                     </td>

@@ -11,6 +11,9 @@ const updateCharacterSchema = z.object({
   hero_image_url: z.string().url().nullable().optional(),
   preferred_provider: z.enum(["openai", "stability", "replicate", "leonardo"]).optional(),
   lora_model_id: z.string().nullable().optional(),
+  trigger_word: z.string().max(100).nullable().optional(),
+  generation_strategy: z.enum(["kontext", "lora", "ip_adapter"]).optional(),
+  lora_training_status: z.enum(["none", "queued", "training", "succeeded", "failed"]).optional(),
   is_active: z.boolean().optional(),
 });
 

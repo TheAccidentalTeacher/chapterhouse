@@ -4,6 +4,7 @@ import { getEnvironmentStatus } from "@/lib/env";
 import { hasSupabasePublicEnv } from "@/lib/env";
 import { FounderMemoryPanel } from "@/components/founder-memory-panel";
 import { BrandVoicesPanel } from "@/components/brand-voices-panel";
+import { CharacterLibraryPanel } from "@/components/character-library-panel";
 
 export default function SettingsPage() {
   const environment = getEnvironmentStatus();
@@ -32,6 +33,8 @@ export default function SettingsPage() {
         <FounderMemoryPanel />
 
         <BrandVoicesPanel />
+
+        <CharacterLibraryPanel />
 
         <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <section className="glass-panel rounded-3xl p-6">

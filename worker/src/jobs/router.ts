@@ -5,6 +5,8 @@ import { runCourseSlideImages, type CourseSlideImagesPayload } from "./course-sl
 import { runGenerateSegmentAudio, type GenerateSegmentAudioPayload } from "./generate-segment-audio";
 import { runGenerateSegmentVideo, type GenerateSegmentVideoPayload } from "./generate-segment-video";
 import { runLessonVideoPipeline, type LessonVideoPipelinePayload } from "./lesson-video-pipeline";
+import { runTrainCharacterLora, type TrainCharacterLoraPayload } from "./train-character-lora";
+import { runGenerateCharacterScenes, type GenerateCharacterScenesPayload } from "./generate-character-scenes";
 import { updateProgress } from "../lib/progress";
 
 export async function processJob(
@@ -55,6 +57,14 @@ export async function processJob(
 
     case "lesson_video_pipeline":
       await runLessonVideoPipeline(jobId, payload as unknown as LessonVideoPipelinePayload);
+      break;
+
+    case "train_character_lora":
+      await runTrainCharacterLora(jobId, payload as unknown as TrainCharacterLoraPayload);
+      break;
+
+    case "generate_character_scenes":
+      await runGenerateCharacterScenes(jobId, payload as unknown as GenerateCharacterScenesPayload);
       break;
 
     default:

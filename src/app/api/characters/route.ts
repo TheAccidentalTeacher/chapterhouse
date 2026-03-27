@@ -12,6 +12,7 @@ const createCharacterSchema = z.object({
   hero_image_url: z.string().url().nullable().optional(),
   preferred_provider: z.enum(["openai", "stability", "replicate", "leonardo"]).default("replicate"),
   trigger_word: z.string().max(100).nullable().optional(),
+  generation_strategy: z.enum(["kontext", "lora", "ip_adapter"]).default("kontext"),
 });
 
 export async function GET() {
