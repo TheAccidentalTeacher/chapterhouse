@@ -180,8 +180,8 @@ async function generateKontext(
   };
 
   if (imagePromptId) {
-    // weight 0.85 = identity lock without over-constraining scene (DO NOT exceed 0.90)
-    genBody.imagePrompts = [{ imagePromptId, weight: 0.85 }];
+    // FLUX Kontext imagePrompts takes an array of string IDs, not {imagePromptId, weight} objects
+    genBody.imagePrompts = [imagePromptId];
   }
 
   const genRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/generations", {
