@@ -1,19 +1,21 @@
 // GET /api/debug/leonardo-elements
-// Lists all user-trained models (Elements/LoRAs) in the Leonardo account.
-// The /v1/elements endpoint only returns platform elements — user-trained LoRAs
-// live under /v1/models filtered by userId. This route:
-//   1. Calls /v1/me to get the authenticated user's ID
-//   2. Calls /v1/models?userId={id} to list all user models including trained Elements
-// One-time diagnostic — grab the akUUID from the result to set characters.leonardo_element_id.
+// Finds all user-trained Elements (LoRAs/custom models) in the Leonardo account.
+// One-time diagnostic — grab the id/akUUID from the result to set characters.leonardo_element_id.
+//
+// API paths tried:
+//   GET /v1/me                           — get userId + full user profile
+//   GET /v1/models/user/{userId}          — list custom models by user (correct path)
+//   GET /v1/me with full body             — sometimes includes model refs
 
 export async function GET() {
   const key = process.env.LEONARDO_API_KEY ?? process.env.LEONARDO_AI_API_KEY;
   if (!key) return Response.json({ error: "LEONARDO_API_KEY not set" }, { status: 503 });
 
   const headers = { Authorization: `Bearer ${key}`, "Content-Type": "application/json" };
+  const BASE = "https://cloud.leonardo.ai/api/rest/v1";
 
-  // Step 1: get current user ID
-  const meRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/me", { headers });
+  // Step 1: get user ID
+  const meRes = await fetch(`${BASE}/me`, { headers });
   const meData = await meRes.json();
   const userId: string | undefined = meData?.user_details?.[0]?.user?.id;
 
@@ -21,25 +23,19 @@ export async function GET() {
     return Response.json({ error: "Could not retrieve user ID", meStatus: meRes.status, meData });
   }
 
-  // Step 2: list all models for this user (includes user-trained Elements/LoRAs)
-  const modelsRes = await fetch(
-    `https://cloud.leonardo.ai/api/rest/v1/models?userId=${userId}`,
-    { headers }
-  );
-  const modelsData = await modelsRes.json();
+  // Step 2: GET /v1/models/user/{userId} — the correct list endpoint for custom models
+  const userModelsRes = await fetch(`${BASE}/models/user/${userId}`, { headers });
+  const userModelsData = await userModelsRes.json();
 
-  // Also try the user-scoped elements endpoint
-  const userElementsRes = await fetch(
-    `https://cloud.leonardo.ai/api/rest/v1/elements?userId=${userId}`,
-    { headers }
-  );
-  const userElementsData = await userElementsRes.json();
+  // Step 3: also dump full /v1/me response — sometimes contains custom model refs
+  // (already have meData above)
 
   return Response.json({
     userId,
-    modelsStatus: modelsRes.status,
-    models: modelsData,
-    userElementsStatus: userElementsRes.status,
-    userElements: userElementsData,
+    // Your trained Elements/LoRAs should be in userModels:
+    userModelsStatus: userModelsRes.status,
+    userModels: userModelsData,
+    // Full /v1/me in case it contains model references:
+    meData,
   });
 }
