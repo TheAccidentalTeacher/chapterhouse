@@ -33,6 +33,7 @@ interface BundleRow {
   videos_count: number;
   videos_generated: number;
   worksheet_present: boolean;
+  anchor_image_url?: string | null;
 }
 
 interface JobState {
@@ -1040,10 +1041,19 @@ export default function CourseAssetsPage() {
                     {/* Anchor / Slides count */}
                     <td className="px-4 py-2.5 tabular-nums text-zinc-400 text-xs">
                       {bundle.slides_generated > 0 ? (
-                        <span className="text-green-500 flex items-center gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          Anchor
-                        </span>
+                        bundle.anchor_image_url ? (
+                          <img
+                            src={bundle.anchor_image_url}
+                            alt="Anchor"
+                            className="w-12 h-12 rounded object-cover border border-zinc-700"
+                            title={bundle.title}
+                          />
+                        ) : (
+                          <span className="text-green-500 flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            Anchor
+                          </span>
+                        )
                       ) : (
                         <span className="text-zinc-600">No anchor</span>
                       )}

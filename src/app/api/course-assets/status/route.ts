@@ -1,6 +1,7 @@
 import { createCourseAdmin } from "@/lib/course-supabase";
 
-// All columns except `content` — too large to send on every list request
+// All columns except `content` — too large to send on every list request.
+// anchor_image_url is extracted directly from the content JSONB field.
 const BUNDLE_COLUMNS = [
   "id", "subject", "subject_code", "grade",
   "unit", "lesson", "bundle_number", "title",
@@ -8,6 +9,7 @@ const BUNDLE_COLUMNS = [
   "audio_generated", "audio_url",
   "videos_count", "videos_generated",
   "worksheet_present",
+  "content->>anchor_image_url",
 ].join(", ");
 
 export async function GET(req: Request) {
