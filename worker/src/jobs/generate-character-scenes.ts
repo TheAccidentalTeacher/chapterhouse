@@ -298,7 +298,7 @@ export async function runGenerateCharacterScenes(
   jobId: string,
   payload: GenerateCharacterScenesPayload
 ) {
-  const { characterId, bundleId, sceneCount = 112 } = payload;
+  const { characterId, bundleId, sceneCount } = payload;
 
   // Fetch character from Chapterhouse Supabase
   const { data: character, error: charErr } = await chapterhouseSupabase
@@ -347,8 +347,9 @@ export async function runGenerateCharacterScenes(
 
   await updateProgress(jobId, 5, `Generating scene descriptions for ${character.name} (${strategy} strategy)...`, "running");
 
-  // 120% budget for rejection rate (Vector mandate)
-  const targetCount = Math.ceil(sceneCount * 1.2);
+  // Use bundle's actual slide count. 20% budget for rejection rate only if sceneCount was explicitly overridden.
+  const baseCount = sceneCount ?? bundle.slides_count ?? 5;
+  const targetCount = sceneCount ? Math.ceil(sceneCount * 1.2) : baseCount;
 
   let scenes: Array<{ slideIndex: number; description: string }>;
   try {
