@@ -77,7 +77,7 @@ export async function POST(req: Request) {
 
   const { data: bundle, error: bundleErr } = await courseSupabase
     .from("bundles")
-    .select("id, title, slides_count")
+    .select("id, title, slides_count, content")
     .eq("id", bundleId)
     .single();
 
@@ -85,11 +85,36 @@ export async function POST(req: Request) {
     return Response.json({ error: `Bundle not found: ${bundleId}` }, { status: 404 });
   }
 
-  const resolvedCount = sceneCount ?? (bundle as { slides_count?: number }).slides_count ?? 112;
+  // slides_count may be 0 (column not populated) — fall back to counting actual slides
+  // from bundle content so the worker knows how many images to generate.
+  type BundleContent = {
+    lesson_script?: {
+      intro_slides?: unknown[];
+      sections?: { slides?: unknown[] }[];
+    };
+  };
+  const rawSlidesCount = (bundle as { slides_count?: number }).slides_count ?? 0;
+  let resolvedCount: number;
+  if (sceneCount) {
+    resolvedCount = sceneCount;
+  } else if (rawSlidesCount > 0) {
+    resolvedCount = rawSlidesCount;
+  } else {
+    // Count from bundle content JSON
+    const ls = ((bundle as { content?: BundleContent }).content?.lesson_script);
+    const introCount = ls?.intro_slides?.length ?? 0;
+    const sectionCount = (ls?.sections ?? []).reduce((s, sec) => s + (sec.slides?.length ?? 0), 0);
+    const contentCount = introCount + sectionCount;
+    resolvedCount = contentCount > 0 ? contentCount : 5; // 5 = absolute minimum fallback
+    console.log(
+      "[generate-character-scenes] slides_count was 0 — counted from content:",
+      { introCount, sectionCount, contentCount, resolvedCount }
+    );
+  }
 
   console.log(
     "[generate-character-scenes] bundleId:", bundleId,
-    "| slides_count:", (bundle as { slides_count?: number }).slides_count,
+    "| slides_count:", rawSlidesCount,
     "| resolvedCount:", resolvedCount,
     "| strategy:", strategy,
     "| char:", (character as { name: string }).name
