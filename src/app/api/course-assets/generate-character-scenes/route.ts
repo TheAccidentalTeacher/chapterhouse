@@ -14,7 +14,7 @@ import { createCourseAdmin } from "@/lib/course-supabase";
 import { z } from "zod";
 
 const schema = z.object({
-  bundleId: z.string().uuid("bundleId must be a valid UUID"),
+  bundleId: z.string().min(1, "bundleId is required"),
   characterId: z.string().uuid("characterId must be a valid UUID"),
   sceneCount: z.number().int().min(1).max(500).optional().default(112),
 });
