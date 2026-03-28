@@ -173,8 +173,9 @@ async function generateKontext(
     width: 1024,
     height: 1024,
     num_images: 1,
-    // FLUX.1 Kontext (fast) — identity conditioning via imagePrompts reference weight 0.85
-    modelId: "b2614463-296c-462a-b22d-e6bb4fc6b92b", // Flux Dev
+    // Phoenix — supports imagePrompts for character reference guidance + alchemy + RENDER_3D
+    // Flux Dev does NOT support imagePrompts; alchemy is also incompatible with Flux Dev.
+    modelId: "6b645e3a-d64f-4341-a6d8-7a3690fbf042", // Leonardo Phoenix
     alchemy: true,
     presetStyle: "RENDER_3D",
   };
