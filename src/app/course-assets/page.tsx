@@ -1041,19 +1041,10 @@ export default function CourseAssetsPage() {
                     {/* Anchor / Slides count */}
                     <td className="px-4 py-2.5 tabular-nums text-zinc-400 text-xs">
                       {bundle.slides_generated > 0 ? (
-                        bundle.anchor_image_url ? (
-                          <img
-                            src={bundle.anchor_image_url}
-                            alt="Anchor"
-                            className="w-12 h-12 rounded object-cover border border-zinc-700"
-                            title={bundle.title}
-                          />
-                        ) : (
-                          <span className="text-green-500 flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            Anchor
-                          </span>
-                        )
+                        <span className="text-green-500 flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Anchor
+                        </span>
                       ) : (
                         <span className="text-zinc-600">No anchor</span>
                       )}
@@ -1165,6 +1156,21 @@ export default function CourseAssetsPage() {
                   {expandedBundle === bundle.id && (
                     <tr key={`${bundle.id}-expanded`} className="border-b border-zinc-800">
                       <td colSpan={7}>
+                        {/* Anchor image — shown large in the dropdown */}
+                        {bundle.anchor_image_url && (
+                          <div className="flex items-start gap-4 px-6 pt-4 pb-2">
+                            <img
+                              src={bundle.anchor_image_url}
+                              alt={`Anchor — ${bundle.title}`}
+                              className="w-40 h-40 rounded-lg object-cover border border-zinc-700 shadow-lg flex-shrink-0"
+                            />
+                            <div className="flex flex-col gap-1 pt-1">
+                              <span className="text-xs text-zinc-400 font-medium">Anchor Image</span>
+                              <span className="text-xs text-zinc-500">{bundle.title}</span>
+                              <span className="text-xs text-zinc-600">Grade {bundle.grade} · sci-g{bundle.grade}-u{bundle.unit}-{bundle.bundle_number}</span>
+                            </div>
+                          </div>
+                        )}
                         <BundleSlideGrid
                           bundleId={bundle.id}
                           defaultModel={selectedModel}
