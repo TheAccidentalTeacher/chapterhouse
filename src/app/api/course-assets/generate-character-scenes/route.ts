@@ -101,7 +101,7 @@ export async function POST(req: Request) {
 
   if (jobErr || !job) {
     console.error("[generate-character-scenes] DB insert error:", jobErr);
-    return Response.json({ error: "Failed to create job" }, { status: 500 });
+    return Response.json({ error: "Failed to create job", detail: jobErr?.message ?? "unknown" }, { status: 500 });
   }
 
   // Publish to QStash → Railway worker
