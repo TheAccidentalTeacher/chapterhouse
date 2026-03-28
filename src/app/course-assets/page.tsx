@@ -442,6 +442,7 @@ export default function CourseAssetsPage() {
   // Anchor image state (1 image per bundle, grade-themed)
   const [anchorGenerating, setAnchorGenerating] = useState<Record<string, boolean>>({});
   const [anchorJobs, setAnchorJobs] = useState<Record<string, JobState>>({});
+  const [anchorErrors, setAnchorErrors] = useState<Record<string, string>>({});
 
   // ΓöÇΓöÇ Fetch bundles ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
@@ -684,6 +685,7 @@ export default function CourseAssetsPage() {
   // ── Generate anchor image for a bundle ────────────────────────────────────
 
   const generateAnchor = useCallback(async (bundleId: string, forceRegen = false) => {
+    setAnchorErrors((prev) => { const n = { ...prev }; delete n[bundleId]; return n; });
     setAnchorGenerating((prev) => ({ ...prev, [bundleId]: true }));
     try {
       const res = await fetch("/api/course-assets/generate-anchor", {
@@ -693,7 +695,9 @@ export default function CourseAssetsPage() {
       });
       const data = await res.json() as { jobId?: string; error?: string };
       if (!res.ok || !data.jobId) {
-        console.error("[course-assets] generate-anchor error:", data.error);
+        const msg = typeof data.error === "string" ? data.error : JSON.stringify(data.error ?? data);
+        console.error("[course-assets] generate-anchor error:", msg);
+        setAnchorErrors((prev) => ({ ...prev, [bundleId]: msg }));
         setAnchorGenerating((prev) => { const n = { ...prev }; delete n[bundleId]; return n; });
       } else {
         setAnchorJobs((prev) => ({
@@ -702,7 +706,9 @@ export default function CourseAssetsPage() {
         }));
       }
     } catch (e) {
+      const msg = String(e);
       console.error("[course-assets] generate-anchor:", e);
+      setAnchorErrors((prev) => ({ ...prev, [bundleId]: msg }));
       setAnchorGenerating((prev) => { const n = { ...prev }; delete n[bundleId]; return n; });
     }
   }, []);
@@ -1082,6 +1088,14 @@ export default function CourseAssetsPage() {
                           >
                             View job →
                           </a>
+                        )}
+                        {anchorErrors[bundle.id] && (
+                          <div
+                            className="text-xs text-red-400 max-w-[160px] leading-tight"
+                            title={anchorErrors[bundle.id]}
+                          >
+                            ⚠ {anchorErrors[bundle.id]}
+                          </div>
                         )}
 
                         {/* Generate Character Scenes */}
