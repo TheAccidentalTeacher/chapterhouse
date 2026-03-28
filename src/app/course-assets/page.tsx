@@ -615,9 +615,9 @@ export default function CourseAssetsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bundleId, characterId }),
       });
-      const data = await res.json() as { jobId?: string; error?: string };
+      const data = await res.json() as { jobId?: string; error?: string; detail?: string };
       if (!res.ok || !data.jobId) {
-        console.error("[course-assets] generate-character-scenes:", data.error);
+        console.error("[course-assets] generate-character-scenes:", data.error, data.detail, data);
         setSceneGenerating((prev) => { const n = { ...prev }; delete n[bundleId]; return n; });
         setSceneJobs((prev) => { const n = { ...prev }; delete n[bundleId]; return n; });
       } else {
