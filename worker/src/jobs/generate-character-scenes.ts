@@ -457,6 +457,51 @@ export async function runGenerateCharacterScenes(
     );
   }
 
+  // Final reconciliation: if bundle has no lesson_script slide slots yet, create them from generatedUrls.
+  // This handles bundles that were created without a pre-populated lesson_script (slides_count=0 case).
+  if (generatedUrls.length > 0) {
+    try {
+      const { data: finalBundle } = await courseSupabase
+        .from("bundles")
+        .select("content")
+        .eq("id", bundleId)
+        .single();
+
+      if (finalBundle) {
+        const content = (finalBundle.content ?? {}) as Record<string, unknown>;
+        const ls = content.lesson_script as {
+          intro_slides?: Array<{ image_url?: string }>;
+          sections?: Array<{ slides?: Array<{ image_url?: string }> }>;
+        } | undefined | null;
+
+        const existingSlots =
+          (ls?.intro_slides?.length ?? 0) +
+          (ls?.sections?.flatMap((s) => s.slides ?? []).length ?? 0);
+
+        if (existingSlots === 0) {
+          // No slide structure — create flat intro_slides from generated images
+          content.lesson_script = {
+            intro_slides: generatedUrls
+              .sort((a, b) => a.slideIndex - b.slideIndex)
+              .map(({ cloudinaryUrl }) => ({ image_url: cloudinaryUrl })),
+            sections: [],
+          };
+
+          await courseSupabase
+            .from("bundles")
+            .update({ content, updated_at: new Date().toISOString() })
+            .eq("id", bundleId);
+
+          console.log(
+            `[generate-character-scenes] Created lesson_script with ${generatedUrls.length} intro_slides for bundle ${bundleId}`
+          );
+        }
+      }
+    } catch (e) {
+      console.warn("[generate-character-scenes] Final content reconciliation failed (non-fatal):", e);
+    }
+  }
+
   // Mark slides_generated in CoursePlatform
   await courseSupabase
     .from("bundles")
