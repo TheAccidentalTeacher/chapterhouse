@@ -48,6 +48,7 @@ interface Character {
   lora_model_id?: string | null;
   trigger_word?: string | null;
   generation_strategy?: string;
+  leonardo_element_id?: string | null; // akUUID of a trained Leonardo Element (LoRA)
 }
 
 // ── Scene description from Claude Haiku ──────────────────────────────────────
@@ -139,7 +140,49 @@ async function generateKontext(
     "extra limbs, malformed anatomy, fused fingers, bad anatomy, extra fingers, missing limbs, mutated hands, disfigured",
   ].filter(Boolean).join(", ");
 
-  // Upload reference image for FLUX Kontext
+  // If character has a trained Leonardo Element (LoRA), use it — much cheaper than imagePrompts + alchemy.
+  // Elements use fast tokens only. imagePrompts path is the fallback when no element is trained yet.
+  if (character.leonardo_element_id) {
+    const genBody: Record<string, unknown> = {
+      prompt: fullPrompt,
+      negative_prompt: negativePrompt,
+      width: 1024,
+      height: 1024,
+      num_images: 1,
+      modelId: "6b645e3a-d64f-4341-a6d8-7a3690fbf042", // Leonardo Phoenix
+      alchemy: false,
+      presetStyle: "RENDER_3D",
+      elements: [{ akUUID: character.leonardo_element_id, weight: 0.75 }],
+    };
+
+    const genRes = await fetch("https://cloud.leonardo.ai/api/rest/v1/generations", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify(genBody),
+    });
+
+    if (!genRes.ok) {
+      const err = await genRes.text();
+      throw new Error(`Leonardo Element error (${genRes.status}): ${err}`);
+    }
+
+    const genData = await genRes.json() as { sdGenerationJob?: { generationId?: string } };
+    const generationId = genData.sdGenerationJob?.generationId;
+    if (!generationId) throw new Error("No generation ID from Leonardo (elements path)");
+
+    for (let i = 0; i < 60; i++) {
+      await new Promise((r) => setTimeout(r, 3000));
+      const poll = await fetch(`https://cloud.leonardo.ai/api/rest/v1/generations/${generationId}`, {
+        headers: { Authorization: `Bearer ${key}` },
+      });
+      const result = await poll.json() as { generations_by_pk?: { generated_images?: { url: string }[] } };
+      const images = result.generations_by_pk?.generated_images;
+      if (images && images.length > 0) return images[0].url as string;
+    }
+    throw new Error("Leonardo Element generation timed out after 3 minutes");
+  }
+
+  // Fallback: imagePrompts path (requires hero_image_url)
   let imagePromptId: string | undefined;
   try {
     const uploadUrl = "https://cloud.leonardo.ai/api/rest/v1/init-image";
@@ -365,7 +408,7 @@ export async function runGenerateCharacterScenes(
   // Fetch character from Chapterhouse Supabase
   const { data: character, error: charErr } = await chapterhouseSupabase
     .from("characters")
-    .select("id, name, slug, physical_description, art_style, negative_prompt, hero_image_url, reference_images, lora_model_id, trigger_word, generation_strategy")
+    .select("id, name, slug, physical_description, art_style, negative_prompt, hero_image_url, reference_images, lora_model_id, trigger_word, generation_strategy, leonardo_element_id")
     .eq("id", characterId)
     .single<Character>();
 
