@@ -215,6 +215,67 @@ async function generateKontext(
   throw new Error("Leonardo Kontext generation timed out after 3 minutes");
 }
 
+// ── Replicate flux-schnell fallback (free tier, no LoRA) ──────────────────────
+// Used automatically when Leonardo returns "not enough api tokens"
+
+async function generateReplicateFallback(prompt: string, character: Character): Promise<string> {
+  const token = process.env.REPLICATE_API_TOKEN;
+  if (!token) throw new Error("REPLICATE_API_TOKEN not configured — cannot fall back from Leonardo");
+
+  const fullPrompt = [
+    character.physical_description,
+    character.art_style,
+    prompt,
+    "educational illustration for children",
+  ].filter(Boolean).join(". ").replace(/\.\s*\./g, ".").trim();
+
+  const negativePrompt = [
+    character.negative_prompt,
+    "extra limbs, malformed anatomy, fused fingers, bad anatomy, extra fingers, missing limbs, mutated hands, disfigured, photo, realistic",
+  ].filter(Boolean).join(", ");
+
+  const createRes = await fetch("https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Prefer: "wait" },
+    body: JSON.stringify({
+      input: {
+        prompt: fullPrompt,
+        negative_prompt: negativePrompt,
+        width: 1024,
+        height: 1024,
+        num_outputs: 1,
+        num_inference_steps: 4,
+      },
+    }),
+  });
+
+  if (!createRes.ok) {
+    const err = await createRes.text();
+    throw new Error(`Replicate fallback error (${createRes.status}): ${err}`);
+  }
+
+  type ReplicatePrediction = { id: string; status: string; output?: string | string[]; error?: string; urls?: { get: string } };
+  const prediction = await createRes.json() as ReplicatePrediction;
+
+  if (prediction.status === "succeeded" && prediction.output) {
+    const url = Array.isArray(prediction.output) ? prediction.output[0] : prediction.output;
+    if (typeof url === "string") return url;
+  }
+
+  const getUrl = prediction.urls?.get ?? `https://api.replicate.com/v1/predictions/${prediction.id}`;
+  for (let i = 0; i < 20; i++) {
+    await new Promise((r) => setTimeout(r, 3000));
+    const pollRes = await fetch(getUrl, { headers: { Authorization: `Bearer ${token}` } });
+    const polled = await pollRes.json() as ReplicatePrediction;
+    if (polled.status === "succeeded" && polled.output) {
+      const url = Array.isArray(polled.output) ? polled.output[0] : polled.output;
+      if (typeof url === "string") return url;
+    }
+    if (polled.status === "failed") throw new Error(polled.error ?? "Replicate fallback prediction failed");
+  }
+  throw new Error("Replicate fallback generation timed out");
+}
+
 // ── Replicate LoRA generation ─────────────────────────────────────────────────
 
 async function generateLoRA(
@@ -401,8 +462,18 @@ export async function runGenerateCharacterScenes(
           if (strategy === "lora") {
             imageUrl = await generateLoRA(prompt, character);
           } else {
-            // Default: kontext (also handles ip_adapter fallback via kontext)
-            imageUrl = await generateKontext(prompt, character);
+            // Default: kontext — with automatic Replicate fallback on token exhaustion
+            try {
+              imageUrl = await generateKontext(prompt, character);
+            } catch (leoErr) {
+              const errMsg = leoErr instanceof Error ? leoErr.message : String(leoErr);
+              if (errMsg.includes("not enough api tokens")) {
+                console.warn(`[generate-character-scenes] Slide ${scene.slideIndex}: Leonardo tokens exhausted — falling back to Replicate flux-schnell`);
+                imageUrl = await generateReplicateFallback(prompt, character);
+              } else {
+                throw leoErr;
+              }
+            }
           }
           console.log(`[generate-character-scenes] Slide ${scene.slideIndex}: got image URL ${imageUrl.slice(0, 60)}...`);
 
