@@ -314,6 +314,22 @@ export async function runGenerateCharacterScenes(
 
   const strategy = character.generation_strategy ?? "kontext";
 
+  // Validate required API keys upfront — fail fast before wasting Claude tokens
+  if (strategy === "kontext" || strategy === "ip_adapter") {
+    const leoKey = process.env.LEONARDO_API_KEY ?? process.env.LEONARDO_AI_API_KEY;
+    if (!leoKey) {
+      await updateProgress(jobId, 0, "LEONARDO_API_KEY not set on Railway — add it to Railway env vars", "failed", undefined, "Missing LEONARDO_API_KEY");
+      return;
+    }
+    console.log("[generate-character-scenes] Leonardo key present ✓");
+  }
+  if (strategy === "lora") {
+    if (!process.env.REPLICATE_API_TOKEN) {
+      await updateProgress(jobId, 0, "REPLICATE_API_TOKEN not set — add it to Railway env vars", "failed", undefined, "Missing REPLICATE_API_TOKEN");
+      return;
+    }
+  }
+
   if (strategy === "kontext" && !character.hero_image_url) {
     await updateProgress(jobId, 0, "Character needs hero_image_url for Kontext strategy", "failed", undefined, "Missing hero_image_url");
     return;
@@ -381,16 +397,19 @@ export async function runGenerateCharacterScenes(
         try {
           let imageUrl: string;
 
+          console.log(`[generate-character-scenes] Slide ${scene.slideIndex}: calling ${strategy} generator...`);
           if (strategy === "lora") {
             imageUrl = await generateLoRA(prompt, character);
           } else {
             // Default: kontext (also handles ip_adapter fallback via kontext)
             imageUrl = await generateKontext(prompt, character);
           }
+          console.log(`[generate-character-scenes] Slide ${scene.slideIndex}: got image URL ${imageUrl.slice(0, 60)}...`);
 
           const publicId = `somerschool/slides/${bundleId}/${scene.slideIndex}`;
           const cloudinaryUrl = await uploadImageFromUrl(imageUrl, publicId);
           generatedUrls.push({ slideIndex: scene.slideIndex, cloudinaryUrl });
+          console.log(`[generate-character-scenes] Slide ${scene.slideIndex}: uploaded to Cloudinary ✓`);
 
           // Update this slide's image_url in CoursePlatform bundle.content
           // We do a targeted update: read current content, update the slide, write back
@@ -441,7 +460,8 @@ export async function runGenerateCharacterScenes(
             console.warn(`[generate-character-scenes] Content update for slide ${scene.slideIndex} failed:`, e);
           }
         } catch (e) {
-          console.error(`[generate-character-scenes] Failed to generate slide ${scene.slideIndex}:`, e);
+          const msg = e instanceof Error ? e.message : String(e);
+          console.error(`[generate-character-scenes] Failed to generate slide ${scene.slideIndex}: ${msg}`);
           // Non-fatal — continue with other slides
         }
       })
