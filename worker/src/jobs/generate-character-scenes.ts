@@ -173,10 +173,11 @@ async function generateKontext(
     width: 1024,
     height: 1024,
     num_images: 1,
-    // Phoenix — supports imagePrompts for character reference guidance + alchemy + RENDER_3D
-    // Flux Dev does NOT support imagePrompts; alchemy is also incompatible with Flux Dev.
+    // Phoenix — supports imagePrompts for character reference guidance.
+    // alchemy: true requires top-up/rollover API credits (separate from fast tokens).
+    // Disabled here to use fast tokens only — re-enable if top-up credits are loaded.
     modelId: "6b645e3a-d64f-4341-a6d8-7a3690fbf042", // Leonardo Phoenix
-    alchemy: true,
+    alchemy: false,
     presetStyle: "RENDER_3D",
   };
 
