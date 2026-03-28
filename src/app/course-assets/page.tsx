@@ -439,6 +439,10 @@ export default function CourseAssetsPage() {
   // Per-bundle error messages for scene generation (shown inline in UI)
   const [sceneErrors, setSceneErrors] = useState<Record<string, string>>({});
 
+  // Anchor image state (1 image per bundle, grade-themed)
+  const [anchorGenerating, setAnchorGenerating] = useState<Record<string, boolean>>({});
+  const [anchorJobs, setAnchorJobs] = useState<Record<string, JobState>>({});
+
   // ΓöÇΓöÇ Fetch bundles ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
   const fetchBundles = useCallback(async () => {
@@ -556,6 +560,39 @@ export default function CourseAssetsPage() {
           }
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "jobs",
+          filter: "type=eq.generate_bundle_anchor",
+        },
+        (payload: { new: Record<string, unknown> }) => {
+          const job = payload.new as {
+            id?: string;
+            input_payload?: { bundleId?: string };
+            progress?: number;
+            progress_message?: string;
+            status?: string;
+          };
+          const bundleId = job?.input_payload?.bundleId;
+          if (!bundleId || !job.id) return;
+          setAnchorJobs((prev) => ({
+            ...prev,
+            [bundleId]: {
+              jobId: job.id!,
+              progress: job.progress ?? 0,
+              message: job.progress_message ?? "",
+              status: job.status ?? "running",
+            },
+          }));
+          if (job.status === "completed" || job.status === "failed") {
+            setAnchorGenerating((prev) => { const n = { ...prev }; delete n[bundleId]; return n; });
+            void fetchBundles();
+          }
+        }
+      )
       .subscribe();
 
     return () => {
@@ -644,7 +681,33 @@ export default function CourseAssetsPage() {
     }
   }, []);
 
-  // ΓöÇΓöÇ Regen all slides in a bundle (force=true) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Generate anchor image for a bundle ────────────────────────────────────
+
+  const generateAnchor = useCallback(async (bundleId: string, forceRegen = false) => {
+    setAnchorGenerating((prev) => ({ ...prev, [bundleId]: true }));
+    try {
+      const res = await fetch("/api/course-assets/generate-anchor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bundleId, ...(forceRegen ? { forceRegen: true } : {}) }),
+      });
+      const data = await res.json() as { jobId?: string; error?: string };
+      if (!res.ok || !data.jobId) {
+        console.error("[course-assets] generate-anchor error:", data.error);
+        setAnchorGenerating((prev) => { const n = { ...prev }; delete n[bundleId]; return n; });
+      } else {
+        setAnchorJobs((prev) => ({
+          ...prev,
+          [bundleId]: { jobId: data.jobId!, progress: 0, message: "Queued...", status: "queued" },
+        }));
+      }
+    } catch (e) {
+      console.error("[course-assets] generate-anchor:", e);
+      setAnchorGenerating((prev) => { const n = { ...prev }; delete n[bundleId]; return n; });
+    }
+  }, []);
+
+  // ── Regen all slides in a bundle (force=true) ─────────────────────────────
 
   const regenAllSlides = useCallback(async (bundleId: string) => {
     setGenerating((prev) => ({ ...prev, [bundleId]: true }));
@@ -684,23 +747,24 @@ export default function CourseAssetsPage() {
 
   const generateAllMissing = useCallback(async () => {
     const missing = bundles.filter(
-      (b) => b.slides_generated < b.slides_count && !generating[b.id]
+      (b) => b.slides_generated === 0 && !anchorGenerating[b.id]
     );
     if (missing.length === 0) return;
 
     setGenerateAllRunning(true);
     for (const bundle of missing) {
-      await generateSlides(bundle.id, selectedModel);
-      // Brief pause between job submissions to avoid overwhelming QStash
-      await new Promise((r) => setTimeout(r, 300));
+      await generateAnchor(bundle.id);
+      // Brief pause between job submissions to avoid rate limiting
+      await new Promise((r) => setTimeout(r, 500));
     }
     setGenerateAllRunning(false);
-  }, [bundles, generating, generateSlides, selectedModel]);
+  }, [bundles, anchorGenerating, generateAnchor]);
 
   // ΓöÇΓöÇ Counts ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
+  // Missing = no anchor image yet (slides_generated === 0)
   const missingSlidesCount = bundles.filter(
-    (b) => b.slides_generated < b.slides_count
+    (b) => b.slides_generated === 0 && !anchorGenerating[b.id]
   ).length;
 
   // ΓöÇΓöÇ Render ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
@@ -777,7 +841,7 @@ export default function CourseAssetsPage() {
             ) : (
               <Play className="w-3.5 h-3.5" />
             )}
-            Generate All Missing ({missingSlidesCount})
+            Generate All Anchors ({missingSlidesCount})
           </button>
         )}
       </div>
@@ -808,7 +872,7 @@ export default function CourseAssetsPage() {
           N/A
         </span>
         <span className="ml-4 text-zinc-600">
-          Dots: Bundle ┬╖ Slides ┬╖ Audio ┬╖ Video ┬╖ Worksheet
+          Dots: Bundle · Anchor · Audio · Video · Worksheet
         </span>
       </div>
 
@@ -846,7 +910,7 @@ export default function CourseAssetsPage() {
                 <th className="text-left text-xs text-zinc-500 font-medium px-4 py-2">Title</th>
                 <th className="text-left text-xs text-zinc-500 font-medium px-4 py-2">ID</th>
                 <th className="text-left text-xs text-zinc-500 font-medium px-4 py-2 w-32">Status</th>
-                <th className="text-left text-xs text-zinc-500 font-medium px-4 py-2 w-32">Slides</th>
+                <th className="text-left text-xs text-zinc-500 font-medium px-4 py-2 w-32">Anchor</th>
                 <th className="text-left text-xs text-zinc-500 font-medium px-4 py-2 w-36">Actions</th>
               </tr>
             </thead>
@@ -856,6 +920,10 @@ export default function CourseAssetsPage() {
                 const isGenerating = !!generating[bundle.id] || (activeJob?.status === "running" || activeJob?.status === "queued");
                 const jobComplete = activeJob?.status === "completed";
                 const jobFailed = activeJob?.status === "failed";
+                const anchorJob = anchorJobs[bundle.id];
+                const isAnchorGenerating = !!anchorGenerating[bundle.id] || anchorJob?.status === "running" || anchorJob?.status === "queued";
+                const anchorJobComplete = anchorJob?.status === "completed";
+                const anchorJobFailed = anchorJob?.status === "failed";
 
                 return (
                   <>
@@ -878,28 +946,52 @@ export default function CourseAssetsPage() {
                     {/* Title */}
                     <td className="px-4 py-2.5 text-zinc-200 font-medium">
                       {bundle.title}
-                      {(isGenerating || jobComplete || jobFailed) && activeJob && (
-                        <div className="mt-1">
-                          {isGenerating && (
-                            <div className="flex items-center gap-2 mb-0.5">
-                              <div className="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden">
-                                <div
-                                  className="h-full bg-amber-500 transition-all duration-300"
-                                  style={{ width: `${activeJob.progress}%` }}
-                                />
+                        {/* Slide-level job progress (legacy) */}
+                        {(isGenerating || jobComplete || jobFailed) && activeJob && (
+                          <div className="mt-1">
+                            {isGenerating && (
+                              <div className="flex items-center gap-2 mb-0.5">
+                                <div className="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-amber-500 transition-all duration-300"
+                                    style={{ width: `${activeJob.progress}%` }}
+                                  />
+                                </div>
+                                <span className="text-xs text-zinc-500 tabular-nums shrink-0">
+                                  {activeJob.progress}%
+                                </span>
                               </div>
-                              <span className="text-xs text-zinc-500 tabular-nums shrink-0">
-                                {activeJob.progress}%
-                              </span>
-                            </div>
-                          )}
-                          <p className={`text-xs mt-0.5 truncate max-w-xs ${
-                            jobFailed ? "text-red-400" : jobComplete ? "text-green-400" : "text-zinc-500"
-                          }`}>
-                            {activeJob.message}
-                          </p>
-                        </div>
-                      )}
+                            )}
+                            <p className={`text-xs mt-0.5 truncate max-w-xs ${
+                              jobFailed ? "text-red-400" : jobComplete ? "text-green-400" : "text-zinc-500"
+                            }`}>
+                              {activeJob.message}
+                            </p>
+                          </div>
+                        )}
+                        {/* Anchor job progress */}
+                        {(isAnchorGenerating || anchorJobComplete || anchorJobFailed) && anchorJob && (
+                          <div className="mt-1">
+                            {isAnchorGenerating && (
+                              <div className="flex items-center gap-2 mb-0.5">
+                                <div className="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-violet-500 transition-all duration-300"
+                                    style={{ width: `${anchorJob.progress}%` }}
+                                  />
+                                </div>
+                                <span className="text-xs text-zinc-500 tabular-nums shrink-0">
+                                  {anchorJob.progress}%
+                                </span>
+                              </div>
+                            )}
+                            <p className={`text-xs mt-0.5 truncate max-w-xs ${
+                              anchorJobFailed ? "text-red-400" : anchorJobComplete ? "text-green-400" : "text-violet-400"
+                            }`}>
+                              {anchorJob.message}
+                            </p>
+                          </div>
+                        )}
                     </td>
 
                     {/* ID */}
@@ -913,10 +1005,10 @@ export default function CourseAssetsPage() {
                         {/* Dot 1: Bundle present */}
                         <StatusDot color="green" title="Bundle present" />
 
-                        {/* Dot 2: Slides / images */}
+                        {/* Dot 2: Anchor image */}
                         <StatusDot
-                          color={slideDotColor(bundle.slides_generated, bundle.slides_count)}
-                          title={`Slides: ${bundle.slides_generated}/${bundle.slides_count}`}
+                          color={bundle.slides_generated > 0 ? "green" : "red"}
+                          title={bundle.slides_generated > 0 ? "Anchor image: ✓" : "Anchor image: missing"}
                         />
 
                         {/* Dot 3: Audio */}
@@ -939,13 +1031,17 @@ export default function CourseAssetsPage() {
                       </div>
                     </td>
 
-                    {/* Slides count */}
+                    {/* Anchor / Slides count */}
                     <td className="px-4 py-2.5 tabular-nums text-zinc-400 text-xs">
-                      {bundle.slides_generated}/{bundle.slides_count}
-                      {jobComplete && (
-                        <CheckCircle2 className="inline ml-1.5 w-3.5 h-3.5 text-green-500" />
+                      {bundle.slides_generated > 0 ? (
+                        <span className="text-green-500 flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Anchor
+                        </span>
+                      ) : (
+                        <span className="text-zinc-600">No anchor</span>
                       )}
-                      {jobFailed && (
+                      {anchorJobFailed && (
                         <XCircle className="inline ml-1.5 w-3.5 h-3.5 text-red-500" />
                       )}
                     </td>
@@ -953,28 +1049,32 @@ export default function CourseAssetsPage() {
                     {/* Actions */}
                     <td className="px-4 py-2.5">
                       <div className="flex flex-col gap-1.5">
-                        {/* Generate Slides */}
-                        {isGenerating ? (
-                          <span className="flex items-center gap-1.5 text-xs text-amber-400">
+                        {/* Generate Anchor Image */}
+                        {isAnchorGenerating ? (
+                          <span className="flex items-center gap-1.5 text-xs text-violet-400">
                             <Loader2 className="w-3 h-3 animate-spin" />
-                            Generating...
+                            Generating anchor...
                           </span>
-                        ) : bundle.slides_generated < bundle.slides_count ? (
+                        ) : bundle.slides_generated === 0 ? (
                           <button
-                            onClick={(e) => { e.stopPropagation(); void generateSlides(bundle.id); }}
-                            className="flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 transition-colors opacity-0 group-hover:opacity-100"
+                            onClick={(e) => { e.stopPropagation(); void generateAnchor(bundle.id); }}
+                            className="flex items-center gap-1.5 text-xs text-violet-400 hover:text-violet-300 transition-colors opacity-0 group-hover:opacity-100"
                           >
-                            <Play className="w-3 h-3" />
-                            Generate Slides
+                            <ImageIcon className="w-3 h-3" />
+                            Generate Anchor
                           </button>
                         ) : (
-                          <span className="text-xs text-zinc-600 opacity-0 group-hover:opacity-100">
-                            All slides done
-                          </span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); void generateAnchor(bundle.id, true); }}
+                            className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-400 transition-colors opacity-0 group-hover:opacity-100"
+                          >
+                            <RefreshCw className="w-3 h-3" />
+                            Regen Anchor
+                          </button>
                         )}
-                        {activeJob && (
+                        {anchorJob && (
                           <a
-                            href={`/jobs?highlight=${activeJob.jobId}`}
+                            href={`/jobs?highlight=${anchorJob.jobId}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}

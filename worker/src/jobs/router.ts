@@ -7,6 +7,7 @@ import { runGenerateSegmentVideo, type GenerateSegmentVideoPayload } from "./gen
 import { runLessonVideoPipeline, type LessonVideoPipelinePayload } from "./lesson-video-pipeline";
 import { runTrainCharacterLora, type TrainCharacterLoraPayload } from "./train-character-lora";
 import { runGenerateCharacterScenes, type GenerateCharacterScenesPayload } from "./generate-character-scenes";
+import { runGenerateBundleAnchor, type GenerateBundleAnchorPayload } from "./generate-bundle-anchor";
 import { updateProgress } from "../lib/progress";
 
 export async function processJob(
@@ -65,6 +66,10 @@ export async function processJob(
 
     case "generate_character_scenes":
       await runGenerateCharacterScenes(jobId, payload as unknown as GenerateCharacterScenesPayload);
+      break;
+
+    case "generate_bundle_anchor":
+      await runGenerateBundleAnchor(jobId, payload as unknown as GenerateBundleAnchorPayload);
       break;
 
     default:
