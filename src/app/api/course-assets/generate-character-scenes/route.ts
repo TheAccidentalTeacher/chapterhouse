@@ -87,6 +87,14 @@ export async function POST(req: Request) {
 
   const resolvedCount = sceneCount ?? (bundle as { slides_count?: number }).slides_count ?? 112;
 
+  console.log(
+    "[generate-character-scenes] bundleId:", bundleId,
+    "| slides_count:", (bundle as { slides_count?: number }).slides_count,
+    "| resolvedCount:", resolvedCount,
+    "| strategy:", strategy,
+    "| char:", (character as { name: string }).name
+  );
+
   // Create job in Chapterhouse Supabase
   const { data: job, error: jobErr } = await supabase
     .from("jobs")

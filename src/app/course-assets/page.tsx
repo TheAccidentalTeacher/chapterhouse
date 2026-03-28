@@ -436,6 +436,8 @@ export default function CourseAssetsPage() {
   const [sceneGenerating, setSceneGenerating] = useState<Record<string, boolean>>({});
   // Increment to force BundleSlideGrid to re-fetch after a regen completes
   const [refreshKeys, setRefreshKeys] = useState<Record<string, number>>({});
+  // Per-bundle error messages for scene generation (shown inline in UI)
+  const [sceneErrors, setSceneErrors] = useState<Record<string, string>>({});
 
   // ΓöÇΓöÇ Fetch bundles ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
@@ -604,30 +606,40 @@ export default function CourseAssetsPage() {
   // ── Generate character scenes for a bundle ────────────────────────────────
 
   const generateCharacterScenes = useCallback(async (bundleId: string, characterId: string) => {
+    // Clear any previous error for this bundle
+    setSceneErrors((prev) => { const n = { ...prev }; delete n[bundleId]; return n; });
     setSceneGenerating((prev) => ({ ...prev, [bundleId]: true }));
     setSceneJobs((prev) => ({
       ...prev,
       [bundleId]: { jobId: "", progress: 0, message: "Queued...", status: "queued" },
     }));
+    console.log("[Scenes] → Sending payload:", { bundleId, characterId });
     try {
       const res = await fetch("/api/course-assets/generate-character-scenes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bundleId, characterId }),
       });
-      const data = await res.json() as { jobId?: string; error?: string; detail?: string };
+      console.log("[Scenes] ← HTTP", res.status, res.statusText);
+      const data = await res.json() as { jobId?: string; error?: string; detail?: string; sceneCount?: number; strategy?: string; characterName?: string };
+      console.log("[Scenes] ← Body:", data);
       if (!res.ok || !data.jobId) {
-        console.error("[course-assets] generate-character-scenes:", data.error, data.detail, data);
+        const errMsg = typeof data.error === "string" ? data.error : JSON.stringify(data.error ?? data);
+        console.error("[Scenes] FAILED:", { status: res.status, error: errMsg, detail: data.detail, full: data });
+        setSceneErrors((prev) => ({ ...prev, [bundleId]: errMsg }));
         setSceneGenerating((prev) => { const n = { ...prev }; delete n[bundleId]; return n; });
         setSceneJobs((prev) => { const n = { ...prev }; delete n[bundleId]; return n; });
       } else {
+        console.log("[Scenes] ✓ Job queued:", data.jobId, "count:", data.sceneCount, "strategy:", data.strategy, "char:", data.characterName);
         setSceneJobs((prev) => ({
           ...prev,
           [bundleId]: { jobId: data.jobId!, progress: 0, message: "Queued...", status: "queued" },
         }));
       }
     } catch (e) {
-      console.error("[course-assets] generate-character-scenes:", e);
+      const errMsg = String(e);
+      console.error("[Scenes] FETCH ERROR:", e);
+      setSceneErrors((prev) => ({ ...prev, [bundleId]: errMsg }));
       setSceneGenerating((prev) => { const n = { ...prev }; delete n[bundleId]; return n; });
     }
   }, []);
@@ -1012,6 +1024,14 @@ export default function CourseAssetsPage() {
                           <div className="flex items-center gap-1.5 text-xs text-green-400">
                             <Loader2 className="w-3 h-3 animate-spin" />
                             <span className="truncate max-w-[100px]">{sceneJobs[bundle.id].message || "Scenes..."}</span>
+                          </div>
+                        )}
+                        {sceneErrors[bundle.id] && (
+                          <div
+                            className="text-xs text-red-400 max-w-[160px] leading-tight"
+                            title={sceneErrors[bundle.id]}
+                          >
+                            ⚠ {sceneErrors[bundle.id]}
                           </div>
                         )}
                       </div>
