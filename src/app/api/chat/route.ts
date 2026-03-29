@@ -113,7 +113,7 @@ You ARE Chapterhouse. When asked about routes, features, or code location — us
 /tasks — Tasks: Status board (open/in-progress/blocked/done/canceled). CRUD.
 /documents — Documents: Workspace markdown files rendered + searchable.
 /jobs — Job Runner: QStash→Railway background jobs. Supabase Realtime progress. 6-step PassStepper.
-/curriculum-factory — Curriculum Factory: 6-pass Council (Gandalf→Data→Polgara→Earl→B&B→Extract JSON). CCSS/NGSS/C3 aligned. SomersSchool pipeline JSON export.
+/curriculum-factory — Curriculum Factory: 6-pass Council (Gandalf→Data→Polgara→Earl→Silk→Extract JSON). CCSS/NGSS/C3 aligned. SomersSchool pipeline JSON export.
 /pipelines — Pipelines: n8n workflow panel (status, execution history, manual trigger).
 /council — Council Chamber: 6-pass curriculum generation as a background job. Same pipeline as Curriculum Factory.
 /dreamer — Dreamer: Kanban board (Seeds→Active→Building→Shipped). Earl AI review. Daily dream log. 48 seeds from dreamer.md.
@@ -140,7 +140,7 @@ Debug: /api/debug (health check), /api/debug/context (brain state), /api/debug/a
 
 ### Key Source Files
 Solo chat system prompt: src/app/api/chat/route.ts → getSystemPrompt() + buildLiveContext()
-Council system prompts: src/app/api/chat/council/route.ts → COUNCIL[] array (Gandalf, Data, Polgara, Earl, B&B)
+Council system prompts: src/app/api/chat/council/route.ts → COUNCIL[] array (Gandalf, Data, Polgara, Earl, Silk)
 Intel processing: src/app/api/intel/route.ts → processIntelUrls() (4-step pipeline)
 Navigation: src/lib/navigation.ts
 Debug panel: src/components/debug-panel.tsx (4 tabs: log/perf/brain/appmap — App Map tab has Dismissed Signals panel)
@@ -255,6 +255,108 @@ async function buildLiveContext(userMessage: string = ""): Promise<string> {
     } catch {
       // emails table may not exist — ignore
     }
+  }
+
+  // Conditional operational queries — keyword-triggered live data injection
+  const jobsIntent = /\b(jobs?|running|queue|worker|background|pipeline)\b/i;
+  if (jobsIntent.test(userMessage)) {
+    try {
+      const { data: jobs } = await supabase
+        .from("jobs")
+        .select("id, type, label, status, progress, progress_message, created_at, completed_at")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (jobs?.length) {
+        const running = jobs.filter((j) => j.status === "running");
+        const failed = jobs.filter((j) => j.status === "failed");
+        const jobLines = jobs.map((j) => {
+          const date = new Date(j.created_at as string).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+          return `- [${(j.status as string).toUpperCase()}] ${j.label} (${j.type}) — ${j.progress}% — ${date}${j.progress_message ? ` — ${j.progress_message}` : ""}`;
+        }).join("\n");
+        blocks.push(`## Live Context: Jobs (queried now)\n\n${jobs.length} recent / ${running.length} running / ${failed.length} failed\n\n${jobLines}`);
+      }
+    } catch { /* jobs table may not exist */ }
+  }
+
+  const dreamerIntent = /\b(dreams?|dreamer|seeds?|kanban|ideas?)\b/i;
+  if (dreamerIntent.test(userMessage)) {
+    try {
+      const { data: dreams } = await supabase
+        .from("dreams")
+        .select("title, status, priority, category, source_type, created_at")
+        .in("status", ["seed", "active", "building"])
+        .order("priority", { ascending: true })
+        .limit(20);
+      if (dreams?.length) {
+        const byStatus = { seed: 0, active: 0, building: 0 };
+        for (const d of dreams) if (d.status in byStatus) byStatus[d.status as keyof typeof byStatus]++;
+        const dreamLines = dreams.map((d) => `- [${(d.status as string).toUpperCase()}] ${d.title} (${d.category ?? "uncategorized"}) — priority ${d.priority ?? "—"}`).join("\n");
+        blocks.push(`## Live Context: Dreamer Board (queried now)\n\n${byStatus.seed} seeds / ${byStatus.active} active / ${byStatus.building} building\n\n${dreamLines}`);
+      }
+    } catch { /* dreams table may not exist */ }
+  }
+
+  const tasksIntent = /\b(tasks?|todo|blocked|open.?tasks?|in.?progress)\b/i;
+  if (tasksIntent.test(userMessage)) {
+    try {
+      const { data: tasks } = await supabase
+        .from("tasks")
+        .select("title, status, description, source_type, created_at")
+        .in("status", ["open", "in-progress", "blocked"])
+        .order("created_at", { ascending: false })
+        .limit(15);
+      if (tasks?.length) {
+        const taskLines = tasks.map((t) => `- [${(t.status as string).toUpperCase()}] ${t.title}${t.description ? ` — ${(t.description as string).slice(0, 100)}` : ""}`).join("\n");
+        blocks.push(`## Live Context: Tasks (queried now)\n\n${tasks.length} open/in-progress/blocked\n\n${taskLines}`);
+      }
+    } catch { /* tasks table may not exist */ }
+  }
+
+  const socialIntent = /\b(social|posts?|buffer|scheduled|review.?queue|instagram|facebook|linkedin)\b/i;
+  if (socialIntent.test(userMessage)) {
+    try {
+      const { data: posts } = await supabase
+        .from("social_posts")
+        .select("brand, platform, status, post_text, scheduled_for, created_at")
+        .in("status", ["pending_review", "approved", "scheduled"])
+        .order("created_at", { ascending: false })
+        .limit(15);
+      if (posts?.length) {
+        const byStatus: Record<string, number> = {};
+        for (const p of posts) byStatus[p.status as string] = (byStatus[p.status as string] ?? 0) + 1;
+        const statusSummary = Object.entries(byStatus).map(([k, v]) => `${v} ${k}`).join(", ");
+        const postLines = posts.map((p) => `- [${(p.status as string).toUpperCase()}] ${p.brand}/${p.platform}: ${(p.post_text as string).slice(0, 80)}…`).join("\n");
+        blocks.push(`## Live Context: Social Posts (queried now)\n\n${statusSummary}\n\n${postLines}`);
+      }
+    } catch { /* social_posts may not exist */ }
+  }
+
+  const charsIntent = /\b(characters?|gimli|character.?library|mascot)\b/i;
+  if (charsIntent.test(userMessage)) {
+    try {
+      const { data: chars } = await supabase
+        .from("characters")
+        .select("name, slug, physical_description, art_style, preferred_provider, lora_model_id")
+        .limit(10);
+      if (chars?.length) {
+        const charLines = chars.map((c) => `- **${c.name}** (${c.slug}) — ${c.art_style ?? "no style set"}, provider: ${c.preferred_provider ?? "any"}${c.lora_model_id ? `, LoRA: ${c.lora_model_id}` : ""}\n  ${(c.physical_description as string)?.slice(0, 200) ?? ""}`).join("\n");
+        blocks.push(`## Live Context: Character Library (queried now)\n\n${chars.length} character(s)\n\n${charLines}`);
+      }
+    } catch { /* characters table may not exist */ }
+  }
+
+  const voicesIntent = /\b(brand.?voice|voice.?settings?|brand.?tone|ncho.?voice|somersschool.?voice)\b/i;
+  if (voicesIntent.test(userMessage)) {
+    try {
+      const { data: voices } = await supabase
+        .from("brand_voices")
+        .select("brand, voice_text, is_active")
+        .eq("is_active", true);
+      if (voices?.length) {
+        const voiceLines = voices.map((v) => `### ${(v.brand as string).toUpperCase()}\n${(v.voice_text as string).slice(0, 500)}`).join("\n\n");
+        blocks.push(`## Live Context: Brand Voices (queried now)\n\n${voiceLines}`);
+      }
+    } catch { /* brand_voices may not exist */ }
   }
 
   try {
