@@ -27,7 +27,7 @@ This document is your complete technical brief. Read all of it before touching a
 
 ---
 
-## What Chapterhouse Already Is (Current State — Updated March 24, 2026, Session 30)
+## What Chapterhouse Already Is (Current State — Updated March 28, 2026, Session 33)
 
 **Stack:** Next.js 16.1.6 (App Router), React 19, TypeScript, Tailwind 4, Supabase (auth + DB + realtime), Anthropic SDK, OpenAI SDK, Zod
 
@@ -1233,7 +1233,7 @@ Effort: 2–3 days.
 |---|---|
 | `bundles` | Lesson content bundles — slides_count, slides_generated, audio_generated, audio_url, videos_count, videos_generated, worksheet_present, content JSONB |
 
-**Migration numbering note:** Migrations 009, 013, 014, 016 also exist for intermediate steps. Check `supabase/migrations/` for canonical list. Last migration: `20260501_024b_seed_gimli.sql`.
+**Migration numbering note:** Migrations 009, 013, 014, 016 also exist for intermediate steps. Check `supabase/migrations/` for canonical list. Last migration: `20260327_028_add_bundle_anchor_job_type.sql`.
 
 **The Build Bible:** `chapterhouse-implementation-spec.md` is the original phase-by-phase Chapterhouse feature build plan. **`production-pipeline-build-bible.md`** is the Production Pipeline plan (Phases 0–7, SomersSchool course asset generation). CLAUDE.md is the living technical reference. Spec = where to go. CLAUDE.md = where you are. Always read both build bibles before starting work.
 
@@ -1259,6 +1259,8 @@ Effort: 2–3 days.
 - Phase 7 (Voice Studio Narration): 🔴 NOT YET STARTED — gates on Phase 5. ElevenLabs batch narration for bundle audio_url fields.
 
 ---
+
+*Document version: March 28, 2026 (Sessions 31-33) — **Anchor image system complete + documentation sync.** Bundle anchor images (1 per bundle, grade-themed Alaska animals) fully operational across all G1 science bundles (~20 jobs completed). Three bugs fixed this session block: (1) `generate_bundle_anchor` missing from `jobs_type_check` CHECK constraint — migration 028 applied (`20260327_028_add_bundle_anchor_job_type.sql`), also run directly in Supabase dashboard. (2) `status/route.ts` not returning `anchor_image_url` — added `content->>anchor_image_url` PostgREST JSON extraction to `BUNDLE_COLUMNS` (extracts top-level JSONB key without fetching full content blob). (3) Anchor image 48×48 table thumbnail too small to recognize — moved to expanded bundle dropdown as 160×160px with title/grade/bundle metadata above `BundleSlideGrid`. Commits: `3036bae` (constraint + status route), `c2dfca5` (dropdown display). Documentation sync: email workspace confirmed as master (~107.5KB), Brand guide + chapterhouse synced to match. `workspace-injection-system.md` updated with current file sizes. Last migration: 028.*
 
 *Document version: March 24, 2026 (Sessions 27-30) — **Production Pipeline Phases 1, 3, and 5 shipped. Character Library fully operational.** Session 27: Brand Voice DB (Phase 1) — `brand_voices` table + seed (migrations 023/023b) + `BrandVoicesPanel` Settings component + `/api/brand-voices/` + `/api/brand-voices/[id]/` CRUD routes. Hardcoded `BRAND_VOICE_SYSTEM` in social generate route replaced with DB lookup. Session 28: Course Asset Dashboard (Phase 5) — `src/app/course-assets/page.tsx` (BundleRow, StatusDot, 5-dot status grid: Bundle/Images/Audio/Video/Worksheet), `src/lib/course-supabase.ts` singleton for CoursePlatform DB, `/api/course-assets/status/` (GET), `/api/course-assets/generate-slides/` (POST → job → QStash → Railway), `/api/course-assets/bundle/[id]/` (GET). Railway worker job `worker/src/jobs/course-slide-images.ts` added with 3-tier Replicate logic (Tier 1: LoRA via `lora_model_id`, Tier 2: flux-dev img2img via `reference_images[0]`, Tier 3: flux-schnell free), Cloudinary upload, and CoursePlatform Supabase status updates. `generated_images` extended: `character_id UUID References characters(id)`, `prompt_original TEXT`, `prompt_enhanced TEXT`, `enhancement_notes TEXT`. Session 29: Character Library (Phase 3) — migration `20260501_024_create_characters.sql` (`characters` table: slug, name, physical_description, art_style, negative_prompt, reference_images TEXT[], hero_image_url, preferred_provider CHECK, lora_model_id), migration `20260501_024b_seed_gimli.sql` (Gimli seed with ToonBee reference images → Cloudinary URLs), `src/lib/prompt-enhancer.ts` (Claude Haiku `claude-haiku-4-5`: front-loads physical_description verbatim, locks art_style, reinforces distinctive features ×2, fallback returns raw if no API key), `/api/characters/` + `/api/characters/[id]/` REST routes. Character picker added to `image-generation-studio.tsx` (calls `/api/characters`, passes `characterRef` to `enhancePrompt()` + to provider payload). Session 30: Character consistency bug-hunt (6 fix commits) — Replicate model endpoint corrected (`replicate-id/version/sha` format), env var standardized to `REPLICATE_API_TOKEN`, preferred_provider selection enforced (character with Replicate pref always uses Replicate), Stability AI + Leonardo env var fallbacks added, Reference images correctly threaded through Replicate flux-dev img2img `image` field and Leonardo `imagePrompts[0]` (base64 upload → URL), removed invalid Leonardo `contrastRatio`/`highContrast` fields (only valid with promptMagic=true). Full documentation update for context recovery applied this session.*
 

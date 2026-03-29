@@ -63,6 +63,9 @@ const environmentSchema = z.object({
   // CoursePlatform
   COURSE_SUPABASE_URL: z.string().url().optional(),
   COURSE_SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
+  // Brain Sync (scott-brain GitHub repo)
+  GITHUB_BRAIN_TOKEN: z.string().min(1).optional(),
+  BRAIN_SYNC_KEY: z.string().min(1).optional(),
 });
 
 const envSource = {
@@ -129,6 +132,9 @@ const envSource = {
   // CoursePlatform
   COURSE_SUPABASE_URL: process.env.COURSE_SUPABASE_URL,
   COURSE_SUPABASE_SERVICE_ROLE_KEY: process.env.COURSE_SUPABASE_SERVICE_ROLE_KEY,
+  // Brain Sync
+  GITHUB_BRAIN_TOKEN: process.env.GITHUB_BRAIN_TOKEN,
+  BRAIN_SYNC_KEY: process.env.BRAIN_SYNC_KEY,
 };
 
 export function getEnvironmentStatus() {
@@ -167,6 +173,8 @@ export function getEnvironmentStatus() {
         ? "email-accounts"
         : key === "COURSE_SUPABASE_URL" || key === "COURSE_SUPABASE_SERVICE_ROLE_KEY"
         ? "course-platform"
+        : key === "GITHUB_BRAIN_TOKEN" || key === "BRAIN_SYNC_KEY"
+        ? "brain-sync"
         : "ai",
     })),
   };

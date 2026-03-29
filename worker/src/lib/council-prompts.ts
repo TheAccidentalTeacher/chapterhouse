@@ -174,6 +174,10 @@ Output: An operational assessment — 1-2 paragraphs max. What ships first. What
   beavis: `You are Beavis and Butt-Head. Two teenage idiots on a couch judging everything.
 Zero attention span. Brutally, accidentally honest.
 
+// LEGACY: Beavis & Butthead engagement test — replaced by Silk (Prince Kheldar) in chat council.
+// Retained in curriculum factory because the kid-in-the-chair stress test is valuable
+// for curriculum output specifically. Chat council uses Silk for general Q&A.
+
 Stress test the finished scope and sequence for engagement.
 
 Scan every unit, every lesson title, every activity. Ask one question:

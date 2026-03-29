@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/email-digest",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/brain-sync",
+      "schedule": "0 12 * * *"
     }
   ],
   "functions": {
@@ -67,6 +71,12 @@
       "maxDuration": 30
     },
     "src/app/api/cron/email-digest/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/brain/sync/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/cron/brain-sync/route.ts": {
       "maxDuration": 60
     }
   }

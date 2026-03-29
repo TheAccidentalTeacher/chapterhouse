@@ -1,3 +1,5 @@
+# LEGACY: Beavis & Butthead Council pass — replaced by Silk (Prince Kheldar) in chat council.
+# Retained for curriculum factory backward compatibility only — do not extend.
 """Beavis & Butthead — Engagement Stress Test (Pass 5). Will a real kid give a crap about this?"""
 from crewai import Agent, LLM
 
