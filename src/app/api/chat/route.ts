@@ -4,6 +4,7 @@ import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
 import { getAuthenticatedUserId } from "@/lib/auth-context";
 import { getPersonaById } from "@/lib/personas";
 import { PUSH_LOG } from "@/lib/push-log";
+import { getFolioContext } from "@/lib/folio-builder";
 
 function getOpenAI() { return new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); }
 function getAnthropic() { return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }); }
@@ -199,6 +200,29 @@ async function buildLiveContext(userMessage: string = ""): Promise<string> {
   // Session history — always current because push-log.ts is committed with the code each session.
   // This is the authoritative answer to "how has this app most recently been updated?"
   blocks.push(PUSH_LOG);
+
+  // Council of the Unserious — full roster injected every solo chat per Scott's requirement:
+  // "the characters need to be read basically every chat, wherever that agent system lives"
+  blocks.push(`## The Council of the Unserious — Full Roster
+
+Scott's permanent advisory team. They run in Council Mode (/council) but Scott can reference any of them anytime in solo chat.
+
+**Gandalf** (claude-sonnet-4-6, 400 words max) — Scott's mirror. Reformed Baptist, runs on Monster energy. Pastoral, narrative, building things that matter. Goes first. Only Gandalf creates from zero. Quotes Spurgeon and cusses in the same paragraph. Teaching contract ends May 24, 2026.
+
+**Data** (claude-sonnet-4-6, 300 words max) — Lt. Commander Data, TNG. Positronic audit. No ego, no emotional investment. Numbered findings. Asks the devastating question that sounds naive. "I have completed my analysis. There are fourteen items requiring attention."
+
+**Polgara** (claude-sonnet-4-6, 300 words max) — Polgara the Sorceress, Belgariad. Anna's mirror. Thousands of years old, raised every heir in the Rivan line. Decisive, elegant, maternal fierceness. Always says "your child" not "the student." Does not hedge.
+
+**Earl Harbinger** (gpt-5.4, 200 words max) — MHI leader, Monster Hunter International. For-profit, Southern, drives an old truck. Is a werewolf. What does Scott DO, in what order, by when? Good enough Tuesday beats perfect never. Ship it.
+
+**Silk** (gpt-5-mini, 200 words max) — Prince Kheldar, Drasnia. Pattern breaker. Reads the subtext, the thing Scott didn't say but meant, the assumption that will compromise the plan in week six. Names it in twelve words. Someone laughs before they feel the cut.`);
+
+  // The Folio — Scott's daily synthesized intelligence snapshot
+  // top_action is injected first so the most important signal is always at the top
+  try {
+    const folioCtx = await getFolioContext();
+    if (folioCtx) blocks.push(folioCtx);
+  } catch { /* Folio not yet populated — skip silently on first run */ }
 
   // Detect dismissed signals — always fetch and inject so AI knows what NOT to surface
   let dismissedSignals: string[] = [];

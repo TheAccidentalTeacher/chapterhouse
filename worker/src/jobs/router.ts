@@ -8,6 +8,7 @@ import { runLessonVideoPipeline, type LessonVideoPipelinePayload } from "./lesso
 import { runTrainCharacterLora, type TrainCharacterLoraPayload } from "./train-character-lora";
 import { runGenerateCharacterScenes, type GenerateCharacterScenesPayload } from "./generate-character-scenes";
 import { runGenerateBundleAnchor, type GenerateBundleAnchorPayload } from "./generate-bundle-anchor";
+import { runFolioDailyBuild } from "./folio-daily-build";
 import { updateProgress } from "../lib/progress";
 
 export async function processJob(
@@ -70,6 +71,10 @@ export async function processJob(
 
     case "generate_bundle_anchor":
       await runGenerateBundleAnchor(jobId, payload as unknown as GenerateBundleAnchorPayload);
+      break;
+
+    case "folio_daily_build":
+      await runFolioDailyBuild(jobId, payload);
       break;
 
     default:

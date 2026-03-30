@@ -11,6 +11,7 @@ import {
   Lightbulb,
   Mail,
   Palette,
+  ScrollText,
   Search,
   Send,
   Settings,
@@ -127,6 +128,30 @@ export const navigationGroups: NavigationGroup[] = [
     label: "Intelligence",
     defaultOpen: true,
     items: [
+      {
+        label: "The Folio",
+        href: "/folio",
+        description: "Daily synthesized intelligence snapshot — Scott's full context in one place.",
+        icon: ScrollText,
+        tooltip: {
+          summary: "The Folio is your daily synthesized intelligence layer. Every morning at 5:00 AM UTC, it reads everything — your founder notes, dreams, briefs, research, intel, emails, and opportunities — and writes a single coherent narrative about what matters today and what you should do first. It flows into every chat automatically.",
+          features: [
+            "One top_action: the single most important thing Scott should do today",
+            "Track signals: where each business track (NCHO / SomersSchool / BibleSaaS) stands",
+            "Full narrative: synthesized by Claude Sonnet 4.6 from all active data sources",
+            "Last 7 days: summaries feed into every chat and Council session automatically",
+            "Manual rebuild: trigger a fresh build anytime without waiting for the cron",
+            "Priority ordering: founder notes and manual adds always weighted first",
+            "Source counts: see how many items from each source were included",
+          ],
+          tips: [
+            "Run 'Rebuild Folio' after adding new founder notes or dreams — it re-synthesizes immediately",
+            "The top_action is injected first into every chat, so ask 'what should I focus on today?' and it knows",
+            "Check track_signals to see how NCHO / SomersSchool / BibleSaaS look at a glance",
+          ],
+        },
+        status: "live",
+      },
       {
         label: "Intel",
         href: "/intel",

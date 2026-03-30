@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
 import { PUSH_LOG } from "@/lib/push-log";
+import { getFolioContext } from "@/lib/folio-builder";
 
 function getAnthropic() { return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }); }
 function getOpenAI() { return new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); }
@@ -431,6 +432,13 @@ async function buildLiveContext(userMessage: string): Promise<string> {
 
   // Session history — always current (committed with the code each session)
   blocks.push(PUSH_LOG);
+
+  // The Folio — Scott's daily synthesized intelligence snapshot
+  // In Council mode, each member gets Folio context alongside their own character system prompt
+  try {
+    const folioCtx = await getFolioContext();
+    if (folioCtx) blocks.push(folioCtx);
+  } catch { /* Folio not yet populated — skip silently */ }
 
   // Dismissed signals — always inject so Council knows what NOT to surface
   try {
