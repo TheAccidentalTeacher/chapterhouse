@@ -18,6 +18,7 @@ import {
   Star,
   Users,
   Volume2,
+  Wand2,
   Youtube,
   Zap,
 } from "lucide-react";
@@ -371,6 +372,28 @@ export const navigationGroups: NavigationGroup[] = [
             "Use the top search bar to search for 'avatar' — verify it filters documents",
             "Check that this help guide appears in the documents list",
             "Verify all markdown files from the workspace root render without errors",
+          ],
+        },
+        status: "live",
+      },
+      {
+        label: "Doc Studio",
+        href: "/doc-studio",
+        description: "14 one-click document generators with full Scott context pre-loaded.",
+        icon: Wand2,
+        tooltip: {
+          summary: "Generate PRDs, blog posts, session closes, ADRs, campaign briefs, landing copy, and more — all with your full founder context and brand rules pre-loaded. 14 document types across 5 categories.",
+          features: [
+            "14 document types: PRD, ADR, blog post, landing copy, spec, session close, campaign brief, positioning, launch checklist, market sizing, feedback synthesis, study guide, report, brainstorm",
+            "Full Scott context (founder notes, recent research, latest brief) injected automatically",
+            "SSE streaming — see your document as it generates",
+            "Save to library — all generated docs stored and searchable",
+            "Session Close type puts Step 5 of the dev process one click away",
+          ],
+          tips: [
+            "Start with Session Close — fastest proof of value",
+            "PRD and Arch Doc types drop directly into a code bot",
+            "Brainstorm type triggers the Dream Floor sequence",
           ],
         },
         status: "live",
