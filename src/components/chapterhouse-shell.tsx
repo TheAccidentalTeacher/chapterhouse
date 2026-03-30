@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, ChevronDown, HelpCircle, LogOut, Search, Settings2, Sparkles, X } from "lucide-react";
+import { Bell, ChevronDown, HelpCircle, LogOut, Menu, Search, Settings2, Sparkles, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { navigationGroups } from "@/lib/navigation";
@@ -32,6 +32,7 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
   const [tooltipRect, setTooltipRect] = useState<DOMRect | null>(null);
   const [mounted, setMounted] = useState(false);
   const [statusCollapsed, setStatusCollapsed] = useState(true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -126,9 +127,26 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
 
   return (
     <div className="h-screen overflow-hidden bg-background">
+      {/* Mobile sidebar backdrop */}
+      {mobileSidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
+          onClick={() => setMobileSidebarOpen(false)}
+        />
+      )}
       <div className="grid h-full lg:grid-cols-[280px_minmax(0,1fr)]">
-          <aside className="overflow-y-auto border-b border-border bg-sidebar/90 px-4 py-6 lg:border-b-0 lg:border-r lg:px-5">
+          <aside className={`overflow-y-auto border-border bg-sidebar/90 px-4 py-6 lg:border-r lg:px-5 ${mobileSidebarOpen ? 'fixed inset-y-0 left-0 z-50 w-[280px] border-r shadow-2xl' : 'hidden lg:block'}`}>
           <div className="mx-auto flex h-full max-w-sm flex-col gap-6">
+            {/* Mobile close button */}
+            <div className="flex items-center justify-between lg:hidden mb-2">
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-muted">Navigation</span>
+              <button
+                onClick={() => setMobileSidebarOpen(false)}
+                className="rounded-lg p-1.5 text-muted hover:bg-muted-surface hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
             <div className="rounded-3xl border border-border bg-card/80 p-5">
               <div className="flex items-center gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl metallic-accent text-accent-foreground shadow-lg shadow-accent/30">
@@ -286,9 +304,17 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
         </aside>
 
         <main className="flex min-h-0 min-w-0 flex-col border-b border-border/70 bg-background lg:border-b-0 lg:border-r">
-          <div className="sticky top-0 z-10 border-b border-border/70 bg-background/80 px-4 py-4 backdrop-blur sm:px-6 lg:px-8">
-            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-              <div className="relative flex-1 xl:max-w-md">
+          <div className="sticky top-0 z-10 border-b border-border/70 bg-background/80 px-3 py-3 backdrop-blur sm:px-6 lg:px-8">
+            <div className="flex items-center gap-2">
+              {/* Hamburger — mobile and tablet only */}
+              <button
+                onClick={() => setMobileSidebarOpen(true)}
+                className="lg:hidden flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-card text-muted transition hover:bg-muted-surface hover:text-foreground"
+                title="Open navigation"
+              >
+                <Menu className="h-4 w-4" />
+              </button>
+              <div className="relative flex-1 min-w-0 xl:max-w-md">
                 <form onSubmit={handleSearch}>
                   <div className="flex items-center gap-3 rounded-full border border-border bg-card/80 px-4 py-3 text-sm text-muted focus-within:border-accent/40 focus-within:text-foreground">
                     <Search className="h-4 w-4 shrink-0" />
@@ -333,22 +359,22 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-3 text-sm">
+              <div className="flex items-center gap-1.5 sm:gap-3 text-sm shrink-0">
                 <Link
                   href="/review-queue"
                   title="Review Queue"
-                  className="rounded-full border border-border bg-card px-3 py-2 text-muted transition hover:bg-muted-surface hover:text-foreground"
+                  className="hidden sm:inline-flex rounded-full border border-border bg-card px-3 py-2 text-muted transition hover:bg-muted-surface hover:text-foreground"
                 >
                   <Bell className="h-4 w-4" />
                 </Link>
                 <Link
                   href="/settings"
                   title="Settings"
-                  className="rounded-full border border-border bg-card px-3 py-2 text-muted transition hover:bg-muted-surface hover:text-foreground"
+                  className="hidden sm:inline-flex rounded-full border border-border bg-card px-3 py-2 text-muted transition hover:bg-muted-surface hover:text-foreground"
                 >
                   <Settings2 className="h-4 w-4" />
                 </Link>
-                <div className="rounded-full border border-border bg-card px-4 py-2 text-muted text-sm truncate max-w-[200px]">
+                <div className="hidden sm:block rounded-full border border-border bg-card px-4 py-2 text-muted text-sm truncate max-w-[180px]">
                   {userEmail ?? "Chapterhouse"}
                 </div>
                 <button
