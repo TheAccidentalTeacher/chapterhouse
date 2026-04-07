@@ -2,7 +2,7 @@ import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
 import { z } from "zod";
 
 const accountSchema = z.object({
-  brand: z.enum(["ncho", "somersschool", "scott_personal"]),
+  brand: z.enum(["ncho", "somersschool", "scott_personal", "alana_terry"]),
   platform: z.enum(["facebook", "instagram", "linkedin", "pinterest"]),
   buffer_profile_id: z.string(),
   display_name: z.string(),
@@ -50,4 +50,15 @@ export async function POST(req: Request) {
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
   return Response.json({ account: data }, { status: 201 });
+}
+
+export async function DELETE(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+  if (!id) return Response.json({ error: "id required" }, { status: 400 });
+  const supabase = getSupabaseServiceRoleClient();
+  if (!supabase) return Response.json({ error: "DB unavailable" }, { status: 503 });
+  const { error } = await supabase.from("social_accounts").delete().eq("id", id);
+  if (error) return Response.json({ error: error.message }, { status: 500 });
+  return Response.json({ ok: true });
 }

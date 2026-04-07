@@ -1,6 +1,6 @@
 # The Dreamer
 ### A living creative intelligence file for Scott Somers / TheAccidentalTeacher
-*Last synced: March 22, 2026 (Session 19) — Morning intel sweep complete. SEED 47 (Project Nomad, offline-first AI), SEED 48 (Remotion, video-as-code with React). Hooks category discovered in awesome-copilot. EdSurge "Restoring Wonder" confirmed as third brand layer. Trump AI child safety framework = SomersSchool positioning opportunity.*
+*Last synced: March 26, 2026 (Session 23) — Intel sweep + repo impact mapping. Copilot data policy deadline (Apr 24) captured as operational risk. Dual-tool baseline (CLAUDE.md + AGENTS.md + `.claude/skills/`) elevated for hot repos. Jentic Mini credential firewall pattern filed as SEED 55 (A2A activation gate).*
 
 > **How This Works**
 > This file is a living document. Every time we talk, I update the repo registry, retire stale ideas, promote seeds to full dreams, and add new ones. Tell me what you shipped, what you're thinking, what's keeping you up at night — and I'll dream with you.
@@ -460,8 +460,8 @@ Stripe is building infrastructure for AI agent-to-agent payments — machines pa
 - Store: `next-chapter-homeschool.myshopify.com`
 - Plan: Basic
 - App: Yellow CoPilot (Dev Dashboard, client credentials grant)
-- Client ID: `[see api-guide-master.md — local only]`
-- Client Secret: `[see api-guide-master.md — local only]`
+- Client ID: `8f84e5c69f9313b01da58f18164d4047`
+- Client Secret: `shpss_REDACTED — store in api-guide-master.md only`
 - Token: refreshed per-run (24hr expiry), no persistent storage needed
 
 ---
@@ -919,6 +919,122 @@ Immersive Reader is FREE at any scale and takes 30 minutes to wire into any web 
 
 ---
 
+**SEED 50 — AI Curriculum Recommender for New Homeschool Parents**
+*Source: r/homeschool, March 23, 2026 — "How do you decide on curriculums?" post from overwhelmed first-year homeschool mom.*
+
+Every week on r/homeschool, a parent posts: "I'm new to this. Where do I even start?" They're not looking for a catalog — they're looking for someone to tell them what to buy for *their* child. No product does this well today.
+
+**The idea:** A short intake (5–7 questions: grade, learning style, subject, schedule, budget, faith/secular preference) → Claude generates a prioritized recommendation with reasons. Output shows SomersSchool courses that match — plus honest acknowledgment of what SomersSchool doesn't cover yet. Positions Scott as trusted advisor, not a salesman.
+
+**The entry point:** Free tool on the SomersSchool homepage (no login required). Captures email at the end: "Save your recommendations and get notified when new courses match your child."
+
+**Status:** 🟡 Wireframe before SomersSchool launch. MVP: 5 questions + Claude + email capture.
+
+---
+
+**SEED 51 — History Quest Gap Filler (Modern Times Bridge Curriculum)**
+*Source: r/homeschool, March 23, 2026 — "History Quest... what's next?" post. Parents panicking; no release date exists for Modern Times as of March 2026.*
+
+History Quest is a beloved homeschool history spine. But *History Quest: Modern Times* has no release date — and families who've finished the available volumes are now stuck with nowhere to go. They're actively asking each other what to do.
+
+**The play:** SomersSchool explicitly markets a Modern US History course as "The Bridge Curriculum for History Quest Families." One landing page. Direct targeting of the exact thread. "Waiting for History Quest Modern Times? We built the bridge." Goes into SomersSchool's existing history slot — no new product required if the course is designed to slot into the History Quest sequence.
+
+**Why now:** The gap is visible, the parents are vocal, and nothing is filling it. Surgical positioning move, not a product pivot.
+
+**Status:** 🔴 Write the landing page before the course is built. Test on Facebook and Reddit ads immediately.
+
+---
+
+**SEED 52 — On-Device SomersSchool Offline Mode for Rural Alaska**
+*Source: GitHub Trending TypeScript March 23 — project-nomad (4,138 stars/day, "self-contained offline AI survival computer, built by @claude") + HN #4 (459 pts, iPhone 17 Pro running 400B LLM on-device).*
+
+Glennallen, Alaska. Satellite outages are real. The homeschool families SomersSchool serves most are often in the lowest-connectivity areas of a state with some of the worst internet infrastructure in the country.
+
+On-device AI is a cultural moment right now — project-nomad trending 4,138 stars in one day is a developer signal. iPhone 17 Pro running a 400B model is the consumer confirmation. The infrastructure is maturing.
+
+**The idea:** A downloadable SomersSchool lesson player (PWA with service workers, or Electron) that caches course content locally. Lessons work with no internet. Progress syncs when connectivity resumes. AI tutoring degrades gracefully: pre-cached responses for common questions, falls back to "ask your parent" when offline.
+
+**Alaska-specific marketing hook:** "Built for families where the internet isn't always on." That sentence removes one of the biggest barriers to rural homeschool adoption.
+
+**Status:** 🔵 Research phase. Test PWA lesson caching first (service worker + manifest — zero new code). If rural users appear in SomersSchool analytics, this becomes 🔴.
+
+---
+
+**SEED 53 — Scott's Vibe Coding Origin Story as a Business Insider Pitch**
+*Source: Business Insider, March 21, 2026 — "I vibe coded an AI caregiving system for my aging parents. Now I'm building a startup to share the tech with others."*
+
+Business Insider published a full feature on Srdjan Stakic: no coding background, stage 4 cancer survivor, built an AI fall-detection + caregiver-monitoring system using Gemini + ChatGPT + Lovable. Now launching startup Alvis, monthly subscription, private beta April 13. The story arc: personal crisis → built a tool to solve it → turned it into a company.
+
+**Scott's story is this story, but more impressive:**
+- Same arc (no coding background + personal conviction driving the build)
+- More technical depth (Next.js + Supabase + Clerk built from scratch, not Lovable's scaffolding)
+- More defensible moat (secular curriculum SaaS for a specific niche, allotment-eligible, COPPA-compliant, teacher-designed)
+- Longer track record (2,526 commits, 47 repos, one year)
+- More culturally compelling setting (Glennallen, Alaska, Title 1 school, -50°F winters)
+
+**The pitch:** *"Middle school teacher in Glennallen, Alaska — population 439, no coding background — vibe coded a homeschool SaaS from scratch in one year. 2,526 commits. 47 repos. Now leaving teaching May 24 to run it full time."*
+
+Business Insider, Fast Company, EdSurge, and EdTech Magazine are all running vibe coding startup stories in early 2026. The window for Scott's story is: **at or just after launch**, when there are real paying customers and a real business model.
+
+**What to prepare:**
+- One-paragraph origin story (cancer survivor angle lands harder but isn't Scott's — use: Title 1 school, rural Alaska, real students)
+- SomersSchool metrics: courses published, enrolled students, revenue in first 30 days
+- One compelling teacher-to-entrepreneur quote
+- Scott's GitHub profile link and commit history (the 2,526 commits in one year is the visual anchor)
+
+**Status:** 🔵 Dormant until SomersSchool has first paying customers. Activate when: enrolled students > 10, revenue > $0, May 2026 contract end is confirmed.
+
+---
+
+**SEED 54 — Cloudflare Code Mode as Chapterhouse Council Execution Architecture**
+*Source: VentureBeat / Cloudflare Dynamic Workers launch, March 24, 2026.*
+
+**The pattern:** Instead of tool-chain orchestration (call 5 tools in sequence, each filling context with intermediate outputs), the agent writes TypeScript that executes the entire workflow as a single function and returns one final result. Cloudflare's internal benchmark: **81% token reduction** vs. standard tool-chain approach.
+
+**Applied to Chapterhouse Council pipeline:**
+Each Council pass (Gandalf → Data → Polgara → Earl → Silk) currently imagines calling tools one by one. Code Mode says: each pass writes a short TypeScript function that calls the Anthropic API + any Supabase queries it needs, returns the completed pass output. No intermediate tool results polluting context. Council session stays under tighter token budget.
+
+**What this unlocks:**
+- 5-pass Council brief generation becomes dramatically cheaper per session
+- Each pass runs in its own Dynamic Worker — clean execution context, no leakage between passes
+- `globalOutbound` handles credential injection (Anthropic API key, Supabase service role key never in model context)
+- `@cloudflare/shell` virtual filesystem could back the review queue artifact store
+
+**Packages to know:**
+- `@cloudflare/codemode` — `DynamicWorkerExecutor()` for running model-generated TypeScript
+- `@cloudflare/worker-bundler` — npm dep resolution + esbuild bundling
+- `@cloudflare/shell` — SQLite + R2 backed virtual filesystem
+
+**Prerequisite:** Cloudflare Workers Paid plan ($5/mo). Currently Scott uses free tier (DNS only).
+
+**Status:** 🔵 Architecture research phase. Prototype one Council pass in Code Mode before committing to full Phase 2 implementation. Activation: Workers Paid plan active + Phase 2 build begins.
+
+---
+
+**SEED 55 — Agent Credential Firewall Layer for Chapterhouse A2A**
+*Source: The New Stack + Jentic Mini launch, March 25, 2026. Mapped to Scott repos March 26, 2026.*
+
+**The pattern:** Agent systems must not hold production credentials in model context. Credential custody belongs in an execution harness layer with policy controls. Jentic Mini and Cloudflare `globalOutbound` converge on the same architecture from different ecosystems.
+
+**Why this matters for Scott's stack:**
+- Current hot repos are mostly single-app execution surfaces; env-var injection is acceptable for now.
+- The moment Chapterhouse reaches Phase 6+ A2A (`/.well-known/agent-card.json` + external agent calls), credential exposure risk changes from internal to network-facing.
+- At that point, fine-grained API permissions and a global kill switch become table stakes.
+
+**Where it fits:**
+- **Primary:** Chapterhouse A2A boundary (Phase 6+)
+- **Secondary:** SomersSchool `student-safe-completion.ts` if exposed as an A2A service
+- **Not now:** Roleplaying / ClassCiv (no external agent mesh)
+
+**Decision framing:**
+- **Now:** Keep env vars + existing patterns; focus on shipping.
+- **Later:** Evaluate Jentic Mini vs Cloudflare-only `globalOutbound` once A2A is actually live.
+- **Trigger:** First external agent-to-agent request path in production or pre-prod.
+
+**Status:** 🔵 Parked with activation gate (A2A live). Not a current sprint item.
+
+---
+
 ### 🚀 MOONSHOT DREAMS
 *These take months. But the payoff is a different life.*
 
@@ -1000,7 +1116,7 @@ BibleSaaS (SM-2, living portrait) ——— ClassCiv (game loop, real-time)
 | Repos with commercial potential | ~18 |
 | Repos with grant potential | ~4 |
 | Collision dream pairs identified | 5 |
-| Seed ideas in queue | 48 |
+| Seed ideas in queue | 49 |
 | Quick wins buildable this week | 5 |
 | Moonshots | 5 |
 
@@ -1022,6 +1138,7 @@ BibleSaaS (SM-2, living portrait) ——— ClassCiv (game loop, real-time)
 | Mar 21, 2026 | **Intel sweep — 4 sources.** Anthropic webinar "Claude Code Advanced Patterns" announced March 24 (subagents, hooks, MCP, monorepo CLAUDE.md, CI pipelines) — register. Vercel open-sourced Knowledge Agent Template: filesystem + bash replaces vector DB + embeddings, 75% cost reduction, transparent debugging. Validates Chapterhouse context architecture. GitHub Copilot coding agent shipped 10 improvements in 4 days (Mar 17–20): Raycast live logs, commit→session tracing, 50% faster start, validation tools config, GPT-5.4 mini GA, GPT-5.3-Codex LTS, semantic code search. Spline 3D evaluated: browser-based 3D design with `@splinetool/runtime` npm embed — potential SomersSchool interactive lesson visuals. Two new seeds: SEED 45 (Filesystem-First Knowledge Architecture), SEED 46 (Spline 3D for Education Visuals). Filed: `intel/2026-03-21/intel-2026-03-21.md`. Also: **Production Tab Overhaul brainstorm brief written** — full 6-studio pipeline spec (Content/Creative/Voice/Review Queue/Tasks/Documents), integrated automated loop (Trigger→Content→Creative→Review Queue→Tasks→Buffer→analytics), image waterfall locked, `BUFFER_ACCESS_TOKEN` missing + Migration 012 identified as blocking. Filed: `intel/2026-03-21/production-tab-overhaul-brainstorm.md`. |
 | Mar 18, 2026 (Afternoon) | **Session 16 — 5-item Awesome Copilot plan completed.** (1) obra/superpowers: deep read done, adoption plan written, pinned for Chapterhouse + SomersSchool + BibleSaaS — Claude Code only, not VS Code Copilot. (2) claude-hud: N/A, CLI only. (3) secrets-scanner + GHAS Pack: deferred, skipped. (4) claude-code-ultimate-guide: scanned, 95% CLI, extracted auto-compact threshold tip. (5) Awesome Copilot table fully scored — Learning Hub bookmark saved (`awesome-copilot.github.com`), llms.txt URL confirmed. New SEED 42: AI Video Creation Toolkit — Gimli avatar (HeyGen/Synthesia), ElevenLabs Gimli voice, Veo 3, copyright framework. AI video course plan created: `intel/2026-03-18/ai-video-course-plan.md`. Sync line updated to Session 16, 42 seeds. |
 | Mar 17, 2026 (Evening) | **Full intel sweep completed.** 10+ sources: TechCrunch, Hacker News, Simon Willison, EdWeek, EdSurge, Getting Smart. Key signals: (1) "Restoring wonder" in education trending independent across multiple sources + validated SEED 28 third brand layer. (2) Screen-free legislation rising—NCHO positioned perfectly. (3) School choice expanding nationally (EdWeek Market Brief)—challenges NCHO positioning, forces "teacher-curated" differentiation. (4) AI in K-12 now mandatory baseline—SomersSchool's "co-viewing" model differentiates. (5) AI models consolidating (Mistral Small 4) but Claude/GPT still differentiated on reliability. (6) Vibe coding validated mainstream (NYT Magazine), creating credibility moat for Scott's founder story. (7) PRH "Grace Corner" now live—not future threat, current threat. (8) Tyndale House leadership crisis (2 execs departing, 1-month gap)—validates indie author timing. (9) Personalized learning credentialing trending (LERs)—SomersSchool's portfolio export becomes feature. (10) HN signals: small web/indie/teacher-built beating corporate alternatives. Two new SEEDs added (32–33): "Real Teacher" opens gates against tier-one players, VCs funding wonder-in-education category (SomersSchool/NCHO positioning alignment). Full briefing: `intel/2026-03-17/intel-2026-03-17-sweep.md`. |
+| Mar 26, 2026 | **Intel sweep + repo reality check completed.** 10 URLs submitted, 9 fetched. Top operational signal: GitHub Copilot interaction data policy changes April 24 for personal tiers unless opted out. Repo mapping across Chapterhouse/CoursePlatform/ClassCiv/roleplaying found only Chapterhouse has mature CLAUDE.md infrastructure; no repos currently have `.claude/skills/` dual-tool baseline. Added SEED 55 (Agent Credential Firewall Layer) with A2A activation gate. Filed: `intel/2026-03-26/intel-2026-03-26.md`. |
 
 ---
 

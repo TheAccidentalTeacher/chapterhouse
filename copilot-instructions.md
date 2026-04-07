@@ -264,7 +264,7 @@ Use these when generating copy, landing pages, ad campaigns, email sequences, or
 |---|---|
 | **Business** | Shopify + Ingram Spark dropship homeschool curriculum store. No inventory, no warehouse. |
 | **Persona** | Homeschool moms (30–45), faith-adjacent but not exclusively Christian, overwhelmed by curriculum choices, many in Alaska (allotment-eligible). Value curation over catalog size. Full avatar in `customer-avatar.md` ("Alaskan Annie"). |
-| **USP** | Curated by a real classroom teacher (not a wholesaler). Alaska allotment eligible. Carries faith resources without being a "Christian store." Companion guides + public domain texts = affordable, legal, original. "Your one-stop homeschool shop" — proven in click test. |
+| **USP** | Curated by a real classroom teacher (not a wholesaler). Education allotment/ESA eligible (20+ states). Carries faith resources without being a "Christian store." Companion guides + public domain texts = affordable, legal, original. "Your one-stop homeschool shop" — proven in click test. |
 | **Challenges** | Crowded market (Rainbow Resource, CBD, Christianbook). No existing audience — cold start. Competing against massive catalogs with a curated boutique. Launch must happen before teaching contract ends May 2026. PRH Christian "Grace Corner" D2C launched Q1 2026 — **this validates the market, not threatens it.** The bigger they are, the more NCHO's curation and teacher-credibility stands out. Counter-position: "An actual classroom teacher curated this for your child" vs "a publishing conglomerate with 2,000 titles." |
 | **Brand Message** | "For the child who doesn't fit in a box." — Lead with the unique child (emotional). Convert with "your one-stop homeschool shop" (practical). Two-layer strategy validated by A/B click tests. |
 | **Visual Identity** | **Red and white primary** (logos, banners, hero sections — click-test confirmed). Secondary/accent palette: earthy, warm, organic (olive greens, dusty roses, teals) used underneath as supporting tones. No corporate navy/gray. Think curated lifestyle blog with a bold identity, not a generic educational supplier. |
@@ -372,7 +372,7 @@ Base rate: $49/mo (1 student). Each additional student adds $25/mo. Capped at 5 
 - Shopify for storefront, not custom-built
 - Ingram Spark for dropship fulfillment — no warehouse, no inventory risk
 - Faith posture: homeschool store that *carries* faith resources, not a faith-branded store
-- Alaska allotment eligibility is a marketing feature
+- State education allotment/ESA eligibility is a marketing feature — target all 20+ ESA states, not just Alaska
 - Curriculum guide model: fair use + companion guide + public domain = legal
 - SomerSchool / SomersVerse is standalone — off Epic Learning, off Trisha Goyer. Scott owns platform, audience, and 100% of revenue.
 - SomerSchool content is ALL SECULAR — Alaska Statute 14.03.320 compliance required
@@ -492,14 +492,18 @@ The end state: every major decision — product, architecture, curriculum, marke
 
 ## Scott's Curriculum Video Production Stack
 
-### The Gimli Framework
-**Gimli** is Scott's 125-lb malamute mascot. Obstinate, mouthy, cross-eyed when annoyed. He is the on-screen explainer for all lower-grade curriculum content (K-5). Character consistency across 40+ videos is a hard requirement. Scripts should be written in Gimli's voice: dry, reluctant, secretly knowledgeable, with a visual punchline.
+### The K-5 Dog Mascot Framework
+**K-5 educational mascot: Dogs (various breeds — contextual, educational illustration style, variety by design).** Gimli-as-consistent-AI-character is DEFERRED — consistent AI generation of the same character across 40+ videos has not been achievable without a solved LoRA/seed, and Scott has not cracked it yet. The practical decision: use dogs as the K-5 mascot. Different breeds for different topics, grades, and contexts. Variety is intentional. No character consistency required — vastly simpler to generate reliably at scale.
 
-**The two-layer Gimli architecture:**
-- **Layer 1 — Establish Gimli:** Commission or AI-generate a cartoon illustration of Gimli in 5-8 poses (sitting, pointing, confused, excited, cross-eyed, sleeping). This asset is reused in every video. Never regenerate from scratch.
-- **Layer 2 — Deploy Gimli:** **Leonardo.ai Premium** is the primary engine — LoRA fine-tune (Flux Dev base, confirmed March 24, 2026) locks character identity across all scenes. Video via Leonardo Video tab (native, evaluate before committing to Phase 4 Kling decision). Doodly Smart Draw available for whiteboard-style assets if needed.
+Gimli (Scott's real 125-lb malamute: obstinate, mouthy, cross-eyed when annoyed) remains Scott's dog and inspiration. Revisit Gimli-as-AI-character when Leonardo LoRA fine-tuning proves reliable enough to lock identity. Until then: dogs.
 
-**Gimli voice guidelines for script writing:**
+**Dog mascot generation approach:**
+- **No LoRA needed** — each dog image is generated fresh with a breed-appropriate, educational-style prompt
+- **Prompt pattern:** "A friendly [breed] dog, educational cartoon illustration style, [context/action], clean background, no text"
+- **Negative prompt required:** no extra limbs, no blurry faces, no text artifacts, no watermarks (per D47)
+- **Leonardo.ai Premium** is the primary engine — Flux Dev, Phoenix, or Nano Banana per context
+
+**Dog mascot voice guidelines for script writing (same voice Gimli would have used):**
 - Reluctant but competent. He sighs before explaining.
 - Dry humor. One-liner punchlines.
 - Short sentences. Direct to kindergartners.
@@ -584,19 +588,19 @@ Month 7–12: Compound
 
 ### Lead Magnet Ideas (Free → Email → Sale)
 - "Free Secular Homeschool 4th Grade Science Unit" (PDF) → SomersSchool enrollment
-- "Alaska Education Allotment Guide" (PDF) → NCHO store + SomersSchool
+- "State Education Allotment/ESA Guide" (PDF) — which states qualify, how to apply, what's eligible → NCHO store + SomersSchool
 - "30 Gimli Math Warm-Up Problems" (PDF, K–3) → SomersSchool enrollment
 - "How to Choose Homeschool Curriculum Without Overwhelm" (PDF) → NCHO curation
 
 ### SEO Target Terms (Wide Open, Low Competition)
 - "best secular homeschool curriculum [grade]"
 - "homeschool [subject] for [grade] without religious content"
-- "Alaska education allotment approved curriculum"
+- "[state] education allotment approved curriculum" (e.g. "Arizona ESA approved curriculum", "Alaska SAS approved curriculum")
 - "how to homeschool without buying a full kit"
 - "[subject] homeschool [grade] free printable"
 
-### The Gimli-First Principle
-**Everything else in this stack is blocked behind Gimli existing as a reusable asset.** Once Gimli's 5–8 poses are illustrated and locked in ToonBee, every short costs 20 minutes of production instead of 3 hours. Before podcasts, before blog posts, before YouTube — build Gimli. — Capability Reference
+### The Dog Mascot-First Principle
+**K-5 content generation is now unblocked.** Gimli-as-AI-character has been DEFERRED (D40) — no reference illustration required, no LoRA, no consistency gate. Prompt a breed-appropriate educational dog for each topic and grade, generate on demand. Before podcasts, before blog posts, before YouTube — start generating dog mascot slides. The mascot gate is gone. — Capability Reference
 *Distilled from verified sessions. These are things Scott can ask for and receive in a single exchange.*
 
 ### Single-File Browser Deliverables (Drop Into Any App)
@@ -633,7 +637,7 @@ Month 7–12: Compound
 | **Simplify It** | "Explain this for a kindergartner. No jargon. Use a simple example." | Gimli script source material. Any concept you want to turn into a lesson — get the simplified explanation first, then write Gimli's version. |
 | **Improve the Idea** | "Critique this idea and suggest ways it could be improved." | Before shipping any feature. Paste the concept or the code. Ask for honest critique. Claude is less sycophantic than most models but still needs this prompt to go full critic mode. |
 | **Structured Thinking** | "Analyze this step by step and show your reasoning." | Debugging complex logic (ClassCiv epoch FSM, BibleSaaS SM-2 algorithm, dice physics in roleplaying). Forces the model to slow down and show the chain of thought. |
-| **Real-World Test** | "If this were deployed in production, what would break, who would complain, and what trade-off am I not seeing?" | Before building any new feature. Especially useful for BibleSaaS (faith audience skepticism), NCHO (Alaska allotment edge cases), ClassCiv (multiplayer race conditions). |
+| **Real-World Test** | "If this were deployed in production, what would break, who would complain, and what trade-off am I not seeing?" | Before building any new feature. Especially useful for BibleSaaS (faith audience skepticism), NCHO (state allotment/ESA edge cases), ClassCiv (multiplayer race conditions). |
 
 **Power combinations:**
 - **First Principles + Real-World Test** → best for architecture decisions

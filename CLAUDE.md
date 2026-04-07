@@ -27,17 +27,35 @@ This document is your complete technical brief. Read all of it before touching a
 
 ---
 
-## What Chapterhouse Already Is (Current State — Updated March 28, 2026, Session 33)
+## 📌 PINNED — Chat-Initiated Document Export & Artifact Generation
+
+> **This capability is PARTIALLY BUILT and needs to be wired as a first-class feature.**
+>
+> - `documents` table (migration 030) already exists with `id, title, content, document_type, created_at`
+> - Doc Studio (`/doc-studio`) already generates 14 document types via SSE → saves to `documents` table
+> - `html-to-docx` npm package is installed — `.docx` export is wired in Doc Studio
+> - **What's NOT built yet:** ability to trigger document generation FROM CHAT and get a downloadable artifact back
+> - **Target flow:** Scott types "generate a session close doc" or "export this as a markdown file" in chat → AI creates the doc → response includes a download link OR saves to `documents` table with a link back
+> - **Routes needed:** `/api/documents/generate` already exists (SSE streaming) — chat route needs to call it and return a doc ID / download URL inline
+> - **Key use cases:** Session Close from chat, generate a spec .md, export a Council output as .docx, save a brainstorm thread as a named document
+> - **Priority:** Build this before charging customers — it turns chat from a conversation into a workspace
+> - **See also:** Doc Studio spec at `chapterhouse-documents-studio-spec.md`
+
+---
+
+## What Chapterhouse Already Is (Current State — Updated March 30, 2026, Sessions 34–40)
 
 **Stack:** Next.js 16.1.6 (App Router), React 19, TypeScript, Tailwind 4, Supabase (auth + DB + realtime), Anthropic SDK, OpenAI SDK, Zod
 
 **All routes — grouped by sidebar section:**
 
 ### Command Center
-- `/` (Home) — Chat-first interface with Solo/Council mode toggle. Solo mode uses a single model (GPT-5.4, Claude Sonnet 4.6, Haiku 4.5, GPT-5-mini). Council mode streams multi-member Council of the Unserious responses via SSE (Gandalf, Data, Polgara, Earl, Beavis & Butthead). Rebuttal round after initial responses. Persistent threads, auto-save, `/remember` command, auto-learn extracts facts to `founder_notes`.
+- `/` (Home) — Chat-first interface with Solo/Council mode toggle. Solo mode uses a single model (GPT-5.4, Claude Sonnet 4.6, Haiku 4.5, GPT-5-mini). Council mode streams multi-member Council of the Unserious responses via SSE (Gandalf, Data, Polgara, Earl, Silk). Rebuttal round after initial responses. Persistent threads, auto-save, `/remember` command, auto-learn extracts facts to `founder_notes`.
 - `/daily-brief` — Automated daily brief from 3 sources: 9 RSS feeds + 11 GitHub repos + **daily.dev** (For You, Popular, Anthropic/Security/Next.js tag feeds, up to 30 posts). Full business context injected: founder_notes, research_items, open opportunities, knowledge_summaries, days-remaining countdown. Claude Haiku 4.5 post-generation pass scores every item ncho/somersschool/biblesaas (0–3). Items scoring ≥2 on 2+ tracks get collision_note. "⚡ Collisions" section pinned at top of brief page. Vercel cron: 3:00 UTC (7 AM Alaska). **Stage 3 (Session 20): after brief generates, cron fire-and-forgets a POST to `/api/intel` with brief content as `extra_content`, `source_type='manual'`, label `Brief Intel — [date]` — making Intel the primary intelligence layer for chat.**
 
 ### Intelligence
+- `/folio` — **The Folio** — Daily synthesized intelligence layer (migration 031). Claude Sonnet 4.6 reads all active sources — founder notes, dreams, briefs, intel, research, emails — and writes a coherent narrative: one `top_action` (the most important thing today), `track_signals` per business track (NCHO / SomersSchool / BibleSaaS), and a full narrative. Injected into every chat and Council session automatically. Rebuilt daily at 05:00 UTC. Manual rebuild available. Last 7 entries contribute to chat context.
+- `/intel` — Structured intelligence analysis (migration 018). Paste 1–20 URLs or a Publishers Weekly report → Claude Sonnet 4.6 two-pass analysis (primary + Haiku 4.5 verification) → impact-scored findings (A+ to C), affected-repo tags, proposed Dreamer seeds. Auto-fetch cron at 04:00 UTC across 5 watch sources. All 5 Council members synthesize commentary per Intel report. Supabase Realtime status updates.
 - `/research` — URL ingest, paste text, quick note, screenshot (GPT Vision), agentic auto-research (Tavily → GPT-5.4 → dedup → auto-ingest), Deep Research (multi-source parallel: Tavily + SerpAPI + Reddit + NewsAPI + Internet Archive). AI extraction, tagging, OG metadata (site_name, author, published_at, og_image), knowledge summaries. SSRF-protected URL fetching. Full CRUD.
 - `/product-intelligence` — Scored opportunity cards (A+/A/B). Triple-scored: Store (NCHO) / Curriculum (SomerSchool) / Content (marketing). Status tracking. Routes to Review Queue.
 - `/youtube` — YouTube Intelligence. Paste URL or search YouTube (Data API v3) → 3-tier transcript: captions (npm, fast) → innertube API → Gemini 2.5 Flash (Railway worker, ~77s, production path). Hallucination guard: validates video via YouTube Data API before Gemini processes. 8 curriculum tools: quiz, lesson plan, vocabulary, discussion questions, DOK projects, graphic organizers, guided notes, full analysis (Claude Sonnet 4.6 grade-appropriate). Batch mode for multi-video processing. Supabase Realtime job watching.
@@ -48,13 +66,14 @@ This document is your complete technical brief. Read all of it before touching a
 - `/voice-studio` — ElevenLabs TTS (premium voices, scoped key per project) + Azure Speech TTS (free tier, 10+ neural voices). In-browser recording → Azure Speech STT transcription. Speed control 0.5×–2.0×. Download as MP3.
 - `/course-assets` — **Course Asset Dashboard** (Production Pipeline hub). Connects to CoursePlatform Supabase via `COURSE_SUPABASE_URL` + `COURSE_SUPABASE_SERVICE_ROLE_KEY`. Shows all bundles for a course/grade combo as a lesson grid with 5 status dots per lesson: Bundle (slides_count), Images (slides_generated), Audio (audio_generated), Video (videos_generated), Worksheet (worksheet_present). "Generate Slides" button per bundle → creates `course_slide_images` job → QStash → Railway worker → Replicate/Leonardo per slide. Optional character selector injects Gimli (or any character) into slide generation via `characterId`. Supabase Realtime progress polling on active job. `GET /api/course-assets/status?course=&grade=` lists bundles. `POST /api/course-assets/generate-slides` kicks off async slide generation job. `GET /api/course-assets/bundle/[id]` fetches full bundle JSON.
 - `/tasks` — Task board with full status machine: open → in-progress → blocked → done → canceled. Source linking (from brief, opportunity, or manual). Full CRUD.
-- `/documents` — Workspace markdown files rendered and searchable.
+- `/documents` — Workspace markdown files + uploaded documents. Upload PDFs, DOCX, ePub, TXT → Azure AI Document Intelligence extracts content (layout-aware, tables). 8 analysis types via Claude: summary, key findings, curriculum map, chapter outline, vocabulary, discussion guide, critique, full analysis.
+- `/doc-studio` — **Doc Studio** (migration 030). 14 one-click document generators with full Scott context pre-loaded: PRD, ADR, blog post, landing copy, spec, Session Close, campaign brief, positioning, launch checklist, market sizing, feedback synthesis, study guide, report, brainstorm. SSE streaming. All generated docs saved to `documents` table. API surface: `documents/generate/`, `documents/list/`, `documents/[id]/`, `documents/analyze/`, `documents/upload/`.
 
 ### AI & Automation
 - `/jobs` — Real-time job dashboard. QStash → Railway workers. Supabase Realtime progress. Visual 6-step PassStepper on curriculum jobs. Accumulating session log. Job detail drawer with output viewer.
-- `/curriculum-factory` — 6-pass Council of the Unserious (Gandalf → Data → Polgara → Earl → Beavis & Butthead → Extract JSON). National standards auto-aligned (CCSS-ELA/CCSS-Math/NGSS/C3 auto-detected from subject). Produces BOTH `finalScopeAndSequence` (Polgara's markdown) AND `structuredOutput` (validated SomersSchool pipeline JSON — drop into `scope-sequence/`). HTML/PDF/DOCX export. Batch mode (parent + child jobs).
+- `/curriculum-factory` — 6-pass Council of the Unserious (Gandalf → Data → Polgara → Earl → Silk → Extract JSON). National standards auto-aligned (CCSS-ELA/CCSS-Math/NGSS/C3 auto-detected from subject). Produces BOTH `finalScopeAndSequence` (Polgara's markdown) AND `structuredOutput` (validated SomersSchool pipeline JSON — drop into `scope-sequence/`). HTML/PDF/DOCX export. Batch mode (parent + child jobs).
 - `/pipelines` — n8n workflow control panel. Status, execution history, manual triggers. Proxies to Railway-hosted n8n.
-- `/council` — 6-pass Council Chamber as background job. Same pipeline as curriculum-factory. Output: Final Scope & Sequence → Pipeline Handoff JSON (emerald card, copy/download/preview) → Earl (open by default) → B&B → Working Papers accordion (Gandalf draft + Data critique, closed) → Download full session transcript (includes JSON fenced block).
+- `/council` — 6-pass Council Chamber as background job. Same pipeline as curriculum-factory. Output: Final Scope & Sequence → Pipeline Handoff JSON (emerald card, copy/download/preview) → Earl (open by default) → Silk → Working Papers accordion (Gandalf draft + Data critique, closed) → Download full session transcript (includes JSON fenced block).
 - `/dreamer` — The Dreamer System (Phase 2). Kanban board: Seeds → Active → Building → Shipped. Archive drawer for dismissed/archived items. Full CRUD via 6 API routes. Earl AI review: Claude Sonnet 4.6 analyzes all seeds and returns prioritized suggestions (promote/dismiss/hold/merge) — never auto-applies, Scott approves each. Daily dream log (one entry per day, mood field). 48 seeds pre-loaded from dreamer.md on launch. Supabase Realtime. Source tracking (dreamer_md, chat, brief, manual, ai_review, push_api).
 - `/social` — Social media automation (replaces Sintra, $49/mo). 3-tab UI: **Review Queue** (Supabase Realtime live updates, inline text edit, datetime picker, Buffer channel selector, approve/reject, full edit history tracking in JSONB), **Generate** (Claude Sonnet 4.6, 3 brands × 3 platforms, topic seed, brand voice enforced per brand), **Accounts** (Buffer GraphQL sync via GetOrganizations + GetChannels, manual brand→channel mapping). Weekly cron: Monday 05:00 UTC. Shopify webhook: new product → NCHO launch posts auto-generated (HMAC-verified).
 
@@ -95,6 +114,9 @@ This document is your complete technical brief. Read all of it before touching a
 - `intel/publishers-weekly/` — PW .txt paste path
 - `dreams/` + `dreams/[id]/` + `dreams/ai-review/` + `dreams/bulk/` + `dreams/reorder/` — Dreamer board
 - `dream-log/` — Daily dream journal
+- `folio/` + `folio/[id]/` + `folio/trigger/` — The Folio CRUD + manual rebuild trigger (CRON_SECRET-protected)
+- `documents/generate/` + `documents/list/` + `documents/[id]/` + `documents/analyze/` + `documents/upload/` — Doc Studio pipeline
+- `brain/sync/` — GitHub scott-brain → context_files sync
 
 **API routes under `/api/`:**
 - `auth/signout` — Sign out
@@ -132,11 +154,22 @@ This document is your complete technical brief. Read all of it before touching a
 - `email/categorize/` — POST: Claude Haiku batch categorization. Fetches uncategorized (`ai_processed_at IS NULL`, limit 30), batches 10 at a time, returns `{category, ai_summary, action_required, urgency}` per email.
 - `email/search/` — GET `?q=&category=&page=&limit=`: full-text TSVECTOR search + category filter on persisted emails. Paginated.
 - `cron/email-digest/` — GET daily cron (midnight UTC): sync → categorize → group by category → Claude Sonnet generates .md digest → saves to `context_files` with `document_type='email_daily', inject_order=5`. Email digest auto-flows into every chat system prompt via `getSystemPrompt()`.
+- `folio/` — Last 30 Folio entry metadata (GET)
+- `folio/[id]/` — Full Folio entry including narrative (GET)
+- `folio/trigger/` — Manual rebuild trigger (POST, CRON_SECRET-protected, maxDuration 300)
+- `cron/folio-build/` — Daily 05:00 UTC cron → Railway worker folio_daily_build job
+- `documents/generate/` — SSE streaming doc generation, 14 doc types, full Scott context injected (POST)
+- `documents/list/` — List all documents (GET)
+- `documents/[id]/` — Get/delete single document
+- `documents/analyze/` — AI analysis on uploaded document content (POST)
+- `documents/upload/` — Upload PDF/DOCX/ePub/TXT → Azure AI Document Intelligence extract (POST)
+- `brain/sync/` — GitHub scott-brain repo → context_files sync (POST, BRAIN_SYNC_KEY auth)
+- `cron/brain-sync/` — Daily noon UTC (GET, CRON_SECRET-protected)
 
 **Supabase tables:**
-- `briefs`, `research_items`, `opportunities`, `tasks`, `chat_threads`, `knowledge_summaries`, `founder_notes`, `jobs`, `social_accounts`, `social_posts`, `emails`
+- `briefs`, `research_items`, `opportunities`, `tasks`, `chat_threads`, `knowledge_summaries`, `founder_notes`, `jobs`, `social_accounts`, `social_posts`, `emails`, `context_files`, `dreams`, `dream_log`, `intel_sessions`, `intel_categories`, `generated_images`, `brand_voices`, `characters`, `documents`, `folio_entries`
 
-**Key env vars:** `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `TAVILY_API_KEY`, `NEWSAPI_API_KEY`, `N8N_BASE_URL`, `N8N_API_KEY`, `RAILWAY_WORKER_URL`, `GITHUB_TOKEN`, `CRON_SECRET`, `NEXT_PUBLIC_APP_URL`, `ALLOWED_EMAILS`, `BUFFER_ACCESS_TOKEN`, `SHOPIFY_WEBHOOK_SECRET`, `YOUTUBE_API_KEY`, `GEMINI_API_KEY`, `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION`
+**Key env vars:** `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `TAVILY_API_KEY`, `NEWSAPI_API_KEY`, `N8N_BASE_URL`, `N8N_API_KEY`, `RAILWAY_WORKER_URL`, `GITHUB_TOKEN`, `CRON_SECRET`, `NEXT_PUBLIC_APP_URL`, `ALLOWED_EMAILS`, `BUFFER_ACCESS_TOKEN`, `SHOPIFY_WEBHOOK_SECRET`, `YOUTUBE_API_KEY`, `GEMINI_API_KEY`, `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION`, `DAILYDEV_TOKEN`, `GITHUB_BRAIN_TOKEN`, `BRAIN_SYNC_KEY`, `COURSE_SUPABASE_URL`, `COURSE_SUPABASE_SERVICE_ROLE_KEY`
 
 **Installed and active:** `@upstash/qstash`, `@upstash/redis`, `@anthropic-ai/sdk`, `openai`, `@supabase/supabase-js`, `@supabase/ssr`, `zod`, `react-markdown`, `remark-gfm`, `resend`, `rss-parser`, `date-fns`, `html-to-docx`, `marked`, `lucide-react`, `youtube-transcript` (v1.3.0 — captions extraction, blocked from cloud IPs)
 
@@ -174,7 +207,7 @@ PHASE 1 — The Job Runner                    ✅ COMPLETE
   API: /api/jobs/ (list, create, [id], [id]/cancel, [id]/run)
 
 PHASE 2 — The Curriculum Factory             ✅ COMPLETE
-  6-pass Council of the Unserious critique loop (Gandalf → Data → Polgara → Earl → Beavis & Butthead → Extract JSON).
+  6-pass Council of the Unserious critique loop (Gandalf → Data → Polgara → Earl → Silk → Extract JSON).
   Produces BOTH finalScopeAndSequence (markdown) AND structuredOutput (validated SomersSchool pipeline JSON).
   National standards auto-alignment: CCSS-ELA, CCSS-Math, NGSS, C3 Framework.
   Form + batch support at /curriculum-factory.
@@ -189,7 +222,7 @@ PHASE 4 — Council Mode in Chat               ✅ COMPLETE (scope expanded)
   1. /council — Background job: purpose-built curriculum generator
   2. Home chat — Real-time Council Mode: toggle Solo/Council in main chat,
      SSE-streamed multi-member responses with rebuttal round.
-     Members: Gandalf, Data, Polgara, Earl, Beavis & Butthead.
+     Members: Gandalf, Data, Polgara, Earl, Silk (Prince Kheldar).
 
 BONUS — Sidebar & Help System                ✅ COMPLETE
   Accordion-grouped navigation (5 sections).
@@ -298,6 +331,65 @@ TURBOPACK BUILD FIX — council-chamber-viewer.tsx  ✅ COMPLETE (3 attempts)
   Files changed:
     - src/components/council-chamber-viewer.tsx — parseOutput + !! guards
     - src/hooks/use-jobs-realtime.ts — Job.output: unknown (from Record<string,unknown>|null)
+
+PHASE 8 — Email AI Pipeline                  ✅ COMPLETE
+  Emails table (migration 019), multi-account IMAP → Supabase persistence (migration 020
+  adds email_account column, fixes UID collision across mailboxes). Haiku batch
+  categorization (11 categories). Sonnet daily digest → context_files (inject_order=5).
+  /inbox with AI view, 11 category tabs, urgency indicators, action_required pulsing dot.
+  Email digest auto-flows into every chat via getSystemPrompt(). emails.uid INT → BIGINT
+  fix (migration 029).
+
+PHASE 9 — Dreamer + Intel Systems            ✅ COMPLETE
+  Dreamer (migration 017): dreams + dream_log tables. Kanban at /dreamer (Seeds/Active/
+  Building/Shipped). 6 API routes. Earl AI review via Claude Sonnet — never auto-applies.
+  48 seeds pre-loaded from dreamer.md. Supabase Realtime.
+  Intel (migration 018): intel_sessions + intel_categories tables. 5 API routes at /intel.
+  Claude Sonnet two-pass analysis + Haiku verification. All 5 Council members synthesize
+  per Intel report. Daily cron 04:00 UTC (5 watch sources). Publishers Weekly report path.
+
+PHASE 10 — Context Brain                     ✅ COMPLETE
+  context_files table (migration 015): multi-document brain with document_type + inject_order.
+  getSystemPrompt() assembles all active docs in inject_order. 4 named slots: 
+  copilot_instructions (1), dreamer (2), extended_context (3), intel (4); email_daily (5).
+  brain/sync route: GitHub scott-brain → context_files. GITHUB_BRAIN_TOKEN + BRAIN_SYNC_KEY
+  env vars. Daily cron noon UTC.
+
+PHASE 11 — B&B → Silk Migration             ✅ COMPLETE (commit 6bdfda8)
+  Pass 5 replaced: Beavis & Butthead → Silk (Prince Kheldar, gpt-5-mini). Silk's role:
+  Pattern Breaker / Devoted Cynic. Reads the draft, names the subtext, identifies the
+  implicit assumption that will compromise the plan in week six.
+  council/route.ts + curriculum-factory worker updated. council-worker/agents/beavis.py
+  marked LEGACY. All persona references updated across codebase.
+
+PHASE 12 — Chat Metaknowledge Upgrade        ✅ COMPLETE (commit 2a9ec31)
+  Council was blind to context_files (email digest, intel, dreamer). Both chat routes
+  now gain keyword-triggered live queries: jobs, dreams, tasks, social posts, characters,
+  brand voices. Council gets brain sync + persona overrides. knowledge_summaries +
+  opportunities added to Council buildLiveContext (was missing vs solo chat).
+  APP_ARCHITECTURE_BLOCK injected into every session — answers "where does X live?" questions.
+
+PHASE 13 — Doc Studio                        ✅ COMPLETE (commit 2f7db55)
+  14 document types across 5 categories: strategy (PRD, ADR, spec), marketing (blog,
+  landing copy, campaign brief, positioning, launch checklist, market sizing), ops
+  (Session Close, feedback synthesis), curriculum (study guide), analytics (report),
+  brainstorm. /doc-studio page with SSE streaming. documents table (migration 030,
+  RLS + Realtime). 5 API routes. Full Scott context injected. Session Close = Step 5
+  of dev process one click away.
+
+PHASE 14 — The Folio                         ✅ COMPLETE (commit a357cc2)
+  folio_entries table (migration 031): entry_date UNIQUE, narrative, top_action,
+  track_signals JSONB, summary, source_counts. folio-builder.ts aggregates all active
+  sources, calls Claude Sonnet 4.6, upserts daily. /folio page (first item in Intelligence
+  group). 3 API routes: folio/ (GET last 30), folio/[id]/ (GET full entry), folio/trigger/
+  (POST, CRON_SECRET-protected, maxDuration 300). Cron: 05:00 UTC daily.
+  getFolioContext() injected into every chat + Council session automatically.
+  Railway worker job: folio_daily_build.
+
+JOBS RLS FIX — migration 032                 ✅ COMPLETE (commit 91d141a)
+  Added anon SELECT policy on jobs table: USING (true). Fixes Supabase Realtime
+  subscriptions via browser anon-key — YouTube transcript completion updates were not
+  reaching the UI because the browser uses the anon key, which RLS was blocking.
 ```
 
 ---
@@ -640,7 +732,7 @@ Each pass uses a different AI model with a character-specific system prompt. The
 | 2 | Lt. Commander Data | Auditor / Analyst (standards + structure) | Claude Sonnet 4.6 |
 | 3 | Polgara the Sorceress | Content Director / Editor (Anna's mirror) | Claude Sonnet 4.6 |
 | 4 | Earl Harbinger | Operations Commander (business reality) | GPT-5.4 |
-| 5 | Beavis & Butthead | Engagement Stress Test (the kid in the chair) | GPT-5-mini |
+| 5 | Silk (Prince Kheldar) | Pattern Breaker / Devoted Cynic | GPT-5-mini |
 | 6 | Extract (structured) | SomersSchool Pipeline JSON — convert Polgara's markdown to validated handoff JSON | Claude Sonnet 4.6 |
 
 Prompts defined in `worker/src/lib/council-prompts.ts` (TS) and `council-worker/agents/*.py` (Python CrewAI).
@@ -649,7 +741,7 @@ Output keys:
 - `finalScopeAndSequence` — Polgara's production-ready markdown document
 - `structuredOutput` — SomersSchool pipeline JSON (id, grade, grade_band, units[], lessons[], meta). Post-extraction fixup guarantees canonical `subject` label, `schema_version: "1.0"`, real `generated_at`/`generated_by`, explicit `is_review_lesson` on every lesson, correct pacing math, sequential lesson numbers, computed `total_units`/`total_lessons`. Null if extraction fails.
 - `operationalAssessment` — Earl's build/ship/revenue analysis
-- `engagementReport` — Beavis & Butthead's COOL/SUCKS verdict
+- `engagementReport` — Silk's pattern-break analysis
 - `draftsRetained.gandalfInitialDraft` — Gandalf's original draft
 - `draftsRetained.dataCritique` — Data's numbered audit findings
 
@@ -683,7 +775,7 @@ The worker auto-detects the national standards framework from the subject field,
 2. **Data audits** (18%) — checks against the specific framework (e.g., "Audit against CCSS-ELA for Grade 7"), finds missing standards, pacing errors, monotone energy/style patterns
 3. **Polgara finalizes** (35%) — synthesizes Gandalf + Data, produces production-ready markdown, child-first lens, preserves structural elements
 4. **Earl assesses** (52%) — operational viability: build order, revenue timeline, minimum viable version, go/no-go
-5. **Beavis & Butthead stress-test** (75%) — COOL/SUCKS/MEH per unit, energy-flow check, engagement reality
+5. **Silk breaks the pattern** (75%) — reads the subtext, names the implicit assumption, identifies the risk no one said out loud, stress-tests the plan against week-6 reality
 6. **Extract JSON** (88%) — `extractStructuredOutput()` converts Polgara's markdown to validated SomersSchool pipeline JSON. Post-extraction fixup (all values authoritative — AI output overridden): `subject` set to canonical label (`"Language Arts"`, `"Science"`, etc.), `schema_version` set to `"1.0"`, `generated_at` set to real JS timestamp, `generated_by` set to `"chapterhouse-curriculum-factory"`, `is_review_lesson` explicitly `true`/`false` on every lesson (never omitted), pacing math corrected (`N+1` enforced), lessons renumbered sequentially, `total_units`/`total_lessons` recomputed programmatically.
 
 Progress breakpoints: 5% → 18% → 35% → 52% → 75% → 88% → 100%.
@@ -696,7 +788,7 @@ Final output shape:
   finalScopeAndSequence: string,             // Polgara's markdown — human-readable
   structuredOutput: Record<string, unknown> | null,  // SomersSchool pipeline JSON — drop into scope-sequence/
   operationalAssessment: string,             // Earl's report
-  engagementReport: string,                  // Beavis & Butthead's verdict
+  engagementReport: string,                  // Silk's pattern-break analysis
   draftsRetained: {
     gandalfInitialDraft: string,
     dataCritique: string,
@@ -724,7 +816,7 @@ Route: `/curriculum-factory`
 Components needed:
 1. **`CurriculumFactoryForm`** — selects subjects (multi-select checkboxes), grade range (5-12 slider), duration, optional standards. "Single generation" or "Full batch" toggle.
 2. **`BatchProgressOverview`** — when a batch is running, shows N/70 complete with a progress ring. Click → expands to show individual child job status.
-3. **`CurriculumOutputViewer`** (`council-chamber-viewer.tsx` / `job-detail-drawer.tsx`) — output order: Final Scope & Sequence → **Pipeline Handoff JSON** (emerald card, copy/download .json/preview toggle, "drop into scope-sequence/") → Earl's assessment (open by default) → B&B report → Working Papers accordion (Gandalf draft + Data critique) → Download Full Session Transcript (includes JSON fenced block). Export toolbar: HTML/PDF/DOCX download.
+3. **`CurriculumOutputViewer`** (`council-chamber-viewer.tsx` / `job-detail-drawer.tsx`) — output order: Final Scope & Sequence → **Pipeline Handoff JSON** (emerald card, copy/download .json/preview toggle, "drop into scope-sequence/") → Earl's assessment (open by default) → Silk's analysis → Working Papers accordion (Gandalf draft + Data critique) → Download Full Session Transcript (includes JSON fenced block). Export toolbar: HTML/PDF/DOCX download.
 
 ---
 
@@ -854,7 +946,7 @@ Here's what this system actually does:
                     │  createPost mutation               │
                     │  { text, channelId, dueAt,         │
                     │    schedulingType: automatic,       │
-                    │    mode: customSchedule }           │
+                    │    mode: customScheduled }          │
                     │  → Returns post ID                 │
                     │  → Stored as buffer_update_id      │
                     └────────────┬────────────────────┘
@@ -932,21 +1024,22 @@ Realtime enabled. RLS: authenticated users only. 4 indexes: status, brand, job_i
 | Component | File | Purpose |
 |---|---|---|
 | `SocialReviewQueue` | `src/components/social-review-queue.tsx` | Posts grouped by brand w/ color badges. Inline text editing. Datetime picker + Buffer channel selector per post. Approve/Reject buttons. Supabase Realtime subscription for live updates. |
-| `SocialGeneratePanel` | `src/components/social-generate-panel.tsx` | Brand toggles (NCHO, SomersSchool, Alana Terry). Platform toggles (Facebook, Instagram, LinkedIn). Count slider. Topic seed input. Fires to `/api/social/generate`. |
+| `SocialGeneratePanel` | `src/components/social-generate-panel.tsx` | Brand toggles (NCHO, SomersSchool, Alana Terry). Platform toggles (Facebook, Instagram, Pinterest). Count slider. Topic seed input. Fires to `/api/social/generate`. |
 | `SocialAccountsPanel` | `src/components/social-accounts-panel.tsx` | "Sync from Buffer" button. Shows synced channels. Manual "Add Account" form for brand+platform→channel mapping. Active accounts table. |
 
 ### Buffer Integration — Technical Details
 
 **API:** Buffer GraphQL API at `https://api.buffer.com`
 **Auth:** Bearer token via `BUFFER_ACCESS_TOKEN` env var
-**Account:** `accidentalakteacher` (free tier, 3 channel slots)
+**Account:** `accidentalakteacher` (Essentials plan, 6 channel slots — NCHO FB/IG/Pinterest + SomersSchool FB/IG/Pinterest)
 **Buffer Organization ID:** `695b16d7995b518a94ef5f6a`
 
 Three GraphQL operations used:
 
 1. **GetOrganizations** — `query { account { organizations { id name ownerEmail } } }` — gets org ID for channel queries
 2. **GetChannels** — `query($organizationId: OrganizationId!) { channels(input: { organizationId }) { id name displayName service avatar isQueuePaused } }` — lists all connected channels
-3. **CreatePost** — `mutation($input: CreatePostInput!) { createPost(input: $input) { ... on PostActionSuccess { post { id text } } ... on MutationError { message } } }` — schedules a post. Input: `{text, channelId, schedulingType: "automatic", mode: "customSchedule", dueAt: ISO8601}`
+3. **CreatePost** — `mutation($input: CreatePostInput!) { createPost(input: $input) { ... on PostActionSuccess { post { id text } } ... on MutationError { message } } }` — schedules a post. Input: `{text, channelId, schedulingType: "automatic", mode: "customScheduled", dueAt: ISO8601}`. Platform metadata required: Facebook needs `metadata.facebook.type: "post"`, Instagram needs `metadata.instagram.type: "image"` + `shouldShareToFeed: true`.
+4. **DeletePost** — `mutation { deletePost(input: { id: "<postId>" }) { ... on DeletePostSuccess { id } ... on MutationError { message } } }` — permanently deletes a post. Input field is `id` (NOT `postId`). `DeletePostSuccess` returns `id` only. ✅ Confirmed working.
 
 The old Buffer REST API (`api.bufferapp.com/1/`) is **dead and deprecated**. All routes use the GraphQL endpoint exclusively.
 
@@ -1111,6 +1204,27 @@ All build steps completed across March 13-16 sessions. Deployed on Vercel.
 41. Railway TS build fix: `unit.lessons.length` → `lessonCount` (a `const` assigned before the `forEach` closure). TypeScript loses `Array.isArray` optional-narrowing when re-evaluating object properties inside callback closures (TS18048). An immutable `const` is always accepted without re-checking. Applied to `is_review_lesson` fixup `forEach` in `worker/src/jobs/curriculum-factory.ts`.
 42. Commits: `b35246e` (initial handoff + ela-g1 sample), `119279a` (audit fixes + OpenAI routing + Railway TS build fix).
 
+**Sessions 34–35: B&B → Silk Migration + Brain Sync (March 29, 2026):**
+
+43. Commit `6bdfda8`: Pass 5 of the Council of the Unserious replaced — Beavis & Butthead → **Silk (Prince Kheldar, gpt-5-mini)**. Role: Pattern Breaker / Devoted Cynic — reads the subtext Scott didn't say, names the implicit assumption that will compromise the plan in week six. `council/route.ts` + `worker/src/jobs/curriculum-factory.ts` updated. `council-worker/agents/beavis.py` marked LEGACY.
+44. Brain sync added: `/api/brain/sync/` (POST, BRAIN_SYNC_KEY bearer auth) + `/api/cron/brain-sync/` (GET, CRON_SECRET-protected, daily noon UTC). `GITHUB_BRAIN_TOKEN` + `BRAIN_SYNC_KEY` env vars added. `context_files` now populated from GitHub `scott-brain` repo content automatically.
+
+**Session 36: Chat Metaknowledge Upgrade (March 29, 2026):**
+
+45. Commit `2a9ec31`: Both chat routes (`/api/chat/` and `/api/chat/council/`) gain full context-file awareness — email digest, intel, dreamer context reliably injected. Keyword-triggered live queries: jobs, dreams, tasks, social posts, characters, brand voices. `APP_ARCHITECTURE_BLOCK` injected into every session so Council can answer "where does X live?" questions. Council gains `knowledge_summaries` + `opportunities` blocks (was missing vs solo chat). Brain sync + persona overrides added to Council system prompt.
+
+**Session 37: Doc Studio (March 29, 2026):**
+
+46. Commit `2f7db55`: 14 one-click document generators at `/doc-studio` — 5 categories: strategy (PRD, ADR, spec), marketing (blog, landing copy, campaign brief, positioning, launch checklist, market sizing), ops (Session Close, feedback synthesis), curriculum (study guide), analytics (report). SSE streaming. `documents` table (migration 030, RLS + Realtime). 5 API routes under `/api/documents/`. Full Scott context pre-loaded. Session Close doc type = Step 5 of dev process one click away. Also: migration 029 — `emails.uid` INTEGER → BIGINT fix (eliminates overflow risk on large mailboxes).
+
+**Sessions 38–39: The Folio (March 30, 2026):**
+
+47. Commit `a357cc2`: `folio_entries` table (migration 031): `entry_date UNIQUE`, `narrative`, `top_action`, `track_signals JSONB`, `summary`, `source_counts`. `folio-builder.ts` aggregates all active sources (founder notes, dreams, briefs, intel, research, emails), calls Claude Sonnet 4.6, upserts once daily. `/folio` page added as first item in Intelligence group. 3 API routes: `folio/` (GET last 30), `folio/[id]/` (GET full entry), `folio/trigger/` (POST, CRON_SECRET-protected, `maxDuration 300`). `getFolioContext()` injected into every chat and Council session automatically. Cron: 05:00 UTC daily. Railway worker job: `folio_daily_build`. `vercel.json` updated.
+
+**Session 40: Jobs RLS Fix (March 30, 2026):**
+
+48. Commit `91d141a`: Migration 032 — added anon `SELECT` policy on `jobs` table: `USING (true)`. Fixes Supabase Realtime subscriptions via browser anon-key — YouTube transcript completion updates were not reaching the UI because the browser uses the anon key, which RLS was blocking. Last migration: **032**.
+
 **QStash signature verification is non-negotiable.** Every POST to `/process-job` on the Railway worker must verify the `upstash-signature` header before processing. Without this, anyone who knows the worker URL can inject arbitrary jobs.
 
 ```typescript
@@ -1147,11 +1261,12 @@ if (!isValid) return res.status(401).json({ error: 'Invalid signature' })
 
 ## Useful Context About Scott
 
-- **The Council** is the Council of the Unserious: Gandalf (creator/architect — Scott's mirror), Lt. Commander Data (auditor/analyst — systematic, ego-free), Polgara the Sorceress (content director/editor — Anna's mirror), Earl Harbinger (operations commander — business reality), Beavis & Butthead (engagement stress test — the kid in the chair).
+- **The Council** is the Council of the Unserious: Gandalf (creator/architect — Scott's mirror), Lt. Commander Data (auditor/analyst — systematic, ego-free), Polgara the Sorceress (content director/editor — Anna's mirror), Earl Harbinger (operations commander — business reality), Silk / Prince Kheldar (pattern breaker / devoted cynic — names the subtext Scott didn't say).
 - **SomersSchool** is the curriculum SaaS at `TheAccidentalTeacher/CoursePlatform`. The curriculum scope & sequences generated here feed directly into that product.
 - **"Secular only"** — all curriculum content generated by this factory must be secular. Alaska Statute 14.03.320 applies to allotment-funded curriculum.
 - **Scott vibe codes** — describe what you're building before writing code, propose the simplest approach, ask before adding abstractions.
 - **Revenue target: before August 2026.** Everything built here serves that deadline.
+- **⚠️ AVATAR A/B TESTING — CONFIRMED PENDING ACTION:** Scott + Anna are running ABCDEF HeyGen avatar click tests via paid ads to NCHO site. Anna leads. Goal: determine which avatar style drives the most clicks before committing to one style for video production at scale. STATUS: NOT YET STARTED. Start this week.
 
 ---
 
@@ -1177,7 +1292,7 @@ Add the ability for Chapterhouse's AI to read any URL on demand (not just RSS). 
 Effort: 1–2 days.
 
 **Phase B — Scott's Context Layer** *(Highest Priority)*
-A `chapterhouse-context.md` file (or Supabase-stored equivalent) loaded as system context into every brief generation call. Already partially done via Phase 7 (SYSTEM_PROMPT expansion). Phase B completes it: adds competitor list, locked decisions log, Alaska allotment context, student data protection rules, Gimli character reference. Success measure: brief says "parents pushing back on screens → NCHO should lean low-screen This week; SomersSchool should use 'intentional learning' not 'digital curriculum.'"
+A `chapterhouse-context.md` file (or Supabase-stored equivalent) loaded as system context into every brief generation call. Already partially done via Phase 7 (SYSTEM_PROMPT expansion). Phase B completes it: adds competitor list, locked decisions log, state education allotment/ESA context (all participating states), student data protection rules, Gimli character reference. Success measure: brief says "parents pushing back on screens → NCHO should lean low-screen This week; SomersSchool should use 'intentional learning' not 'digital curriculum.'"
 Effort: 1 day to write context file + 2–4 hours to wire.
 
 **Phase C — Collision Mapping** *(Already partially shipped in Phase 7)*
@@ -1189,7 +1304,7 @@ Chapterhouse produces structured markdown files — not just summaries. Handoff 
 Effort: 2–3 days.
 
 **Phase E — Council Voices in Brief**
-Wire Council Chamber into brief generation workflow. After standard brief, run a Council pass on the top 3 priority items: Gandalf synthesizes → Data audits → Polgara checks child-impact → Earl asks "so what, by when" → B&B stress tests. Council Chamber is already live — needs wiring, not rebuilding.
+Wire Council Chamber into brief generation workflow. After standard brief, run a Council pass on the top 3 priority items: Gandalf synthesizes → Data audits → Polgara checks child-impact → Earl asks "so what, by when" → Silk names the pattern. Council Chamber is already live — needs wiring, not rebuilding.
 Effort: 2–3 days.
 
 **Phase F — Dream Integration**
@@ -1259,6 +1374,10 @@ Effort: 2–3 days.
 - Phase 7 (Voice Studio Narration): 🔴 NOT YET STARTED — gates on Phase 5. ElevenLabs batch narration for bundle audio_url fields.
 
 ---
+
+*Document version: April 4, 2026 (Social Expansion — D132) — **Pinterest as third platform (D132). Buffer Essentials plan active (6 channels).** (1) `supabase/migrations/20260404_038_add_pinterest_platform.sql` — NEW. Extends both `social_accounts_platform_check` and `social_posts_platform_check` to include `pinterest`. LinkedIn kept in DB constraints for backward compat. (2) `src/app/api/social/accounts/route.ts` — Zod platform enum updated to include `pinterest`. (3) `src/app/api/social/generate/route.ts` — `platforms` Zod enum updated; Pinterest format rules added to both `PLATFORM_RULES` constant and `BRAND_VOICE_FALLBACK` (keyword-rich 100-300 chars, save-worthy, 2-5 hashtags, vertical 2:3 image brief). (4) `src/app/api/social/posts/[id]/approve/route.ts` — Pinterest uses `null` metadata (same as LinkedIn; schema not yet introspected — safe fallback). Channel structure locked: NCHO (facebook, instagram, pinterest) + SomersSchool (facebook, instagram, pinterest) = 6 channels total. LinkedIn dropped from active channel roster. Buffer plan upgraded from free (3 slots) to Essentials (6 slots). Last migration: 038. Next migration: 039. Next decision: D133.*
+
+*Document version: March 30, 2026 (Sessions 34–40) — **Silk migration, Brain Sync, Doc Studio, The Folio, Jobs RLS fix + full documentation sync.** Sessions 34–35: Pass 5 replaced — Beavis & Butthead → Silk (Prince Kheldar, gpt-5-mini, Pattern Breaker / Devoted Cynic). Commit `6bdfda8`. Brain sync added (`/api/brain/sync/` + `/api/cron/brain-sync/`, `GITHUB_BRAIN_TOKEN` + `BRAIN_SYNC_KEY`). Session 36: Chat metaknowledge upgrade — both chat routes gain full context awareness, keyword-triggered live queries, APP_ARCHITECTURE_BLOCK, Council gains knowledge_summaries + opportunities. Commit `2a9ec31`. Session 37: Doc Studio — 14 document generators, SSE streaming, `documents` table (migration 030), emails.uid BIGINT fix (migration 029). Commit `2f7db55`. Sessions 38–39: The Folio — `folio_entries` table (migration 031), `folio-builder.ts`, `/folio` page (first in Intelligence group), `getFolioContext()` injected into all chat sessions, Cron 05:00 UTC, Railway worker `folio_daily_build`. Commit `a357cc2`. Session 40: Jobs RLS fix — migration 032 adds anon SELECT policy so browser YouTube Realtime actually works. Commit `91d141a`. **Last migration: 032.** All B&B references replaced by Silk throughout documentation. All routes, tables, and env vars updated.*
 
 *Document version: March 28, 2026 (Sessions 31-33) — **Anchor image system complete + documentation sync.** Bundle anchor images (1 per bundle, grade-themed Alaska animals) fully operational across all G1 science bundles (~20 jobs completed). Three bugs fixed this session block: (1) `generate_bundle_anchor` missing from `jobs_type_check` CHECK constraint — migration 028 applied (`20260327_028_add_bundle_anchor_job_type.sql`), also run directly in Supabase dashboard. (2) `status/route.ts` not returning `anchor_image_url` — added `content->>anchor_image_url` PostgREST JSON extraction to `BUNDLE_COLUMNS` (extracts top-level JSONB key without fetching full content blob). (3) Anchor image 48×48 table thumbnail too small to recognize — moved to expanded bundle dropdown as 160×160px with title/grade/bundle metadata above `BundleSlideGrid`. Commits: `3036bae` (constraint + status route), `c2dfca5` (dropdown display). Documentation sync: email workspace confirmed as master (~107.5KB), Brand guide + chapterhouse synced to match. `workspace-injection-system.md` updated with current file sizes. Last migration: 028.*
 

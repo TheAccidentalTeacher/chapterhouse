@@ -42,7 +42,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const { data: post, error: fetchErr } = await supabase
     .from("social_posts")
-    .select("post_text, hashtags")
+    .select("post_text, hashtags, brand, platform, edit_history")
     .eq("id", id)
     .single();
 
@@ -58,6 +58,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const bufferToken = process.env.BUFFER_ACCESS_TOKEN;
   if (!bufferToken) return Response.json({ error: "Buffer not configured" }, { status: 503 });
 
+  // Buffer requires platform-specific metadata for Facebook (type: post|story|reel)
+  // and Instagram (type: image|video|reel|story, shouldShareToFeed: bool).
+  // LinkedIn and Pinterest need no metadata. Confirmed via schema introspection April 2026.
+  // Pinterest metadata schema not yet introspected — null is safe (same as LinkedIn).
+  const platform = post.platform as string;
+  const postMetadata =
+    platform === "facebook" ? { facebook: { type: "post" } } :
+    platform === "instagram" ? { instagram: { type: "image", shouldShareToFeed: true } } :
+    null;
+
   const bufferRes = await fetch("https://api.buffer.com", {
     method: "POST",
     headers: {
@@ -71,8 +81,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           text: fullText,
           channelId: buffer_profile_id,
           schedulingType: "automatic",
-          mode: "customSchedule",
+          mode: "customScheduled",
           dueAt: new Date(scheduled_for).toISOString(),
+          ...(postMetadata ? { metadata: postMetadata } : {}),
         },
       },
     }),
@@ -120,5 +131,25 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     .single();
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
+
+  // D130: Edit-to-learn signal — write platform hint if post was edited before approval (non-fatal)
+  if (Array.isArray(post.edit_history) && (post.edit_history as unknown[]).length > 0 && post.brand && post.platform) {
+    try {
+      const { data: bv } = await supabase
+        .from("brand_voices")
+        .select("platform_hints")
+        .eq("brand", post.brand as string)
+        .single();
+      const currentHints = (bv?.platform_hints ?? {}) as Record<string, string>;
+      const hint = `Approved example (${new Date().toISOString().slice(0, 10)}): ${String(post.post_text).slice(0, 300)}`;
+      await supabase
+        .from("brand_voices")
+        .update({ platform_hints: { ...currentHints, [post.platform as string]: hint } })
+        .eq("brand", post.brand as string);
+    } catch {
+      console.warn("[social/approve] D130 platform hint write failed (non-fatal)");
+    }
+  }
+
   return Response.json({ post: data });
 }

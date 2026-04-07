@@ -3,8 +3,8 @@ import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
 import { z } from "zod";
 
 const generateSchema = z.object({
-  brands: z.array(z.enum(["ncho", "somersschool", "alana_terry", "scott_personal"])).min(1),
-  platforms: z.array(z.enum(["facebook", "instagram", "linkedin"])).min(1),
+  brands: z.array(z.enum(["ncho", "somersschool", "scott_personal"])).min(1),
+  platforms: z.array(z.enum(["facebook", "instagram", "linkedin", "pinterest"])).min(1),
   count_per_combo: z.number().int().min(1).max(7).default(3),
   topic_seed: z.string().optional(),
   job_id: z.string().uuid().optional(),
@@ -36,18 +36,11 @@ somersschool (secular homeschool SaaS course platform):
 - Instagram: lesson preview or win showcase. Bold and clean.
 - Never use: spiritual, faith, Christian, explore your beliefs, student (use "child").
 
-alana_terry (Anna Somers — Christian fiction author + "Praying Christian Women" podcast):
-- Write as a woman (Anna's voice, not Scott's).
-- Personal, vulnerable. Story-forward. Faith is assumed, never preachy.
-- Community: readers and listeners are friends, not audiences.
-- Facebook/Instagram only. LinkedIn does not apply.
-- Book posts: question readers are asking → character/theme connection → CTA.
-- Podcast posts: episode's most arresting insight → 2 sentences context → "new episode live."
-
 PLATFORM FORMAT RULES:
 - facebook: conversational, 2-4 sentences, CTA at end, no hashtags
 - instagram: punchy, first 125 chars must stand alone, 3-5 hashtags on separate line
 - linkedin: professional, first 210 chars is the hook, white space between paragraphs, no hashtags
+- pinterest: keyword-rich description (100-300 chars), save-worthy and searchable, describe what the pin solves or shows, no sales language, strong visual description in image_brief (vertical 2:3 ideal), 2-5 hashtags ok
 
 OUTPUT FORMAT — return a JSON array of post objects:
 [
@@ -66,6 +59,7 @@ PLATFORM FORMAT RULES:
 - facebook: conversational, 2-4 sentences, CTA at end, no hashtags
 - instagram: punchy, first 125 chars must stand alone, 3-5 hashtags on separate line
 - linkedin: professional, first 210 chars is the hook, white space between paragraphs, no hashtags
+- pinterest: keyword-rich description (100-300 chars), save-worthy and searchable, describe what the pin solves or shows, no sales language, strong visual description in image_brief (vertical 2:3 ideal), 2-5 hashtags ok
 
 OUTPUT FORMAT — return a JSON array of post objects:
 [
@@ -78,26 +72,40 @@ OUTPUT FORMAT — return a JSON array of post objects:
   }
 ]`;
 
-async function getBrandVoiceSystem(brands: string[]): Promise<string> {
+async function getBrandVoiceSystem(brands: string[], platforms: string[]): Promise<string> {
   try {
     const supabase = getSupabaseServiceRoleClient();
     if (!supabase) return BRAND_VOICE_FALLBACK;
 
     const { data, error } = await supabase
       .from("brand_voices")
-      .select("brand, full_voice_prompt")
+      .select("brand, full_voice_prompt, platform_hints")
       .in("brand", brands)
       .eq("is_active", true);
 
     if (error || !data?.length) return BRAND_VOICE_FALLBACK;
 
     const voiceBlocks = data.map((v) => v.full_voice_prompt).join("\n\n");
+
+    // D130: inject learned platform hints for the active platforms
+    const hintLines: string[] = [];
+    for (const row of data) {
+      const hints = (row.platform_hints ?? {}) as Record<string, string>;
+      for (const platform of platforms) {
+        const hint = hints[platform];
+        if (hint) hintLines.push(`${row.brand} / ${platform}: ${hint}`);
+      }
+    }
+    const hintsBlock = hintLines.length
+      ? `\n\nLEARNED PLATFORM PREFERENCES (apply these to matching brand+platform):\n${hintLines.join("\n")}`
+      : "";
+
     return `You are a social media content generator for three brands owned by Scott and Anna Somers.
 Return ONLY valid JSON — no markdown, no explanation, no preamble.
 
 BRAND RULES:
 
-${voiceBlocks}
+${voiceBlocks}${hintsBlock}
 ${PLATFORM_RULES}`.trim();
   } catch {
     return BRAND_VOICE_FALLBACK;
@@ -138,7 +146,7 @@ Total objects expected: ${brands.length * platforms.length * count_per_combo}`;
   }>;
 
   try {
-    const brandVoiceSystem = await getBrandVoiceSystem(brands);
+    const brandVoiceSystem = await getBrandVoiceSystem(brands, platforms);
     const response = await anthropic.messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 4096,

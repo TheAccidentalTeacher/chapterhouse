@@ -9,6 +9,7 @@ import { runTrainCharacterLora, type TrainCharacterLoraPayload } from "./train-c
 import { runGenerateCharacterScenes, type GenerateCharacterScenesPayload } from "./generate-character-scenes";
 import { runGenerateBundleAnchor, type GenerateBundleAnchorPayload } from "./generate-bundle-anchor";
 import { runFolioDailyBuild } from "./folio-daily-build";
+import { runNewsletterDraft, type NewsletterDraftPayload } from "./newsletter-draft";
 import { updateProgress } from "../lib/progress";
 
 export async function processJob(
@@ -75,6 +76,15 @@ export async function processJob(
 
     case "folio_daily_build":
       await runFolioDailyBuild(jobId, payload);
+      break;
+
+    case "newsletter_draft":
+      await runNewsletterDraft(jobId, payload as unknown as NewsletterDraftPayload);
+      break;
+
+    case "youtube_batch_playlist":
+      // Gated on YouTube OAuth token — implement in Phase 1.5
+      await updateProgress(jobId, 0, "YouTube OAuth not yet configured", "failed", undefined, "Requires YOUTUBE_OAUTH_TOKEN — deferred to Phase 1.5");
       break;
 
     default:

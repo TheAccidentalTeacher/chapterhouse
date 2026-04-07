@@ -95,7 +95,7 @@ The following capabilities exist in Scott's manual workflow with GitHub Copilot 
 **Technical path:** Source directory in Supabase. Brief generation prompt includes: "Are these sources appropriate for today's focus? What additional sources should be queried?" System can propose new sources; Scott or the system can add them to the rotation.
 
 ### Gap 3 — Scott's Business Context in the Analysis AI (Severity: CRITICAL)
-**What Copilot does:** Every analysis is filtered through 90KB of detailed context about Scott's business, products, pricing, competitors, decisions, deadline (May 24, 2026), Anna's audience, Alaska allotment, COPPA requirements, student data protection rules, Council of the Unserious personas, and locked decisions.  
+**What Copilot does:** Every analysis is filtered through 90KB of detailed context about Scott's business, products, pricing, competitors, decisions, deadline (May 24, 2026), Anna's audience, state education allotment/ESA, COPPA requirements, student data protection rules, Council of the Unserious personas, and locked decisions.  
 **What Chapterhouse does:** Produces a generic intelligence brief. The brief could have been written by any AI for any business that monitors educational tech and Shopify news.  
 **Business Impact:** This is the single largest gap. The brief identified "parents pushing back on screens" as a signal but did not connect it to: (a) NCHO brand positioning for the store launching this week, (b) SomersSchool's "visible progress" retention mechanism vs. screen fatigue, (c) Gimli's character design (teaching kids, not substituting for human engagement), (d) SomersSchool copy — "intentional learning" vs. "dumping kids in front of glowing rectangles."  
 **Technical path:** Load a distilled version of `copilot-instructions.md` (or a Chapterhouse-specific context file) as system prompt context for every brief generation call. See Section 4 for the exact content this context file needs.
@@ -161,7 +161,7 @@ The following capabilities exist in Scott's manual workflow with GitHub Copilot 
 - NCHO brand rules (red/white visual identity, "your child" not "your student," convicted not curious copy)
 - SomersSchool content rules (secular mandatory, COPPA hard requirements, AI training protection non-negotiable)
 - Anna's audience + podcast channel
-- Alaska allotment positioning
+- State education allotment/ESA positioning
 - The "Gimli" character and K-5 curriculum mascot concept
 **Effort estimate:** 1 day to write the context file. 2-4 hours to wire it into the brief generation prompt. This is the highest-leverage single action available.  
 **Success measure:** Brief says "parents pushing back on screens → NCHO should lean into low-screen, book-based curation this week; SomersSchool should address this with 'intentional vs. passive' messaging in onboarding copy."
@@ -223,7 +223,7 @@ TRACK 1 — Next Chapter Homeschool Outpost (NCHO)
 - Launch imminent (within days of this writing)
 - Anna Somers (Scott's wife, pen name Alana Terry, USA Today bestselling author) is primary builder
 - Target customer: Homeschool moms 30-45, faith-adjacent, overwhelmed by curriculum choices
-- USP: Curated by a real classroom teacher. Alaska allotment eligible. Carries faith resources without being a "faith store."
+- USP: Curated by a real classroom teacher. Education allotment/ESA eligible (20+ states). Carries faith resources without being a "faith store."
 - Brand voice: "Your child" not "your student." Emotional lead: "For the child who doesn't fit in a box." Practical close: "Your one-stop homeschool shop."
 - Visual identity: RED AND WHITE primary. Earthy accent tones (olive, rose, teal) as secondary.
 - Anti-screen fatigue is a positioning OPPORTUNITY. Lean into books, manipulatives, low-screen options.

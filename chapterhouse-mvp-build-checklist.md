@@ -208,7 +208,7 @@ The Shopify storefront build is **Anna's domain**. Scott owns Chapterhouse. The 
 - Kidu theme configuration and storefront design
 - Catalog curation and product selection
 - Faith/secular filter setup
-- Alaska Allotment filter and badge
+- State Education Allotment/ESA filter and badge
 - Grade Level Quick-Nav
 - Curriculum Guide Upsell block
 - Ingram Spark account and catalog sync

@@ -837,7 +837,7 @@ Here's what this system actually does:
                     │  createPost mutation               │
                     │  { text, channelId, dueAt,         │
                     │    schedulingType: automatic,       │
-                    │    mode: customSchedule }           │
+                    │    mode: customScheduled }          │
                     │  → Returns post ID                 │
                     │  → Stored as buffer_update_id      │
                     └────────────┬────────────────────┘
@@ -915,21 +915,22 @@ Realtime enabled. RLS: authenticated users only. 4 indexes: status, brand, job_i
 | Component | File | Purpose |
 |---|---|---|
 | `SocialReviewQueue` | `src/components/social-review-queue.tsx` | Posts grouped by brand w/ color badges. Inline text editing. Datetime picker + Buffer channel selector per post. Approve/Reject buttons. Supabase Realtime subscription for live updates. |
-| `SocialGeneratePanel` | `src/components/social-generate-panel.tsx` | Brand toggles (NCHO, SomersSchool, Alana Terry). Platform toggles (Facebook, Instagram, LinkedIn). Count slider. Topic seed input. Fires to `/api/social/generate`. |
+| `SocialGeneratePanel` | `src/components/social-generate-panel.tsx` | Brand toggles (NCHO, SomersSchool, Alana Terry). Platform toggles (Facebook, Instagram, Pinterest). Count slider. Topic seed input. Fires to `/api/social/generate`. |
 | `SocialAccountsPanel` | `src/components/social-accounts-panel.tsx` | "Sync from Buffer" button. Shows synced channels. Manual "Add Account" form for brand+platform→channel mapping. Active accounts table. |
 
 ### Buffer Integration — Technical Details
 
 **API:** Buffer GraphQL API at `https://api.buffer.com`
 **Auth:** Bearer token via `BUFFER_ACCESS_TOKEN` env var
-**Account:** `accidentalakteacher` (free tier, 3 channel slots)
+**Account:** `accidentalakteacher` (Essentials plan, 6 channel slots — NCHO FB/IG/Pinterest + SomersSchool FB/IG/Pinterest)
 **Buffer Organization ID:** `695b16d7995b518a94ef5f6a`
 
 Three GraphQL operations used:
 
 1. **GetOrganizations** — `query { account { organizations { id name ownerEmail } } }` — gets org ID for channel queries
 2. **GetChannels** — `query($organizationId: OrganizationId!) { channels(input: { organizationId }) { id name displayName service avatar isQueuePaused } }` — lists all connected channels
-3. **CreatePost** — `mutation($input: CreatePostInput!) { createPost(input: $input) { ... on PostActionSuccess { post { id text } } ... on MutationError { message } } }` — schedules a post. Input: `{text, channelId, schedulingType: "automatic", mode: "customSchedule", dueAt: ISO8601}`
+3. **CreatePost** — `mutation($input: CreatePostInput!) { createPost(input: $input) { ... on PostActionSuccess { post { id text } } ... on MutationError { message } } }` — schedules a post. Input: `{text, channelId, schedulingType: "automatic", mode: "customScheduled", dueAt: ISO8601}`. Platform metadata required: Facebook needs `metadata.facebook.type: "post"`, Instagram needs `metadata.instagram.type: "image"` + `shouldShareToFeed: true`.
+4. **DeletePost** — `mutation { deletePost(input: { id: "<postId>" }) { ... on DeletePostSuccess { id } ... on MutationError { message } } }` — permanently deletes a post. Input field is `id` (NOT `postId`). `DeletePostSuccess` returns `id` only. ✅ Confirmed working.
 
 The old Buffer REST API (`api.bufferapp.com/1/`) is **dead and deprecated**. All routes use the GraphQL endpoint exclusively.
 
