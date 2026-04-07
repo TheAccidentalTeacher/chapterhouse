@@ -19,20 +19,18 @@ interface BufferProfile {
   display_name: string;
 }
 
-const BRANDS = ["ncho", "somersschool", "alana_terry", "scott_personal"];
-const PLATFORMS = ["facebook", "instagram", "pinterest", "linkedin", "threads", "tiktok", "youtube"];
+const BRANDS = ["ncho", "somersschool", "scott_personal"];
+const PLATFORMS = ["facebook", "instagram", "pinterest", "linkedin"];
 
 const BRAND_LABEL: Record<string, string> = {
   ncho: "NCHO",
   somersschool: "SomersSchool",
-  alana_terry: "Alana Terry",
   scott_personal: "Scott Personal",
 };
 
 const BRAND_COLOR: Record<string, string> = {
   ncho: "bg-amber-500/20 text-amber-400 border border-amber-500/30",
   somersschool: "bg-sky-500/20 text-sky-400 border border-sky-500/30",
-  alana_terry: "bg-rose-500/20 text-rose-400 border border-rose-500/30",
   scott_personal: "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30",
 };
 
@@ -41,9 +39,6 @@ const PLATFORM_COLOR: Record<string, string> = {
   instagram: "bg-pink-500/15 text-pink-400",
   pinterest: "bg-red-500/15 text-red-400",
   linkedin: "bg-sky-600/15 text-sky-400",
-  threads: "bg-zinc-500/15 text-zinc-300",
-  tiktok: "bg-zinc-500/15 text-zinc-300",
-  youtube: "bg-red-600/15 text-red-400",
 };
 
 export function SocialAccountsPanel() {

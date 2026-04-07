@@ -17,22 +17,7 @@ const GET_POST_QUERY = `
   }
 `;
 
-// Fallback: query posts from a channel and match by ID
-const GET_CHANNEL_POSTS_QUERY = `
-  query GetChannelPosts($channelId: ChannelId!) {
-    posts(input: { channelId: $channelId, status: sent, limit: 100 }) {
-      id
-      text
-      statistics {
-        reach
-        clicks
-        likes
-        comments
-        shares
-      }
-    }
-  }
-`;
+
 
 interface BufferStatistics {
   reach?: number;
@@ -52,15 +37,7 @@ interface BufferPostResponse {
   errors?: Array<{ message: string }>;
 }
 
-interface BufferChannelPostsResponse {
-  data?: {
-    posts?: Array<{
-      id: string;
-      statistics?: BufferStatistics;
-    }>;
-  };
-  errors?: Array<{ message: string }>;
-}
+
 
 async function fetchPostStats(
   bufferToken: string,

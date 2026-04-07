@@ -33,7 +33,7 @@ export async function POST(req: Request) {
       input_payload: {
         trigger: "shopify_new_product",
         brands: ["ncho"],
-        platforms: ["facebook", "instagram"],
+        platforms: ["facebook", "instagram", "pinterest"],
         count_per_combo: 3,
         topic_seed: `New NCHO product: ${productTitle}${productType ? ` (${productType})` : ""}`,
       },

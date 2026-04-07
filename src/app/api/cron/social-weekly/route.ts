@@ -17,8 +17,8 @@ export async function GET(req: Request) {
       label: `Weekly social batch — week of ${new Date().toLocaleDateString()}`,
       input_payload: {
         trigger: "weekly_cron",
-        brands: ["ncho", "somersschool", "alana_terry"],
-        platforms: ["facebook", "instagram", "linkedin"],
+        brands: ["ncho", "somersschool"],
+        platforms: ["facebook", "instagram", "linkedin", "pinterest"],
         count_per_combo: 2,
       },
       status: "queued",
@@ -37,6 +37,8 @@ export async function GET(req: Request) {
       url: `${workerUrl}/process-job`,
       body: { jobId: job.id, type: "social_batch", payload: job.input_payload },
     });
+  } else {
+    console.warn("[cron/social-weekly] QStash/Railway env vars missing — job queued but not dispatched");
   }
 
   return Response.json({ jobId: job.id });

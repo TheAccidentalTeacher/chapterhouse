@@ -66,6 +66,10 @@ const environmentSchema = z.object({
   // Brain Sync (scott-brain GitHub repo)
   GITHUB_BRAIN_TOKEN: z.string().min(1).optional(),
   BRAIN_SYNC_KEY: z.string().min(1).optional(),
+  // Social Media
+  BUFFER_ACCESS_TOKEN: z.string().min(1).optional(),
+  SHOPIFY_WEBHOOK_SECRET: z.string().min(1).optional(),
+  CRON_SECRET: z.string().min(1).optional(),
 });
 
 const envSource = {
@@ -135,6 +139,10 @@ const envSource = {
   // Brain Sync
   GITHUB_BRAIN_TOKEN: process.env.GITHUB_BRAIN_TOKEN,
   BRAIN_SYNC_KEY: process.env.BRAIN_SYNC_KEY,
+  // Social Media
+  BUFFER_ACCESS_TOKEN: process.env.BUFFER_ACCESS_TOKEN,
+  SHOPIFY_WEBHOOK_SECRET: process.env.SHOPIFY_WEBHOOK_SECRET,
+  CRON_SECRET: process.env.CRON_SECRET,
 };
 
 export function getEnvironmentStatus() {
@@ -175,6 +183,8 @@ export function getEnvironmentStatus() {
         ? "course-platform"
         : key === "GITHUB_BRAIN_TOKEN" || key === "BRAIN_SYNC_KEY"
         ? "brain-sync"
+        : key === "BUFFER_ACCESS_TOKEN" || key === "SHOPIFY_WEBHOOK_SECRET" || key === "CRON_SECRET"
+        ? "social"
         : "ai",
     })),
   };

@@ -3,7 +3,7 @@ import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
 import { z } from "zod";
 
 const generateSchema = z.object({
-  brands: z.array(z.enum(["ncho", "somersschool", "alana_terry", "scott_personal"])).min(1),
+  brands: z.array(z.enum(["ncho", "somersschool", "scott_personal"])).min(1),
   platforms: z.array(z.enum(["facebook", "instagram", "linkedin", "pinterest"])).min(1),
   count_per_combo: z.number().int().min(1).max(7).default(3),
   topic_seed: z.string().optional(),
@@ -35,6 +35,16 @@ somersschool (secular homeschool SaaS course platform):
 - LinkedIn: counterintuitive first line, 3 short paragraphs, light CTA.
 - Instagram: lesson preview or win showcase. Bold and clean.
 - Never use: spiritual, faith, Christian, explore your beliefs, student (use "child").
+
+scott_personal (Scott Somers — personal brand):
+- Audience: entrepreneurs, homeschool dads, small business owners.
+- Voice: direct, experienced mentor sharing real lessons. Not preachy.
+- Personal stories welcome. Authenticity over polish.
+- Facebook: short insight or anecdote, 2-3 sentences, conversational.
+- Instagram: bold take or behind-the-scenes moment. 3-5 hashtags.
+- LinkedIn: professional growth angle, lessons learned, encourage discussion.
+- Pinterest: save-worthy tips on parenting, business, or education.
+- Never use: synergy, leverage, guru, hustle, grind.
 
 PLATFORM FORMAT RULES:
 - facebook: conversational, 2-4 sentences, CTA at end, no hashtags

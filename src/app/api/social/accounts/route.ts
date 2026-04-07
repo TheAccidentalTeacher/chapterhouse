@@ -2,7 +2,7 @@ import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
 import { z } from "zod";
 
 const accountSchema = z.object({
-  brand: z.enum(["ncho", "somersschool", "scott_personal", "alana_terry"]),
+  brand: z.enum(["ncho", "somersschool", "scott_personal"]),
   platform: z.enum(["facebook", "instagram", "linkedin", "pinterest"]),
   buffer_profile_id: z.string(),
   display_name: z.string(),
