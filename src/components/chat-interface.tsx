@@ -21,6 +21,8 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { log, mountConsoleHelpers, type SystemStatus } from "@/lib/debug-logger";
 import { personas, type Persona } from "@/lib/personas";
+import { FocusBoardPanel } from "@/components/focus-board-panel";
+import { ScratchpadPanel } from "@/components/scratchpad-panel";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -801,28 +803,14 @@ export function ChatInterface() {
         {/* Message area */}
         <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">
           {isEmpty ? (
-            <div className="flex h-full flex-col items-center justify-center gap-8 pb-8">
-              <div className="text-center">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-3xl bg-accent text-accent-foreground shadow-lg shadow-accent/25">
-                  <Bot className="h-6 w-6" />
-                </div>
-                <h2 className="mt-5 text-2xl font-semibold tracking-tight">
-                  What do you need?
-                </h2>
-                <p className="mt-2 text-sm text-muted">
-                  Ask about strategy, products, positioning, or anything Next Chapter.
-                </p>
+            <div className="flex h-full gap-4 pb-4">
+              {/* Focus Board — 60% */}
+              <div className="flex w-[60%] flex-col rounded-2xl border border-border/40 bg-card/60 p-4">
+                <FocusBoardPanel />
               </div>
-              <div className="grid w-full max-w-2xl gap-2 sm:grid-cols-2">
-                {SUGGESTED_PROMPTS.map((prompt) => (
-                  <button
-                    key={prompt}
-                    onClick={() => sendMessage(prompt)}
-                    className="rounded-2xl border border-border bg-card/80 px-4 py-3 text-left text-sm text-muted transition hover:border-accent/40 hover:bg-card hover:text-foreground"
-                  >
-                    {prompt}
-                  </button>
-                ))}
+              {/* Scratchpad — 40% */}
+              <div className="flex w-[40%] flex-col rounded-2xl border border-border/40 bg-card/60 p-4">
+                <ScratchpadPanel />
               </div>
             </div>
           ) : (
