@@ -20,6 +20,11 @@ export async function POST(req: Request) {
   const supabase = getSupabaseServiceRoleClient();
   if (!supabase) return Response.json({ error: "DB not configured" }, { status: 500 });
 
+  // Get the first user (Scott-only app)
+  const { data: users } = await supabase.auth.admin.listUsers();
+  const userId = users?.users?.[0]?.id;
+  if (!userId) return Response.json({ error: "No user found" }, { status: 500 });
+
   const body = await req.json();
   const content = (body.content ?? "").trim();
   if (!content) return Response.json({ error: "content required" }, { status: 400 });
@@ -39,7 +44,7 @@ export async function POST(req: Request) {
       content,
       source: body.source ?? "manual",
       sort_order: body.sort_order ?? (count ?? 0),
-      user_id: "00000000-0000-0000-0000-000000000000", // service role — single-user app
+      user_id: userId,
     })
     .select()
     .single();

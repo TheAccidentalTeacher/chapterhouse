@@ -7,6 +7,11 @@ export async function POST() {
   const supabase = getSupabaseServiceRoleClient();
   if (!supabase) return Response.json({ error: "DB not configured" }, { status: 500 });
 
+  // Get the first user (Scott-only app)
+  const { data: users } = await supabase.auth.admin.listUsers();
+  const userId = users?.users?.[0]?.id;
+  if (!userId) return Response.json({ error: "No user found" }, { status: 500 });
+
   // Check current count — only fill empty slots
   const { count: existingCount } = await supabase
     .from("focus_items")
@@ -116,7 +121,7 @@ ${contextText}`,
   const { error } = await supabase.from("focus_items").insert(
     items.map((item) => ({
       ...item,
-      user_id: "00000000-0000-0000-0000-000000000000",
+      user_id: userId,
     }))
   );
 

@@ -23,6 +23,11 @@ export async function POST(req: Request) {
   const supabase = getSupabaseServiceRoleClient();
   if (!supabase) return Response.json({ error: "DB not configured" }, { status: 500 });
 
+  // Get the first user (Scott-only app)
+  const { data: users } = await supabase.auth.admin.listUsers();
+  const userId = users?.users?.[0]?.id;
+  if (!userId) return Response.json({ error: "No user found" }, { status: 500 });
+
   const body = await req.json();
   const content = body.content ?? "";
 
@@ -31,7 +36,7 @@ export async function POST(req: Request) {
     .from("scratch_notes")
     .upsert(
       {
-        user_id: "00000000-0000-0000-0000-000000000000",
+        user_id: userId,
         content,
         updated_at: new Date().toISOString(),
       },
