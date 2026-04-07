@@ -754,15 +754,22 @@ export async function POST(request: Request) {
 
       const readable = new ReadableStream({
         async start(controller) {
-          for await (const chunk of stream) {
-            if (
-              chunk.type === "content_block_delta" &&
-              chunk.delta.type === "text_delta"
-            ) {
-              controller.enqueue(encoder.encode(chunk.delta.text));
+          try {
+            for await (const chunk of stream) {
+              if (
+                chunk.type === "content_block_delta" &&
+                chunk.delta.type === "text_delta"
+              ) {
+                controller.enqueue(encoder.encode(chunk.delta.text));
+              }
             }
+            controller.close();
+          } catch (streamErr) {
+            console.error("Anthropic stream error:", streamErr);
+            const msg = streamErr instanceof Error ? streamErr.message : String(streamErr);
+            controller.enqueue(encoder.encode(`\n\n[Error: ${msg}]`));
+            controller.close();
           }
-          controller.close();
         },
       });
 
@@ -786,15 +793,22 @@ export async function POST(request: Request) {
 
     const readable = new ReadableStream({
       async start(controller) {
-        for await (const event of stream) {
-          if (
-            event.type === "response.output_text.delta" &&
-            event.delta
-          ) {
-            controller.enqueue(encoder.encode(event.delta));
+        try {
+          for await (const event of stream) {
+            if (
+              event.type === "response.output_text.delta" &&
+              event.delta
+            ) {
+              controller.enqueue(encoder.encode(event.delta));
+            }
           }
+          controller.close();
+        } catch (streamErr) {
+          console.error("OpenAI stream error:", streamErr);
+          const msg = streamErr instanceof Error ? streamErr.message : String(streamErr);
+          controller.enqueue(encoder.encode(`\n\n[Error: ${msg}]`));
+          controller.close();
         }
-        controller.close();
       },
     });
 

@@ -625,7 +625,11 @@ export function ChatInterface() {
       log.data("HTTP status", `${response.status} ${response.statusText}`);
 
       if (!response.ok || !response.body) {
-        const errorText = await response.text().catch(() => "(no body)");
+        let errorText = await response.text().catch(() => "(no body)");
+        // Strip HTML error pages (e.g. Next.js 500) to a clean message
+        if (errorText.includes("<!DOCTYPE") || errorText.includes("<html")) {
+          errorText = "Server error — please try again";
+        }
         log.error(`Request failed — ${response.status}`, errorText);
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }

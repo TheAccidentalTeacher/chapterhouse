@@ -1,7 +1,9 @@
 import OpenAI from "openai";
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+function getOpenAI() {
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+}
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -188,7 +190,7 @@ async function runCurriculumFactory(
 
   await setProgress(helpers, 10, `Generating ${subject} scope & sequence for Grade ${gradeLevel}…`);
 
-  const aiResponse = await openai.responses.create({
+  const aiResponse = await getOpenAI().responses.create({
     model: "gpt-5.4",
     instructions: "You output only valid JSON. No markdown fences, no commentary.",
     input: `You are a K-12 curriculum designer. Create a complete scope & sequence for Grade ${gradeLevel} ${subject} (${duration}).
@@ -312,7 +314,7 @@ async function runCouncilSession(
 
   await setProgress(helpers, 20, "Convening the Council of the Unserious…");
 
-  const aiResponse = await openai.responses.create({
+  const aiResponse = await getOpenAI().responses.create({
     model: "gpt-5.4",
     input: `You are the Council of the Unserious (Gandalf, Data, Polgara, Earl, Beavis & Butthead). Scott Somers is asking for your collective wisdom.
 
@@ -337,7 +339,7 @@ Each member who has something meaningful to contribute should speak in character
 // ── AI text analysis ──────────────────────────────────────────────────────────
 
 async function analyzeText(text: string, sourceLabel: string) {
-  const aiResponse = await openai.responses.create({
+  const aiResponse = await getOpenAI().responses.create({
     model: "gpt-5.4",
     instructions: "You output only valid JSON. No markdown fences.",
     input: `You are analyzing content for relevance to Scott Somers and the Next Chapter Homeschool Outpost operation.
