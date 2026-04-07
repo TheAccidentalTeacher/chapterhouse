@@ -500,5 +500,3 @@ function GenerateButton({
     </button>
   );
 }
-  );
-}
