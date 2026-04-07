@@ -2,6 +2,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { CheckCircle, X, ChevronDown, ChevronUp } from "lucide-react";
+import { logEvent, loggedFetch } from "@/lib/debug-log";
+import { Tooltip } from "@/components/tooltip";
 
 interface SocialPost {
   id: string;
@@ -54,7 +56,7 @@ export function SocialReviewQueue() {
   const [openImage, setOpenImage] = useState<string | null>(null);
 
   const loadPosts = useCallback(async () => {
-    const res = await fetch("/api/social/posts?status=pending_review");
+    const res = await loggedFetch("/api/social/posts?status=pending_review", undefined, "Social · Load pending posts");
     if (res.ok) {
       const data = await res.json() as { posts: SocialPost[] };
       setPosts(data.posts ?? []);
@@ -63,7 +65,7 @@ export function SocialReviewQueue() {
   }, []);
 
   const loadAccounts = useCallback(async () => {
-    const res = await fetch("/api/social/accounts");
+    const res = await loggedFetch("/api/social/accounts", undefined, "Social · Load accounts (queue)");
     if (res.ok) {
       const data = await res.json() as { accounts: SocialAccount[] };
       setAccounts(data.accounts ?? []);
@@ -82,7 +84,7 @@ export function SocialReviewQueue() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "social_posts" },
-        () => { loadPosts(); }
+        () => { logEvent("realtime", "Social · Realtime post change"); loadPosts(); }
       )
       .subscribe();
 
@@ -92,15 +94,17 @@ export function SocialReviewQueue() {
   const handleBlurEdit = async (postId: string) => {
     const newText = editingText[postId];
     if (!newText) return;
-    await fetch(`/api/social/posts/${postId}`, {
+    logEvent("click", "Social · Edit post text", { postId });
+    await loggedFetch(`/api/social/posts/${postId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ post_text: newText }),
-    });
+    }, "Social · Save post edit");
   };
 
   const handleReject = async (postId: string) => {
-    await fetch(`/api/social/posts/${postId}`, { method: "DELETE" });
+    logEvent("click", "Social · Reject post", { postId });
+    await loggedFetch(`/api/social/posts/${postId}`, { method: "DELETE" }, "Social · Reject post");
     setPosts((prev) => prev.filter((p) => p.id !== postId));
   };
 
@@ -108,11 +112,12 @@ export function SocialReviewQueue() {
     const form = approveForm[postId];
     if (!form?.scheduled_for || !form?.buffer_profile_id) return;
     setApproving(postId);
-    const res = await fetch(`/api/social/posts/${postId}/approve`, {
+    logEvent("click", "Social · Approve post", { postId, scheduled_for: form.scheduled_for });
+    const res = await loggedFetch(`/api/social/posts/${postId}/approve`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
-    });
+    }, "Social · Approve post");
     setApproving(null);
     if (res.ok) {
       setPosts((prev) => prev.filter((p) => p.id !== postId));
@@ -190,13 +195,15 @@ export function SocialReviewQueue() {
                   {/* Image brief collapsible */}
                   {post.image_brief && (
                     <div>
-                      <button
-                        onClick={() => setOpenImage(openImage === post.id ? null : post.id)}
-                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-                      >
-                        {openImage === post.id ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                        Image brief
-                      </button>
+                      <Tooltip content="AI-generated description of the ideal image for this post" position="right">
+                        <button
+                          onClick={() => setOpenImage(openImage === post.id ? null : post.id)}
+                          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                        >
+                          {openImage === post.id ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                          Image brief
+                        </button>
+                      </Tooltip>
                       {openImage === post.id && (
                         <p className="text-xs text-muted-foreground mt-1 pl-4 border-l border-border/40 italic">
                           {post.image_brief}
@@ -207,49 +214,57 @@ export function SocialReviewQueue() {
 
                   {/* Approve form */}
                   <div className="flex flex-wrap items-end gap-2 pt-1 border-t border-border/30">
-                    <input
-                      type="datetime-local"
-                      className="bg-background border border-border/50 rounded-md text-xs px-2 py-1 text-foreground"
-                      value={approve?.scheduled_for ?? ""}
-                      onChange={(e) =>
-                        setApproveForm((prev) => ({
-                          ...prev,
-                          [post.id]: { ...prev[post.id], scheduled_for: e.target.value },
-                        }))
-                      }
-                    />
-                    <select
-                      className="bg-background border border-border/50 rounded-md text-xs px-2 py-1 text-foreground"
-                      value={approve?.buffer_profile_id ?? ""}
-                      onChange={(e) =>
-                        setApproveForm((prev) => ({
-                          ...prev,
-                          [post.id]: { ...prev[post.id], buffer_profile_id: e.target.value },
-                        }))
-                      }
-                    >
-                      <option value="">Select Buffer account...</option>
-                      {accountsForPlatform.map((a) => (
-                        <option key={a.buffer_profile_id} value={a.buffer_profile_id}>
-                          {a.display_name}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={() => handleApprove(post.id)}
-                      disabled={isApprovingThis || !approve?.scheduled_for || !approve?.buffer_profile_id}
-                      className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-md bg-green-600/20 text-green-300 hover:bg-green-600/30 disabled:opacity-40 transition"
-                    >
-                      <CheckCircle size={12} />
-                      {isApprovingThis ? "Scheduling..." : "Approve"}
-                    </button>
-                    <button
-                      onClick={() => handleReject(post.id)}
-                      className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-md bg-red-600/15 text-red-400 hover:bg-red-600/25 transition"
-                    >
-                      <X size={12} />
-                      Reject
-                    </button>
+                    <Tooltip content="Pick a date and time for publishing" position="top">
+                      <input
+                        type="datetime-local"
+                        className="bg-background border border-border/50 rounded-md text-xs px-2 py-1 text-foreground"
+                        value={approve?.scheduled_for ?? ""}
+                        onChange={(e) =>
+                          setApproveForm((prev) => ({
+                            ...prev,
+                            [post.id]: { ...prev[post.id], scheduled_for: e.target.value },
+                          }))
+                        }
+                      />
+                    </Tooltip>
+                    <Tooltip content="Route to a Buffer channel for this platform" position="top">
+                      <select
+                        className="bg-background border border-border/50 rounded-md text-xs px-2 py-1 text-foreground"
+                        value={approve?.buffer_profile_id ?? ""}
+                        onChange={(e) =>
+                          setApproveForm((prev) => ({
+                            ...prev,
+                            [post.id]: { ...prev[post.id], buffer_profile_id: e.target.value },
+                          }))
+                        }
+                      >
+                        <option value="">Select Buffer account...</option>
+                        {accountsForPlatform.map((a) => (
+                          <option key={a.buffer_profile_id} value={a.buffer_profile_id}>
+                            {a.display_name}
+                          </option>
+                        ))}
+                      </select>
+                    </Tooltip>
+                    <Tooltip content="Schedule to Buffer and move to published" position="top">
+                      <button
+                        onClick={() => handleApprove(post.id)}
+                        disabled={isApprovingThis || !approve?.scheduled_for || !approve?.buffer_profile_id}
+                        className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-md bg-green-600/20 text-green-300 hover:bg-green-600/30 disabled:opacity-40 transition"
+                      >
+                        <CheckCircle size={12} />
+                        {isApprovingThis ? "Scheduling..." : "Approve"}
+                      </button>
+                    </Tooltip>
+                    <Tooltip content="Permanently reject this post" position="top">
+                      <button
+                        onClick={() => handleReject(post.id)}
+                        className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-md bg-red-600/15 text-red-400 hover:bg-red-600/25 transition"
+                      >
+                        <X size={12} />
+                        Reject
+                      </button>
+                    </Tooltip>
                   </div>
                 </div>
               );

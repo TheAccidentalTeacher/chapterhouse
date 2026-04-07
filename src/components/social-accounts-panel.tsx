@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { RefreshCw, Plus, Trash2, ChevronDown, ChevronUp, Rss } from "lucide-react";
+import { logEvent, loggedFetch } from "@/lib/debug-log";
+import { Tooltip } from "@/components/tooltip";
 
 interface SocialAccount {
   id: string;
@@ -60,7 +62,7 @@ export function SocialAccountsPanel() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const loadAccounts = async () => {
-    const res = await fetch("/api/social/accounts");
+    const res = await loggedFetch("/api/social/accounts", undefined, "Social · Load accounts");
     if (res.ok) {
       const data = await res.json() as { accounts: SocialAccount[] };
       setAccounts(data.accounts ?? []);
@@ -73,7 +75,8 @@ export function SocialAccountsPanel() {
   const handleSync = async () => {
     setSyncing(true);
     setSyncError(null);
-    const res = await fetch("/api/social/accounts/sync", { method: "POST" });
+    logEvent("click", "Social · Sync Buffer clicked");
+      const res = await loggedFetch("/api/social/accounts/sync", { method: "POST" }, "Social · Sync Buffer profiles");
     setSyncing(false);
     if (res.ok) {
       const data = await res.json() as { profiles: BufferProfile[] };
@@ -86,11 +89,12 @@ export function SocialAccountsPanel() {
   const handleAddAccount = async () => {
     if (!form.buffer_profile_id || !form.display_name) return;
     setSaving(true);
-    const res = await fetch("/api/social/accounts", {
+    logEvent("click", "Social · Add account", { brand: form.brand, platform: form.platform });
+    const res = await loggedFetch("/api/social/accounts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
-    });
+    }, "Social · Add account");
     setSaving(false);
     if (res.ok) {
       setForm({ brand: "ncho", platform: "facebook", buffer_profile_id: "", display_name: "" });
@@ -102,7 +106,8 @@ export function SocialAccountsPanel() {
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);
-    await fetch(`/api/social/accounts?id=${id}`, { method: "DELETE" });
+    logEvent("click", "Social · Delete account", { id });
+    await loggedFetch(`/api/social/accounts?id=${id}`, { method: "DELETE" }, "Social · Delete account");
     setDeletingId(null);
     loadAccounts();
   };
@@ -131,14 +136,16 @@ export function SocialAccountsPanel() {
               <span className="ml-2 text-xs font-normal text-muted-foreground">({accounts.length})</span>
             )}
           </h3>
-          <button
-            onClick={() => setShowAddForm((v) => !v)}
-            className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg bg-accent/15 text-accent hover:bg-accent/25 transition"
-          >
-            <Plus size={11} />
-            Add channel
-            {showAddForm ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-          </button>
+          <Tooltip content="Map a new Buffer channel to a brand" position="left">
+            <button
+              onClick={() => setShowAddForm((v) => !v)}
+              className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg bg-accent/15 text-accent hover:bg-accent/25 transition"
+            >
+              <Plus size={11} />
+              Add channel
+              {showAddForm ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+            </button>
+          </Tooltip>
         </div>
 
         {accounts.length === 0 && !showAddForm && (
@@ -162,17 +169,18 @@ export function SocialAccountsPanel() {
                 <span className="font-mono text-[10px] text-muted-foreground/60 truncate max-w-[140px] hidden sm:block">
                   {a.buffer_profile_id}
                 </span>
-                <button
-                  onClick={() => handleDelete(a.id)}
-                  disabled={deletingId === a.id}
-                  className="opacity-0 group-hover:opacity-100 text-muted-foreground/50 hover:text-red-400 disabled:opacity-30 transition ml-1 shrink-0"
-                  title="Remove mapping"
-                >
-                  {deletingId === a.id
-                    ? <RefreshCw size={13} className="animate-spin" />
-                    : <Trash2 size={13} />
-                  }
-                </button>
+                <Tooltip content="Remove this channel mapping" position="left">
+                  <button
+                    onClick={() => handleDelete(a.id)}
+                    disabled={deletingId === a.id}
+                    className="opacity-0 group-hover:opacity-100 text-muted-foreground/50 hover:text-red-400 disabled:opacity-30 transition ml-1 shrink-0"
+                  >
+                    {deletingId === a.id
+                      ? <RefreshCw size={13} className="animate-spin" />
+                      : <Trash2 size={13} />
+                    }
+                  </button>
+                </Tooltip>
               </div>
             ))}
           </div>
@@ -189,14 +197,16 @@ export function SocialAccountsPanel() {
             <p className="text-xs text-muted-foreground mb-2">
               Step 1 — Sync your Buffer channels to get the profile ID, then click a row to auto-fill below.
             </p>
-            <button
-              onClick={handleSync}
-              disabled={syncing}
-              className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg bg-accent/15 text-accent hover:bg-accent/25 disabled:opacity-40 transition"
-            >
-              <RefreshCw size={12} className={syncing ? "animate-spin" : ""} />
-              {syncing ? "Fetching..." : "Sync from Buffer"}
-            </button>
+            <Tooltip content="Fetch latest channels from your Buffer account" position="right">
+              <button
+                onClick={handleSync}
+                disabled={syncing}
+                className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg bg-accent/15 text-accent hover:bg-accent/25 disabled:opacity-40 transition"
+              >
+                <RefreshCw size={12} className={syncing ? "animate-spin" : ""} />
+                {syncing ? "Fetching..." : "Sync from Buffer"}
+              </button>
+            </Tooltip>
             {syncError && <p className="text-xs text-red-400 mt-2">{syncError}</p>}
 
             {profiles.length > 0 && (
@@ -282,14 +292,16 @@ export function SocialAccountsPanel() {
                 />
               </div>
             </div>
-            <button
-              onClick={handleAddAccount}
-              disabled={saving || !form.buffer_profile_id || !form.display_name}
-              className="mt-3 flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg bg-accent/15 text-accent hover:bg-accent/25 disabled:opacity-40 transition"
-            >
-              <Plus size={12} />
-              {saving ? "Saving..." : "Save mapping"}
-            </button>
+            <Tooltip content="Save this brand–channel mapping to the database" position="right">
+              <button
+                onClick={handleAddAccount}
+                disabled={saving || !form.buffer_profile_id || !form.display_name}
+                className="mt-3 flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg bg-accent/15 text-accent hover:bg-accent/25 disabled:opacity-40 transition"
+              >
+                <Plus size={12} />
+                {saving ? "Saving..." : "Save mapping"}
+              </button>
+            </Tooltip>
           </div>
         </section>
       )}

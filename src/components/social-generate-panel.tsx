@@ -15,6 +15,8 @@ import {
   Loader2,
   CheckCircle2,
 } from "lucide-react";
+import { logEvent, loggedFetch } from "@/lib/debug-log";
+import { Tooltip } from "@/components/tooltip";
 
 // ─── Brand Configuration ───────────────────────────────
 
@@ -206,7 +208,8 @@ export function SocialGeneratePanel({ onGenerated }: Props) {
     setError(null);
 
     try {
-      const res = await fetch("/api/social/generate", {
+      logEvent("click", "Social · Generate submitted", { brands: selectedBrands, platforms: selectedPlatforms, count: countPerCombo });
+      const res = await loggedFetch("/api/social/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -215,7 +218,7 @@ export function SocialGeneratePanel({ onGenerated }: Props) {
           count_per_combo: countPerCombo,
           topic_seed: topicSeed || undefined,
         }),
-      });
+      }, "Social · Generate posts");
 
       if (!res.ok) {
         const err = (await res.json()) as { error?: string };
@@ -341,23 +344,27 @@ export function SocialGeneratePanel({ onGenerated }: Props) {
           Posts per combination
         </p>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setCountPerCombo(Math.max(1, countPerCombo - 1))}
-            disabled={countPerCombo <= 1}
-            className="w-9 h-9 rounded-lg border border-border/50 flex items-center justify-center text-muted-foreground hover:border-accent/50 hover:text-foreground disabled:opacity-30 transition"
-          >
-            <Minus size={14} />
-          </button>
+          <Tooltip content="Fewer posts per combo" position="top">
+            <button
+              onClick={() => setCountPerCombo(Math.max(1, countPerCombo - 1))}
+              disabled={countPerCombo <= 1}
+              className="w-9 h-9 rounded-lg border border-border/50 flex items-center justify-center text-muted-foreground hover:border-accent/50 hover:text-foreground disabled:opacity-30 transition"
+            >
+              <Minus size={14} />
+            </button>
+          </Tooltip>
           <span className="text-2xl font-bold text-foreground w-8 text-center tabular-nums">
             {countPerCombo}
           </span>
-          <button
-            onClick={() => setCountPerCombo(Math.min(5, countPerCombo + 1))}
-            disabled={countPerCombo >= 5}
-            className="w-9 h-9 rounded-lg border border-border/50 flex items-center justify-center text-muted-foreground hover:border-accent/50 hover:text-foreground disabled:opacity-30 transition"
-          >
-            <Plus size={14} />
-          </button>
+          <Tooltip content="More posts per combo" position="top">
+            <button
+              onClick={() => setCountPerCombo(Math.min(5, countPerCombo + 1))}
+              disabled={countPerCombo >= 5}
+              className="w-9 h-9 rounded-lg border border-border/50 flex items-center justify-center text-muted-foreground hover:border-accent/50 hover:text-foreground disabled:opacity-30 transition"
+            >
+              <Plus size={14} />
+            </button>
+          </Tooltip>
           <span className="text-xs text-muted-foreground ml-1">
             per brand × platform
           </span>
@@ -381,13 +388,14 @@ export function SocialGeneratePanel({ onGenerated }: Props) {
         />
         <div className="flex flex-wrap gap-1.5 mt-2">
           {TOPIC_SUGGESTIONS.map((s) => (
-            <button
-              key={s}
-              onClick={() => appendTopic(s)}
-              className="text-[11px] px-2.5 py-1 rounded-full border border-border/30 text-muted-foreground hover:border-accent/30 hover:text-foreground transition"
-            >
-              {s}
-            </button>
+            <Tooltip key={s} content={`Add "${s}" to topic seed`} position="top">
+              <button
+                onClick={() => appendTopic(s)}
+                className="text-[11px] px-2.5 py-1 rounded-full border border-border/30 text-muted-foreground hover:border-accent/30 hover:text-foreground transition"
+              >
+                {s}
+              </button>
+            </Tooltip>
           ))}
         </div>
       </section>
@@ -481,22 +489,24 @@ function GenerateButton({
   onClick: () => void;
 }) {
   return (
-    <button
-      onClick={onClick}
-      disabled={loading || disabled}
-      className="w-full flex items-center justify-center gap-2.5 px-5 py-3.5 text-sm font-semibold rounded-xl bg-accent text-zinc-900 disabled:opacity-30 hover:opacity-90 transition-all duration-200"
-    >
-      {loading ? (
-        <>
-          <Loader2 size={16} className="animate-spin" />
-          <span>Generating {total} posts…</span>
-        </>
-      ) : (
-        <>
-          <Sparkles size={16} />
-          <span>Generate {total > 0 ? `${total} Posts` : "Posts"}</span>
-        </>
-      )}
-    </button>
+    <Tooltip content="Send selected brands × platforms to Claude for content generation" position="top">
+      <button
+        onClick={onClick}
+        disabled={loading || disabled}
+        className="w-full flex items-center justify-center gap-2.5 px-5 py-3.5 text-sm font-semibold rounded-xl bg-accent text-zinc-900 disabled:opacity-30 hover:opacity-90 transition-all duration-200"
+      >
+        {loading ? (
+          <>
+            <Loader2 size={16} className="animate-spin" />
+            <span>Generating {total} posts…</span>
+          </>
+        ) : (
+          <>
+            <Sparkles size={16} />
+            <span>Generate {total > 0 ? `${total} Posts` : "Posts"}</span>
+          </>
+        )}
+      </button>
+    </Tooltip>
   );
 }
