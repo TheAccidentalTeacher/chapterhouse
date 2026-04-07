@@ -24,22 +24,25 @@ interface SocialAccount {
 const BRAND_LABEL: Record<string, string> = {
   ncho: "NCHO",
   somersschool: "SomersSchool",
+  alana_terry: "Alana Terry",
   scott_personal: "Scott",
 };
 
 const BRAND_COLOR: Record<string, string> = {
   ncho: "bg-amber-500/20 text-amber-300",
   somersschool: "bg-red-500/20 text-red-300",
+  alana_terry: "bg-rose-500/20 text-rose-300",
   scott_personal: "bg-slate-500/20 text-slate-300",
 };
 
 const PLATFORM_COLOR: Record<string, string> = {
   facebook: "bg-sky-500/20 text-sky-300",
   instagram: "bg-pink-500/20 text-pink-300",
-  linkedin: "bg-sky-500/20 text-sky-300",
+  pinterest: "bg-red-600/20 text-red-400",
+  linkedin: "bg-blue-500/20 text-blue-300",
 };
 
-const BRAND_ORDER = ["ncho", "somersschool", "scott_personal"];
+const BRAND_ORDER = ["ncho", "somersschool", "alana_terry", "scott_personal"];
 
 export function SocialReviewQueue() {
   const [posts, setPosts] = useState<SocialPost[]>([]);
