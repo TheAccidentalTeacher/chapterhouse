@@ -69,15 +69,16 @@ export async function POST() {
     messages: [
       {
         role: "user",
-        content: `Based on these inputs about Scott Somers' current work, generate up to ${slotsAvailable} specific, actionable working items for today. Be concrete — no vague goals. Each item should be something that can be done in one sitting.
+        content: `Generate up to ${slotsAvailable} action items from this context. Rules:
+- MAX 8 WORDS per item. Shorter is better.
+- Start with an action verb (Ship, Wire, Fix, Write, Build, Test, Add, Set up, Draft, Review).
+- No descriptions, explanations, or qualifiers. Just the task.
+- Tag each with its source in brackets.
 
-Tag each item with its primary source: folio, brief, or dream.
-
-Format: one item per line, starting with the source tag in brackets.
-Example:
-[folio] Build SomersSchool pricing page
-[brief] Write "Robot Teacher" blog post
-[dream] Set up Gimli reference illustration pipeline
+Format — one per line:
+[folio] Wire Langfuse into Chapterhouse
+[brief] Fix mobile loading state
+[dream] Commission Gimli illustration
 
 ${contextText}`,
       },
