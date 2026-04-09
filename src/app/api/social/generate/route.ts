@@ -4,7 +4,7 @@ import { z } from "zod";
 
 const generateSchema = z.object({
   brands: z.array(z.enum(["ncho", "somersschool", "scott_personal"])).min(1),
-  platforms: z.array(z.enum(["facebook", "instagram", "linkedin", "pinterest"])).min(1),
+  platforms: z.array(z.enum(["facebook", "instagram", "linkedin", "pinterest", "youtube"])).min(1),
   count_per_combo: z.number().int().min(1).max(7).default(3),
   topic_seed: z.string().optional(),
   job_id: z.string().uuid().optional(),

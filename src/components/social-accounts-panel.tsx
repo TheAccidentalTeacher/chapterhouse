@@ -20,7 +20,7 @@ interface BufferProfile {
 }
 
 const BRANDS = ["ncho", "somersschool", "scott_personal"];
-const PLATFORMS = ["facebook", "instagram", "pinterest", "linkedin"];
+const PLATFORMS = ["facebook", "instagram", "pinterest", "linkedin", "youtube"];
 
 const BRAND_LABEL: Record<string, string> = {
   ncho: "NCHO",
