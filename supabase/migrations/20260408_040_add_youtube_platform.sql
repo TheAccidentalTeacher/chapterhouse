@@ -1,4 +1,4 @@
--- Migration 039: Add 'youtube' as a valid platform for social accounts and posts
+-- Migration 040: Add 'youtube' as a valid platform for social accounts and posts
 --
 -- Scott confirmed April 8, 2026: TheAccidentalTeacher YouTube channel is connected
 -- in Buffer and maps to scott_personal + youtube.
