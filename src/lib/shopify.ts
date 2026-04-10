@@ -266,6 +266,143 @@ export async function fetchShopInfo(): Promise<ShopInfo> {
   }`);
 }
 
+// ── Blog queries ─────────────────────────────────────────────
+
+export interface ShopifyBlog {
+  id: string;
+  title: string;
+  handle: string;
+}
+
+export interface ShopifyArticle {
+  id: string;
+  title: string;
+  handle: string;
+  body: string;
+  summary: string | null;
+  tags: string[];
+  publishedAt: string | null;
+  createdAt: string;
+  blog: { id: string; title: string };
+  seo: { title: string | null; description: string | null };
+  image: { url: string; altText: string | null } | null;
+}
+
+/**
+ * Fetch all blogs on the store. NCHO typically has one ("News").
+ */
+export async function fetchBlogs(): Promise<ShopifyBlog[]> {
+  const data = await gql<{ blogs: { edges: Array<{ node: ShopifyBlog }> } }>(`query {
+    blogs(first: 10) {
+      edges { node { id title handle } }
+    }
+  }`);
+  return data.blogs.edges.map((e) => e.node);
+}
+
+/**
+ * Fetch articles from a specific blog.
+ */
+export async function fetchArticles(blogId: string, limit = 50): Promise<ShopifyArticle[]> {
+  const data = await gql<{ blog: { articles: { edges: Array<{ node: ShopifyArticle }> } } | null }>(`query($id: ID!) {
+    blog(id: $id) {
+      articles(first: ${limit}, sortKey: PUBLISHED_AT, reverse: true) {
+        edges {
+          node {
+            id title handle body summary tags publishedAt createdAt
+            blog { id title }
+            seo { title description }
+            image { url altText }
+          }
+        }
+      }
+    }
+  }`, { id: blogId });
+  return data.blog?.articles.edges.map((e) => e.node) ?? [];
+}
+
+export interface CreateArticleInput {
+  title: string;
+  body: string;
+  summary?: string;
+  tags?: string[];
+  seoTitle?: string;
+  seoDescription?: string;
+  isPublished?: boolean;
+}
+
+interface ArticleCreateResult {
+  articleCreate: {
+    article: { id: string; handle: string; title: string; onlineStoreUrl: string | null } | null;
+    userErrors: Array<{ field: string[]; message: string }>;
+  };
+}
+
+/**
+ * Create an article on the NCHO Shopify blog.
+ * Auto-fetches the first blog ID if not provided.
+ */
+export async function createArticle(
+  input: CreateArticleInput,
+  blogId?: string,
+): Promise<{ articleId: string; handle: string; url: string | null }> {
+  // Auto-fetch blog ID
+  if (!blogId) {
+    const blogs = await fetchBlogs();
+    if (blogs.length === 0) throw new Error("No blogs found on Shopify store");
+    blogId = blogs[0].id;
+  }
+
+  const mutation = `mutation articleCreate($article: ArticleCreateInput!) {
+    articleCreate(article: $article) {
+      article {
+        id
+        handle
+        title
+        onlineStoreUrl
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }`;
+
+  const variables = {
+    article: {
+      blogId,
+      title: input.title,
+      body: input.body,
+      summary: input.summary || undefined,
+      tags: input.tags || [],
+      author: { name: "Next Chapter Homeschool Outpost" },
+      isPublished: input.isPublished ?? false,
+      seo: (input.seoTitle || input.seoDescription)
+        ? { title: input.seoTitle, description: input.seoDescription }
+        : undefined,
+    },
+  };
+
+  const result = await gql<ArticleCreateResult>(mutation, variables);
+
+  if (result.articleCreate.userErrors.length > 0) {
+    const errMsg = result.articleCreate.userErrors
+      .map((e) => `${e.field.join(".")}: ${e.message}`)
+      .join("; ");
+    throw new Error(`Shopify articleCreate errors: ${errMsg}`);
+  }
+
+  if (!result.articleCreate.article) {
+    throw new Error("Shopify articleCreate returned no article and no errors");
+  }
+
+  return {
+    articleId: result.articleCreate.article.id,
+    handle: result.articleCreate.article.handle,
+    url: result.articleCreate.article.onlineStoreUrl,
+  };
+}
+
 // ── Quick health check ───────────────────────────────────────
 
 export async function shopifyHealthCheck(): Promise<{ ok: boolean; shopName?: string; error?: string }> {
