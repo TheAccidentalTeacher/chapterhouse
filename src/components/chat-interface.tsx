@@ -819,18 +819,11 @@ export function ChatInterface() {
           </button>
         </div>
         {/* Message area */}
-        <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">
-          {isEmpty ? (
-            <div className="flex h-full gap-4">
-              <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/40 bg-card/60 p-4">
-                <FocusBoardPanel />
-              </div>
-              <div className="flex w-72 shrink-0 flex-col rounded-2xl border border-border/40 bg-card/60 p-4">
-                <ScratchpadPanel />
-              </div>
-            </div>
-          ) : (
-            <div className="mx-auto max-w-3xl space-y-6">
+        <div className="flex flex-1 gap-4 overflow-hidden px-4 py-6 sm:px-6 lg:px-8">
+          {/* Left: chat messages */}
+          <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
+            {!isEmpty && (
+            <div className="mx-auto w-full max-w-3xl space-y-6">
               {/* Council members bar — shows when council is active */}
               {councilMode && activeCouncilMembers.length > 0 && isStreaming && (
                 <div className="flex items-center gap-2 rounded-2xl border border-border/40 bg-card/60 px-4 py-2.5">
@@ -1004,7 +997,18 @@ export function ChatInterface() {
               )}
               <div ref={bottomRef} />
             </div>
-          )}
+            )}
+          </div>
+
+          {/* Right: always-visible panels */}
+          <div className="flex w-72 shrink-0 flex-col gap-4">
+            <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/40 bg-card/60 p-4">
+              <FocusBoardPanel />
+            </div>
+            <div className="flex shrink-0 flex-col rounded-2xl border border-border/40 bg-card/60 p-4">
+              <ScratchpadPanel />
+            </div>
+          </div>
         </div>
 
         {/* Input area */}
