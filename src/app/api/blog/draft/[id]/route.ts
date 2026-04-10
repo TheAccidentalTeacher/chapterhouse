@@ -59,7 +59,7 @@ export async function POST(
       productContext = referenced
         .map(
           (p) =>
-            `Product: "${p.title}" by ${p.vendor}\nHandle: ${p.handle}\nPrice: $${p.variants.edges[0]?.node.price || "N/A"}\nTags: ${p.tags.join(", ")}\nDescription: ${p.description?.slice(0, 200) || "N/A"}`,
+            `Product: "${p.title}" by ${p.vendor}\nHandle: ${p.handle}\nPrice: $${p.variants.edges[0]?.node.price || "N/A"}\nTags: ${p.tags.join(", ")}\nDescription: ${p.descriptionHtml?.replace(/<[^>]*>/g, "").slice(0, 200) || "N/A"}`,
         )
         .join("\n\n");
     } catch {
