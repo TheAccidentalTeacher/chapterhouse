@@ -821,26 +821,38 @@ export function ChatInterface() {
         {/* Message area */}
         <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">
           {isEmpty ? (
-            <div className="flex h-full flex-col items-center justify-center gap-6">
-              <div className="flex flex-col items-center gap-3 text-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/15">
-                  <Brain className="h-6 w-6 text-accent" />
+            <div className="flex h-full flex-col gap-4">
+              {/* ── Chat Hero — the star ──────────────────────────────────── */}
+              <div className="flex flex-1 flex-col items-center justify-center gap-6">
+                <div className="flex flex-col items-center gap-3 text-center">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/15">
+                    <Brain className="h-6 w-6 text-accent" />
+                  </div>
+                  <div>
+                    <h1 className="text-xl font-semibold text-foreground">Chapterhouse</h1>
+                    <p className="mt-1 text-sm text-muted">Research, briefs, documents, and decisions in one place.</p>
+                  </div>
                 </div>
-                <div>
-                  <h1 className="text-xl font-semibold text-foreground">Chapterhouse</h1>
-                  <p className="mt-1 text-sm text-muted">Research, briefs, documents, and decisions in one place.</p>
+                <div className="flex max-w-xl flex-wrap justify-center gap-2">
+                  {SUGGESTED_PROMPTS.map((prompt) => (
+                    <button
+                      key={prompt}
+                      onClick={() => sendMessage(prompt)}
+                      className="rounded-2xl border border-border/70 bg-card/60 px-4 py-2 text-xs text-muted transition hover:border-accent/40 hover:text-foreground"
+                    >
+                      {prompt}
+                    </button>
+                  ))}
                 </div>
               </div>
-              <div className="flex max-w-xl flex-wrap justify-center gap-2">
-                {SUGGESTED_PROMPTS.map((prompt) => (
-                  <button
-                    key={prompt}
-                    onClick={() => sendMessage(prompt)}
-                    className="rounded-2xl border border-border/70 bg-card/60 px-4 py-2 text-xs text-muted transition hover:border-accent/40 hover:text-foreground"
-                  >
-                    {prompt}
-                  </button>
-                ))}
+              {/* ── Workspace Panels — secondary ─────────────────────────── */}
+              <div className="flex h-80 shrink-0 gap-4">
+                <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/40 bg-card/60 p-4">
+                  <FocusBoardPanel />
+                </div>
+                <div className="flex w-72 shrink-0 flex-col rounded-2xl border border-border/40 bg-card/60 p-4">
+                  <ScratchpadPanel />
+                </div>
               </div>
             </div>
           ) : (
