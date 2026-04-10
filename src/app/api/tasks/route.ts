@@ -29,9 +29,13 @@ export async function POST(request: Request) {
       .select()
       .single();
 
-    if (error) return Response.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error("[tasks POST] Supabase error:", error.message, error.code, error.details);
+      return Response.json({ error: error.message }, { status: 500 });
+    }
     return Response.json({ task: data }, { status: 201 });
   } catch (e) {
+    console.error("[tasks POST] Unexpected error:", e);
     return Response.json({ error: String(e) }, { status: 500 });
   }
 }

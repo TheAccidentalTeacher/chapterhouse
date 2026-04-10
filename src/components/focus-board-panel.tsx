@@ -468,15 +468,20 @@ export function FocusBoardPanel() {
     const title = newTitle.trim();
     if (!title) return;
     try {
-      await fetch("/api/tasks", {
+      const res = await fetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title }),
       });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setError(body.error ?? `Failed to add task (${res.status})`);
+        return;
+      }
       setNewTitle("");
       await fetchTasks();
     } catch {
-      // silent
+      setError("Failed to add task");
     }
   };
 
