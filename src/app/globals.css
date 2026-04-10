@@ -1,20 +1,23 @@
 @import "tailwindcss";
 
+/* ─── DAYTIME GOLD ─────────────────────────────────────────────────────────── */
+/* Bright, vibrant gold workspace. Cards float above on warm parchment.         */
+/* Espresso accent pops hard against the gold. Night mode below.                */
 :root {
-  --background: #faf4e2;
-  --foreground: #1a1200;
-  --card: rgba(255, 250, 234, 0.78);
-  --card-foreground: #1a1200;
-  --border: rgba(140, 96, 4, 0.18);
-  --muted: #7a6428;
-  --muted-surface: rgba(140, 96, 4, 0.07);
-  --accent: #8B5E00;
-  --accent-foreground: #fffbf0;
-  --success: #2d8659;
-  --warning: #a76516;
-  --danger: #c4233c;
-  --sidebar: rgba(250, 240, 218, 0.90);
-  --rail: rgba(250, 243, 224, 0.65);
+  --background: #E8A800;                    /* vivid amber gold */
+  --foreground: #1A0800;                    /* warm near-black espresso */
+  --card: rgba(255, 246, 190, 0.90);       /* parchment — lifts above the gold */
+  --card-foreground: #1A0800;
+  --border: rgba(100, 60, 0, 0.20);
+  --muted: #7A5000;                         /* dark amber secondary text */
+  --muted-surface: rgba(100, 60, 0, 0.10);
+  --accent: #1A0800;                        /* espresso — max contrast on gold */
+  --accent-foreground: #FFE566;             /* bright warm gold on espresso */
+  --success: #1A6036;
+  --warning: #7A3A00;
+  --danger: #B01C28;
+  --sidebar: #C48700;                       /* deeper gold sidebar */
+  --rail: #D49200;                          /* medium gold rail */
 }
 
 @theme inline {
@@ -36,22 +39,24 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* ─── NIGHT GOLD ────────────────────────────────────────────────────────────── */
+/* Deep amber-night. Same gold family — dark bg, glowing gold text/accents.     */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0e0b02;
-    --foreground: #f0e8cc;
-    --card: rgba(22, 18, 4, 0.85);
-    --card-foreground: #f0e8cc;
-    --border: rgba(210, 168, 18, 0.14);
-    --muted: #a89868;
-    --muted-surface: rgba(210, 168, 18, 0.07);
-    --accent: #D4A80E;
-    --accent-foreground: #0f0b00;
+    --background: #2A1A00;                    /* deep night amber */
+    --foreground: #F5D667;                    /* glowing warm gold text */
+    --card: rgba(44, 28, 0, 0.90);           /* very dark amber card */
+    --card-foreground: #F5D667;
+    --border: rgba(210, 162, 10, 0.15);
+    --muted: #A88030;
+    --muted-surface: rgba(210, 162, 10, 0.08);
+    --accent: #D4A80E;                        /* bright gold accent on dark */
+    --accent-foreground: #1A0800;
     --success: #54c59d;
     --warning: #ffbf70;
     --danger: #ef4458;
-    --sidebar: rgba(12, 9, 2, 0.92);
-    --rail: rgba(14, 11, 2, 0.75);
+    --sidebar: rgba(20, 12, 0, 0.95);        /* near-black amber sidebar */
+    --rail: rgba(28, 18, 0, 0.80);
   }
 }
 

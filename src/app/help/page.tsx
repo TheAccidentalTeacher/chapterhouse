@@ -111,7 +111,7 @@ export default function HelpPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#0e0b02]">
+    <div className="flex min-h-screen bg-background">
       {/* Sidebar */}
       <aside className="w-64 border-r border-[#2d2d3d] overflow-y-auto sticky top-0 h-screen bg-[#0a0a0f] p-6">
         <div className="mb-8 pb-6 border-b border-[#2d2d3d]">

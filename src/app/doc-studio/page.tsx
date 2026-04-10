@@ -267,7 +267,7 @@ export default function DocStudioPage() {
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex h-full min-h-0" style={{ background: "#0e0b02" }}>
+    <div className="flex h-full min-h-0 bg-background">
       {/* ── Left sidebar: type picker ───────────────────────────────────────── */}
       <aside className="w-64 flex-none border-r border-zinc-800 flex flex-col overflow-y-auto">
         <div className="px-4 pt-5 pb-3">
