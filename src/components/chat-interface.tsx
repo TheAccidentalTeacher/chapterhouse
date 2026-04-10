@@ -823,7 +823,7 @@ export function ChatInterface() {
           {isEmpty ? (
             <div className="flex h-full gap-4 pb-4">
               {/* Focus Board — merged items + tasks */}
-              <div className="flex flex-1 flex-col rounded-2xl border border-border/40 bg-card/60 p-4">
+              <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/40 bg-card/60 p-4">
                 <FocusBoardPanel />
               </div>
               {/* Scratchpad */}

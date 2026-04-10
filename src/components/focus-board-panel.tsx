@@ -115,7 +115,7 @@ function SortableItem({
     <li
       ref={setNodeRef}
       style={style}
-      className="group flex items-center gap-1 rounded px-1 py-0.5 transition-opacity duration-300 hover:bg-card/60"
+      className="group flex min-w-0 items-center gap-1 rounded px-1 py-0.5 transition-opacity duration-300 hover:bg-card/60"
     >
       {/* Drag handle */}
       <button
@@ -212,7 +212,7 @@ function TaskRow({
 
   return (
     <li>
-      <div className="group flex items-center gap-1.5 rounded px-1 py-0.5 hover:bg-card/60">
+      <div className="group flex min-w-0 items-center gap-1.5 rounded px-1 py-0.5 hover:bg-card/60">
         {/* Expand / add-sub toggle */}
         <button
           onClick={() => {
@@ -489,7 +489,7 @@ export function FocusBoardPanel() {
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-w-0 flex-col overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between pb-1.5">
         <div className="flex items-center gap-1.5">
