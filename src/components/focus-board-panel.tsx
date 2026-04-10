@@ -115,7 +115,7 @@ function SortableItem({
     <li
       ref={setNodeRef}
       style={style}
-      className="group flex min-w-0 items-center gap-1 rounded px-1 py-0.5 transition-opacity duration-300 hover:bg-card/60"
+      className="group flex min-w-0 items-start gap-1 rounded px-1 py-0.5 transition-opacity duration-300 hover:bg-card/60"
     >
       {/* Drag handle */}
       <button
@@ -146,7 +146,7 @@ function SortableItem({
       />
 
       {/* Content */}
-      <span className="flex-1 truncate text-xs leading-tight">
+      <span className="min-w-0 flex-1 break-words text-xs leading-snug">
         {item.content}
       </span>
 
@@ -179,7 +179,7 @@ function SubTaskItem({
           <Check className="h-2 w-2 text-accent" />
         )}
       </button>
-      <span className="truncate text-[10px] text-muted/70">{task.title}</span>
+      <span className="min-w-0 flex-1 break-words text-[10px] text-muted/70">{task.title}</span>
     </li>
   );
 }
@@ -212,7 +212,7 @@ function TaskRow({
 
   return (
     <li>
-      <div className="group flex min-w-0 items-center gap-1.5 rounded px-1 py-0.5 hover:bg-card/60">
+      <div className="group flex min-w-0 items-start gap-1.5 rounded px-1 py-0.5 hover:bg-card/60">
         {/* Expand / add-sub toggle */}
         <button
           onClick={() => {
@@ -251,7 +251,7 @@ function TaskRow({
         />
 
         {/* Title */}
-        <span className="flex-1 truncate text-xs">{task.title}</span>
+        <span className="min-w-0 flex-1 break-words text-xs">{task.title}</span>
 
         {/* Status dot */}
         {STATUS_DOT[task.status] && (
