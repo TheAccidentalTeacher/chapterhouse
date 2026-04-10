@@ -1,50 +1,58 @@
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
 
+const DOCUMENT_TYPE = "scratch_note";
+
+// GET /api/scratch-notes — return the current scratch note content
 export async function GET() {
   const supabase = getSupabaseServiceRoleClient();
-  if (!supabase) return Response.json({ error: "DB not configured" }, { status: 500 });
+  if (!supabase) return Response.json({ content: "" });
 
-  // Single row per user — just grab the first
-  const { data, error } = await supabase
-    .from("scratch_notes")
-    .select("*")
+  const { data } = await supabase
+    .from("context_files")
+    .select("content")
+    .eq("document_type", DOCUMENT_TYPE)
+    .order("created_at", { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
-  if (error && error.code !== "PGRST116") {
-    // PGRST116 = no rows — that's fine, return empty
-    return Response.json({ error: error.message }, { status: 500 });
-  }
-
-  return Response.json(data ?? { content: "" });
+  return Response.json({ content: data?.content ?? "" });
 }
 
+// POST /api/scratch-notes — save scratch note content (upsert single row)
 export async function POST(req: Request) {
-  const supabase = getSupabaseServiceRoleClient();
-  if (!supabase) return Response.json({ error: "DB not configured" }, { status: 500 });
+  try {
+    const body = await req.json();
+    const content: string = body.content ?? "";
 
-  // Get the first user (Scott-only app)
-  const { data: users } = await supabase.auth.admin.listUsers();
-  const userId = users?.users?.[0]?.id;
-  if (!userId) return Response.json({ error: "No user found" }, { status: 500 });
+    const supabase = getSupabaseServiceRoleClient();
+    if (!supabase) return Response.json({ error: "DB not configured" }, { status: 500 });
 
-  const body = await req.json();
-  const content = body.content ?? "";
+    // Check if a scratch note row already exists
+    const { data: existing } = await supabase
+      .from("context_files")
+      .select("id")
+      .eq("document_type", DOCUMENT_TYPE)
+      .limit(1)
+      .maybeSingle();
 
-  // Upsert — single row per user
-  const { data, error } = await supabase
-    .from("scratch_notes")
-    .upsert(
-      {
-        user_id: userId,
+    if (existing?.id) {
+      await supabase
+        .from("context_files")
+        .update({ content, description: `Scratch note — ${new Date().toISOString()}` })
+        .eq("id", existing.id);
+    } else {
+      await supabase.from("context_files").insert({
+        name: "Scratch Note",
         content,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id" }
-    )
-    .select()
-    .single();
+        is_active: false, // never injected into AI context
+        document_type: DOCUMENT_TYPE,
+        inject_order: 99,
+        description: `Scratch note — ${new Date().toISOString()}`,
+      });
+    }
 
-  if (error) return Response.json({ error: error.message }, { status: 500 });
-  return Response.json(data);
+    return Response.json({ ok: true });
+  } catch (e) {
+    return Response.json({ error: String(e) }, { status: 500 });
+  }
 }

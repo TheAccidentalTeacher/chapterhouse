@@ -23,6 +23,7 @@ import { log, mountConsoleHelpers, type SystemStatus } from "@/lib/debug-logger"
 import { personas, type Persona } from "@/lib/personas";
 import { FocusBoardPanel } from "@/components/focus-board-panel";
 import { HomeTasksPanel } from "@/components/home-tasks-panel";
+import { ScratchpadPanel } from "@/components/scratchpad-panel";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -808,13 +809,17 @@ export function ChatInterface() {
         <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">
           {isEmpty ? (
             <div className="flex h-full gap-4 pb-4">
-              {/* Focus Board — 60% */}
-              <div className="flex w-[60%] flex-col rounded-2xl border border-border/40 bg-card/60 p-4">
+              {/* Focus Board — fixed width */}
+              <div className="flex w-[42%] flex-col rounded-2xl border border-border/40 bg-card/60 p-4">
                 <FocusBoardPanel />
               </div>
-              {/* Tasks — 40% */}
-              <div className="flex w-[40%] flex-col rounded-2xl border border-border/40 bg-card/60 p-4">
+              {/* Tasks */}
+              <div className="flex flex-1 flex-col rounded-2xl border border-border/40 bg-card/60 p-4">
                 <HomeTasksPanel />
+              </div>
+              {/* Scratchpad */}
+              <div className="flex flex-1 flex-col rounded-2xl border border-border/40 bg-card/60 p-4">
+                <ScratchpadPanel />
               </div>
             </div>
           ) : (
