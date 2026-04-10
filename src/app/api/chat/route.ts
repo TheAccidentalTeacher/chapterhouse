@@ -103,7 +103,7 @@ You ARE Chapterhouse. When asked about routes, features, or code location — us
 / — Home: Chat (Solo + Council Mode). SSE streaming. Thread persistence. Auto-learn (/remember). URL detection + fetch.
 /daily-brief — Daily Brief: RSS+GitHub+daily.dev → Claude Sonnet analysis → track impact scoring → collision detection. Vercel cron 3:00 UTC.
 /intel — Intel: URL analysis sessions. 4-step pipeline: fetch → Sonnet structured analysis → Haiku verification → Council synthesis. PW report paste path. Daily cron 04:00 UTC.
-/inbox — Email Inbox: IMAP persistence, Haiku categorization (11 categories), TSVECTOR full-text search, AI summary. Daily digest cron midnight UTC.
+/inbox — Email Inbox: IMAP persistence, Haiku categorization (10 categories), TSVECTOR full-text search, AI summary. Daily digest cron midnight UTC.
 /research — Research Library: URL ingest, agentic auto-research (Tavily→GPT-5.4), Deep Research (Tavily+SerpAPI+Reddit+NewsAPI). AI extraction + tagging.
 /product-intelligence — Product Intel: Scored opportunity cards (A+–C). Triple-scored NCHO/SomersSchool/Content. Status tracking.
 /youtube — YouTube Intelligence: transcript (captions npm → innertube → Gemini 2.5 Flash via Railway ~77s) → 8 curriculum tools via Claude Sonnet.
@@ -740,6 +740,133 @@ export async function POST(request: Request) {
             headers: { "Content-Type": "text/plain; charset=utf-8" },
           });
         }
+      }
+    }
+
+    // ── /inbox — list recent unread emails from Supabase ─────────────────────
+    if (lastUserMsg.trim().toLowerCase() === "/inbox") {
+      const supabase = getSupabaseServiceRoleClient();
+      if (!supabase) {
+        return new Response("Database unavailable.", { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+      }
+      const { data: usersData } = await supabase.auth.admin.listUsers();
+      const inboxUserId = usersData?.users?.[0]?.id;
+      if (!inboxUserId) {
+        return new Response("Auth error — could not resolve user.", { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+      }
+      const { data: emails } = await supabase
+        .from("emails")
+        .select("subject, from_name, from_address, received_at, email_account, category")
+        .eq("user_id", inboxUserId)
+        .eq("is_read", false)
+        .order("received_at", { ascending: false })
+        .limit(20);
+      if (!emails || emails.length === 0) {
+        return new Response(
+          "📭 No unread emails in the database. Try `/triage` to fetch new messages from your inbox.",
+          { headers: { "Content-Type": "text/plain; charset=utf-8" } }
+        );
+      }
+      type EmailRow = { subject: string; from_name: string | null; from_address: string; received_at: string; email_account: string; category: string | null };
+      const lines = (emails as EmailRow[]).map((e, i) => {
+        const from = e.from_name || e.from_address;
+        const date = new Date(e.received_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        const cat = e.category ? ` [${e.category}]` : "";
+        return `${i + 1}. **${e.subject}** — ${from}${cat} (${date}) [${e.email_account}]`;
+      });
+      return new Response(
+        `📬 **${emails.length} unread email(s):**\n\n${lines.join("\n")}\n\nUse \`/archive-spam\`, \`/archive-newsletters\`, or \`/archive-notifications\` to clean up by category.`,
+        { headers: { "Content-Type": "text/plain; charset=utf-8" } }
+      );
+    }
+
+    // ── /triage [N] — bulk-fetch emails from IMAP into Supabase ─────────────
+    if (lastUserMsg.trim().toLowerCase().startsWith("/triage")) {
+      const parts = lastUserMsg.trim().split(/\s+/);
+      const limitArg = parts[1] ? parseInt(parts[1], 10) : 200;
+      const limit = isNaN(limitArg) ? 200 : Math.min(Math.max(1, limitArg), 500);
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/email/bulk-triage`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.CRON_SECRET}`,
+          },
+          body: JSON.stringify({ limit }),
+        });
+        const data = (await res.json()) as { fetched?: number; inserted?: number; skipped?: number };
+        return new Response(
+          `📥 Triage complete. Fetched **${data.fetched ?? 0}** messages — **${data.inserted ?? 0}** new, ${data.skipped ?? 0} already stored. Use \`/inbox\` to see unread messages.`,
+          { headers: { "Content-Type": "text/plain; charset=utf-8" } }
+        );
+      } catch {
+        return new Response("❌ Triage failed. Check server logs.", { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+      }
+    }
+
+    // ── /archive-spam — bulk-archive all spam emails ──────────────────────────
+    if (lastUserMsg.trim().toLowerCase() === "/archive-spam") {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/email/bulk-archive`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.CRON_SECRET}`,
+          },
+          body: JSON.stringify({ category: "spam" }),
+        });
+        const data = (await res.json()) as { archived?: number; failed?: number };
+        const failNote = (data.failed ?? 0) > 0 ? ` (${data.failed} IMAP error(s) — DB still cleaned)` : "";
+        return new Response(
+          `🗑️ Archived **${data.archived ?? 0}** spam email(s)${failNote}.`,
+          { headers: { "Content-Type": "text/plain; charset=utf-8" } }
+        );
+      } catch {
+        return new Response("❌ Archive failed. Check server logs.", { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+      }
+    }
+
+    // ── /archive-newsletters — bulk-archive all newsletter emails ─────────────
+    if (lastUserMsg.trim().toLowerCase() === "/archive-newsletters") {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/email/bulk-archive`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.CRON_SECRET}`,
+          },
+          body: JSON.stringify({ category: "newsletter" }),
+        });
+        const data = (await res.json()) as { archived?: number; failed?: number };
+        const failNote = (data.failed ?? 0) > 0 ? ` (${data.failed} IMAP error(s) — DB still cleaned)` : "";
+        return new Response(
+          `📰 Archived **${data.archived ?? 0}** newsletter email(s)${failNote}.`,
+          { headers: { "Content-Type": "text/plain; charset=utf-8" } }
+        );
+      } catch {
+        return new Response("❌ Archive failed. Check server logs.", { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+      }
+    }
+
+    // ── /archive-notifications — bulk-archive all notification emails ──────────
+    if (lastUserMsg.trim().toLowerCase() === "/archive-notifications") {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/email/bulk-archive`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.CRON_SECRET}`,
+          },
+          body: JSON.stringify({ category: "notification" }),
+        });
+        const data = (await res.json()) as { archived?: number; failed?: number };
+        const failNote = (data.failed ?? 0) > 0 ? ` (${data.failed} IMAP error(s) — DB still cleaned)` : "";
+        return new Response(
+          `🔔 Archived **${data.archived ?? 0}** notification email(s)${failNote}.`,
+          { headers: { "Content-Type": "text/plain; charset=utf-8" } }
+        );
+      } catch {
+        return new Response("❌ Archive failed. Check server logs.", { headers: { "Content-Type": "text/plain; charset=utf-8" } });
       }
     }
 
