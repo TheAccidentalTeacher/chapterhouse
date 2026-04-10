@@ -485,19 +485,46 @@ async function buildLiveContext(userMessage: string): Promise<string> {
     }
   } catch { /* context_files may not exist */ }
 
-  // Email intent detection — if the user is asking about emails, query live
+  // Ambient email alerts — always injected when there are unread action-required or urgent emails.
+  // No keyword guard: Scott should not have to say "email" to be told a critical NCHO message arrived.
+  try {
+    const { data: urgentEmails } = await supabase
+      .from("emails")
+      .select("subject, from_name, email_account, urgency, action_required, received_at")
+      .or("action_required.eq.true,urgency.gte.4")
+      .eq("is_read", false)
+      .order("received_at", { ascending: false })
+      .limit(5);
+    if (urgentEmails && urgentEmails.length > 0) {
+      const ACCT_LABEL: Record<string, string> = { ncho: "NCHO", gmail_ncho: "NCHO Gmail", gmail_personal: "Gmail" };
+      const alertLines = urgentEmails.map((e) => {
+        const acct = ACCT_LABEL[e.email_account as string] ?? "Email";
+        const flags = [e.action_required ? "⚡ ACTION" : null, (e.urgency ?? 0) >= 4 ? "🔴 URGENT" : null].filter(Boolean).join(" ");
+        return `- [${acct}] ${flags} **${e.from_name || "Unknown"}**: ${e.subject}`;
+      }).join("\n");
+      blocks.push(`## ⚠️ Email Alerts — ${urgentEmails.length} unread need attention\n\n${alertLines}`);
+    }
+  } catch {
+    // emails table may not exist — ignore
+  }
+
+  // Email intent detection — if the user is asking about emails, query the full inbox live
   const emailIntentPattern = /\b(email|emails|inbox|unread|mail|messages?|got\s+mail|new\s+mail)\b/i;
   if (emailIntentPattern.test(userMessage)) {
     try {
       const { data: emails } = await supabase
         .from("emails")
-        .select("subject, from_name, from_address, received_at, category, ai_summary, action_required, urgency, is_read, snippet")
+        .select("subject, from_name, from_address, received_at, category, ai_summary, action_required, urgency, is_read, snippet, email_account")
         .order("received_at", { ascending: false })
         .limit(20);
       if (emails && emails.length > 0) {
+        const ACCT_LABEL: Record<string, string> = { ncho: "NCHO", gmail_ncho: "NCHO Gmail", gmail_personal: "Gmail" };
         const unread = emails.filter((e) => !e.is_read);
         const actionRequired = emails.filter((e) => e.action_required);
+        const nchoCount = emails.filter((e) => e.email_account === "ncho" || e.email_account === "gmail_ncho").length;
+        const gmailCount = emails.filter((e) => e.email_account === "gmail_personal").length;
         const emailLines = emails.map((e) => {
+          const acct = ACCT_LABEL[e.email_account as string] ?? "Email";
           const flags = [
             !e.is_read ? "UNREAD" : null,
             e.action_required ? "ACTION REQUIRED" : null,
@@ -505,9 +532,9 @@ async function buildLiveContext(userMessage: string): Promise<string> {
             e.category && e.category !== "other" ? (e.category as string).toUpperCase() : null,
           ].filter(Boolean).join(", ");
           const dateStr = new Date(e.received_at as string).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
-          return `- [${dateStr}]${flags ? ` [${flags}]` : ""} **${e.from_name || e.from_address}**: ${e.subject}\n  ${e.ai_summary || e.snippet || ""}`.trimEnd();
+          return `- [${acct}][${dateStr}]${flags ? ` [${flags}]` : ""} **${e.from_name || e.from_address}**: ${e.subject}\n  ${e.ai_summary || e.snippet || ""}`.trimEnd();
         }).join("\n");
-        const summary = `${emails.length} recent / ${unread.length} unread / ${actionRequired.length} need action`;
+        const summary = `Inbox: ${emails.length} recent / ${unread.length} unread / ${actionRequired.length} need action | NCHO: ${nchoCount} / Gmail: ${gmailCount}`;
         blocks.push(`## Live Context: Inbox (queried now)\n\n${summary}\n\n${emailLines}`);
         if (actionRequired.length > 0) {
           blocks.push(`## Email Intelligence\n\nScott has ${actionRequired.length} email(s) flagged as needing a reply. If he asks for draft replies, help compose concise, professional responses for each action_required email listed above. Match formality to the sender.`);

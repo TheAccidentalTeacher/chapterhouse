@@ -159,8 +159,8 @@ Dismissed signals live in founder_notes with category='dismissed'. They are:
 - Detectable via natural language — extract-learnings detects "ignore/irrelevant/not relevant" patterns
 - Viewable + deletable in Debug panel → App Map → Dismissed Signals section
 
-### Email Intent Detection
-When userMessage contains email-related keywords (email/inbox/mail/message/unread), buildLiveContext() queries the emails table live and injects a real-time inbox summary. Scott can ask "do I have any new emails?" from chat.
+### Email Context Strategy
+Two-layer email injection: (1) Ambient — buildLiveContext() ALWAYS queries for unread emails with action_required=true or urgency≥4 and injects them regardless of keywords, so urgent NCHO/Gmail messages surface even when Scott doesn't ask about email. (2) Keyword-triggered — if message matches email/inbox/mail/message/unread, full inbox is queried (last 20) with per-account breakdown [NCHO / NCHO Gmail / Gmail] labeled on every row. email_account field distinguishes business (ncho, gmail_ncho) from personal (gmail_personal).
 
 ### Supabase Tables
 briefs, research_items, opportunities, tasks, chat_threads, knowledge_summaries, founder_notes, jobs, social_accounts, social_posts, context_files, dreams, dream_log, intel_categories, intel_sessions, emails
@@ -245,20 +245,47 @@ Scott's permanent advisory team. They run in Council Mode (/council) but Scott c
     // dismissed notes may not exist yet — ignore
   }
 
-  // Email intent detection — if Scott is asking about emails, query the inbox live
+  // Ambient email alerts — always injected when there are unread action-required or urgent emails.
+  // No keyword guard: Scott should not have to say "email" to be told a critical NCHO message arrived.
+  try {
+    const { data: urgentEmails } = await supabase
+      .from("emails")
+      .select("subject, from_name, email_account, urgency, action_required, received_at")
+      .or("action_required.eq.true,urgency.gte.4")
+      .eq("is_read", false)
+      .order("received_at", { ascending: false })
+      .limit(5);
+    if (urgentEmails && urgentEmails.length > 0) {
+      const ACCT_LABEL: Record<string, string> = { ncho: "NCHO", gmail_ncho: "NCHO Gmail", gmail_personal: "Gmail" };
+      const alertLines = urgentEmails.map((e) => {
+        const acct = ACCT_LABEL[e.email_account as string] ?? "Email";
+        const flags = [e.action_required ? "⚡ ACTION" : null, (e.urgency ?? 0) >= 4 ? "🔴 URGENT" : null].filter(Boolean).join(" ");
+        return `- [${acct}] ${flags} **${e.from_name || "Unknown"}**: ${e.subject}`;
+      }).join("\n");
+      blocks.push(`## ⚠️ Email Alerts — ${urgentEmails.length} unread need attention\n\n${alertLines}`);
+    }
+  } catch {
+    // emails table may not exist — ignore
+  }
+
+  // Email intent detection — if Scott is asking about emails, query the full inbox live
   const emailIntentPattern = /\b(email|emails|inbox|inbox|unread|mail|message|messages|got\s+mail|new\s+mail)\b/i;
   if (emailIntentPattern.test(userMessage)) {
     try {
       const { data: emails } = await supabase
         .from("emails")
-        .select("subject, from_name, from_address, received_at, category, ai_summary, action_required, urgency, is_read, snippet")
+        .select("subject, from_name, from_address, received_at, category, ai_summary, action_required, urgency, is_read, snippet, email_account")
         .order("received_at", { ascending: false })
         .limit(20);
       if (emails && emails.length > 0) {
+        const ACCT_LABEL: Record<string, string> = { ncho: "NCHO", gmail_ncho: "NCHO Gmail", gmail_personal: "Gmail" };
         const unread = emails.filter((e) => !e.is_read);
         const urgent = emails.filter((e) => (e.urgency ?? 0) >= 4);
         const actionRequired = emails.filter((e) => e.action_required);
+        const nchoCount = emails.filter((e) => e.email_account === "ncho" || e.email_account === "gmail_ncho").length;
+        const gmailCount = emails.filter((e) => e.email_account === "gmail_personal").length;
         const emailLines = emails.map((e) => {
+          const acct = ACCT_LABEL[e.email_account as string] ?? "Email";
           const flags = [
             !e.is_read ? "UNREAD" : null,
             e.action_required ? "ACTION REQUIRED" : null,
@@ -266,9 +293,9 @@ Scott's permanent advisory team. They run in Council Mode (/council) but Scott c
             e.category && e.category !== "other" ? e.category.toUpperCase() : null,
           ].filter(Boolean).join(", ");
           const dateStr = new Date(e.received_at as string).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
-          return `- [${dateStr}]${flags ? ` [${flags}]` : ""} **${e.from_name || e.from_address}**: ${e.subject}\n  ${e.ai_summary || e.snippet || ""}`.trimEnd();
+          return `- [${acct}][${dateStr}]${flags ? ` [${flags}]` : ""} **${e.from_name || e.from_address}**: ${e.subject}\n  ${e.ai_summary || e.snippet || ""}`.trimEnd();
         }).join("\n");
-        const summary = `Inbox summary: ${emails.length} recent / ${unread.length} unread / ${actionRequired.length} need action / ${urgent.length} urgent`;
+        const summary = `Inbox: ${emails.length} recent / ${unread.length} unread / ${actionRequired.length} need action / ${urgent.length} urgent | NCHO: ${nchoCount} / Gmail: ${gmailCount}`;
         blocks.push(`## Live Context: Inbox (queried now)\n\n${summary}\n\n${emailLines}`);
         if (actionRequired.length > 0) {
           blocks.push(`## Email Intelligence\n\nScott has ${actionRequired.length} email(s) flagged as needing a reply. If he asks for draft replies, help compose concise, professional responses for each action_required email listed above. Match formality to the sender.`);
