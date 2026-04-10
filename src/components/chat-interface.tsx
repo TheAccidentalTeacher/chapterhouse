@@ -22,7 +22,7 @@ import remarkGfm from "remark-gfm";
 import { log, mountConsoleHelpers, type SystemStatus } from "@/lib/debug-logger";
 import { personas, type Persona } from "@/lib/personas";
 import { FocusBoardPanel } from "@/components/focus-board-panel";
-import { ScratchpadPanel } from "@/components/scratchpad-panel";
+import { HomeTasksPanel } from "@/components/home-tasks-panel";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -812,9 +812,9 @@ export function ChatInterface() {
               <div className="flex w-[60%] flex-col rounded-2xl border border-border/40 bg-card/60 p-4">
                 <FocusBoardPanel />
               </div>
-              {/* Scratchpad — 40% */}
+              {/* Tasks — 40% */}
               <div className="flex w-[40%] flex-col rounded-2xl border border-border/40 bg-card/60 p-4">
-                <ScratchpadPanel />
+                <HomeTasksPanel />
               </div>
             </div>
           ) : (
