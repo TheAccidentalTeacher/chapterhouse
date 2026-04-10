@@ -196,16 +196,20 @@ export function FocusBoardPanel() {
     await fetch(`/api/focus-items/${id}`, { method: "DELETE" });
   };
 
+  const VISIBLE_COUNT = 10;
+  const visibleItems = items.slice(0, VISIBLE_COUNT);
+  const hiddenCount = Math.max(0, items.length - VISIBLE_COUNT);
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const oldIndex = items.findIndex((i) => i.id === active.id);
-    const newIndex = items.findIndex((i) => i.id === over.id);
-    const reordered = arrayMove(items, oldIndex, newIndex);
-    setItems(reordered);
+    const oldIndex = visibleItems.findIndex((i) => i.id === active.id);
+    const newIndex = visibleItems.findIndex((i) => i.id === over.id);
+    const reordered = arrayMove(visibleItems, oldIndex, newIndex);
+    setItems([...reordered, ...items.slice(VISIBLE_COUNT)]);
 
-    // Persist new sort orders
+    // Persist new sort orders for visible items
     await Promise.all(
       reordered.map((item, idx) =>
         fetch(`/api/focus-items/${item.id}`, {
@@ -220,10 +224,6 @@ export function FocusBoardPanel() {
   const handleAdd = async () => {
     const content = newInput.trim();
     if (!content) return;
-    if (items.length >= 10) {
-      setError("Full — check off or remove an item first");
-      return;
-    }
     setError("");
     try {
       const res = await fetch("/api/focus-items", {
@@ -243,14 +243,6 @@ export function FocusBoardPanel() {
     }
   };
 
-  const count = items.length;
-  const countColor =
-    count >= 10
-      ? "text-red-400"
-      : count >= 8
-        ? "text-amber-400"
-        : "text-muted/60";
-
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -266,8 +258,8 @@ export function FocusBoardPanel() {
         <div className="flex items-center gap-1.5">
           <CircleDot className="h-3.5 w-3.5 text-accent" />
           <h3 className="text-xs font-semibold tracking-tight">Focus Board</h3>
-          <span className={`text-[10px] font-mono ${countColor}`}>
-            {count}/10
+          <span className="text-[10px] font-mono text-muted/60">
+            {items.length}
           </span>
         </div>
         <button
@@ -304,11 +296,11 @@ export function FocusBoardPanel() {
           onDragEnd={handleDragEnd}
         >
           <SortableContext
-            items={items.map((i) => i.id)}
+            items={visibleItems.map((i) => i.id)}
             strategy={verticalListSortingStrategy}
           >
             <ul>
-              {items.map((item) => (
+              {visibleItems.map((item) => (
                 <SortableItem
                   key={item.id}
                   item={item}
@@ -319,6 +311,11 @@ export function FocusBoardPanel() {
             </ul>
           </SortableContext>
         </DndContext>
+        {hiddenCount > 0 && (
+          <p className="mt-1 text-center text-[10px] text-muted/40">
+            +{hiddenCount} more · check off items to surface them
+          </p>
+        )}
       </div>
 
       {/* Add input */}

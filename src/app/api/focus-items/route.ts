@@ -1,7 +1,5 @@
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
 
-const MAX_ITEMS = 10;
-
 export async function GET() {
   const supabase = getSupabaseServiceRoleClient();
   if (!supabase) return Response.json({ error: "DB not configured" }, { status: 500 });
@@ -29,21 +27,34 @@ export async function POST(req: Request) {
   const content = (body.content ?? "").trim();
   if (!content) return Response.json({ error: "content required" }, { status: 400 });
 
-  // Enforce 10-item cap
-  const { count } = await supabase
-    .from("focus_items")
-    .select("id", { count: "exact", head: true });
+  const source = body.source ?? "manual";
 
-  if ((count ?? 0) >= MAX_ITEMS) {
-    return Response.json({ error: "Maximum 10 items. Delete one first." }, { status: 409 });
+  // Manual items float to top; AI items append to bottom
+  let sortOrder: number;
+  if (source === "manual") {
+    const { data: minRow } = await supabase
+      .from("focus_items")
+      .select("sort_order")
+      .order("sort_order", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    sortOrder = ((minRow?.sort_order as number | null) ?? 1) - 1;
+  } else {
+    const { data: maxRow } = await supabase
+      .from("focus_items")
+      .select("sort_order")
+      .order("sort_order", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    sortOrder = ((maxRow?.sort_order as number | null) ?? -1) + 1;
   }
 
   const { data, error } = await supabase
     .from("focus_items")
     .insert({
       content,
-      source: body.source ?? "manual",
-      sort_order: body.sort_order ?? (count ?? 0),
+      source,
+      sort_order: sortOrder,
       user_id: userId,
     })
     .select()

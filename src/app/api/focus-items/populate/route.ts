@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
 
-const MAX_ITEMS = 10;
+const AI_FILL_LIMIT = 5;
 
 export async function POST() {
   const supabase = getSupabaseServiceRoleClient();
@@ -12,15 +12,14 @@ export async function POST() {
   const userId = users?.users?.[0]?.id;
   if (!userId) return Response.json({ error: "No user found" }, { status: 500 });
 
-  // Check current count — only fill empty slots
-  const { count: existingCount } = await supabase
+  // Get current max sort_order — AI items always append below everything
+  const { data: maxRow } = await supabase
     .from("focus_items")
-    .select("id", { count: "exact", head: true });
-
-  const slotsAvailable = MAX_ITEMS - (existingCount ?? 0);
-  if (slotsAvailable <= 0) {
-    return Response.json({ populated: 0, reason: "Board is full" });
-  }
+    .select("sort_order")
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const baseOrder = ((maxRow?.sort_order as number | null) ?? -1) + 1;
 
   // Gather context from three sources
   const [folioRes, briefRes, dreamsRes] = await Promise.all([
@@ -69,7 +68,7 @@ export async function POST() {
     messages: [
       {
         role: "user",
-        content: `Generate up to ${slotsAvailable} action items from this context. Rules:
+        content: `Generate up to ${AI_FILL_LIMIT} action items from this context. Rules:
 - MAX 8 WORDS per item. Shorter is better.
 - Start with an action verb (Ship, Wire, Fix, Write, Build, Test, Add, Set up, Draft, Review).
 - No descriptions, explanations, or qualifiers. Just the task.
@@ -101,7 +100,7 @@ ${contextText}`,
 
   const items: { content: string; source: string; sort_order: number }[] = [];
   for (const line of lines) {
-    if (items.length >= slotsAvailable) break;
+    if (items.length >= AI_FILL_LIMIT) break;
 
     const match = line.match(/^\[(\w+)]\s*(.+)/);
     if (match) {
@@ -109,7 +108,7 @@ ${contextText}`,
       items.push({
         content: match[2].trim(),
         source,
-        sort_order: (existingCount ?? 0) + items.length,
+        sort_order: baseOrder + items.length,
       });
     }
   }
