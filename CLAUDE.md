@@ -117,6 +117,22 @@ This document is your complete technical brief. Read all of it before touching a
 - `folio/` + `folio/[id]/` + `folio/trigger/` — The Folio CRUD + manual rebuild trigger (CRON_SECRET-protected)
 - `documents/generate/` + `documents/list/` + `documents/[id]/` + `documents/analyze/` + `documents/upload/` — Doc Studio pipeline
 - `brain/sync/` — GitHub scott-brain → context_files sync
+- `focus-items/` + `focus-items/[id]/` + `focus-items/populate/` — Focus Board items CRUD + AI populate (pulls top items from Folio/Brief)
+- `scratch-notes/` — Scratchpad save/load (Tiptap HTML, one row per user, upsert pattern)
+- `blog/posts/` + `blog/posts/[id]/` + `blog/calendar/` + `blog/draft/[id]/` + `blog/publish/[id]/` — Blog calendar pipeline: plan → draft → review → Shopify publish
+- `webhooks/shopify-blog-post/` — HMAC-verified Shopify webhook for blog post lifecycle events
+- `cron/social-publish-check/` — Periodic cron: verify scheduled Buffer posts have published → update `social_posts.status`
+- `debug/leonardo-elements/` — Debug route for Leonardo Elements catalog
+- `characters/[id]/train-lora/` — Trigger LoRA fine-tune for a character on Leonardo
+- `characters/list-elements/` — List available Leonardo Elements models
+- `course-assets/generate-anchor/` — Generate bundle anchor image (grade-themed Alaska animal, 1 per bundle)
+- `course-assets/generate-character-scenes/` — Generate character-consistent scene images for slides
+- `course-assets/regenerate-slide/` — Regenerate a single slide image in a bundle
+- `email/messages/` + `email/messages/[uid]/` — IMAP email message list + single message view (live from IMAP)
+- `email/persisted/[uid]/` — Retrieve a single persisted email from Supabase by UID
+- `email/test/` — Test IMAP connection health
+- `lessons/pipeline/` — Trigger SomersSchool lesson asset generation pipeline job
+- `research/deep/` — Deep Research: multi-source parallel (Tavily + SerpAPI + Reddit + NewsAPI + Internet Archive)
 
 **API routes under `/api/`:**
 - `auth/signout` — Sign out
@@ -133,6 +149,7 @@ This document is your complete technical brief. Read all of it before touching a
 - `opportunities/` — Opportunity list + `analyze/` + `[id]/` (PATCH)
 - `research/` — Full CRUD (GET, POST, PATCH, DELETE)
 - `research/auto/` — Agentic research via Tavily (web search → GPT-5.4 analysis → dedup → auto-ingest)
+- `research/deep/` — Multi-source parallel deep research (Tavily + SerpAPI + Reddit + NewsAPI + Internet Archive)
 - `search/` — Global cross-table search (tasks, research, opportunities, threads, briefs via `ilike`)
 - `social/accounts/` — Social account CRUD (GET active, POST upsert)
 - `social/accounts/sync/` — Buffer GraphQL channel sync (GetOrganizations → GetChannels)
@@ -144,7 +161,7 @@ This document is your complete technical brief. Read all of it before touching a
 - `cron/social-weekly/` — Monday 05:00 UTC batch generation cron via QStash → Railway worker
 - `webhooks/shopify-product/` — HMAC-verified Shopify webhook → auto-generate NCHO product launch posts
 - `summarize/` — AI summarization
-- `tasks/` — Task list + create, `[id]/` (PATCH, DELETE)
+- `tasks/` — Task list + create, `[id]/` (PATCH, DELETE). Subtasks via `parent_id`. Status vocab: open/in-progress/blocked/done/canceled
 - `threads/` — Chat thread list + create, `[id]/` (PATCH)
 - `youtube/transcript/` — YouTube transcript extraction (POST): captions → innertube fast path on Vercel, then Railway worker handoff for Gemini 2.5 Flash. Returns `{pending: true, jobId}` for async jobs.
 - `youtube/search/` — YouTube Data API v3 search proxy (GET)
@@ -165,9 +182,25 @@ This document is your complete technical brief. Read all of it before touching a
 - `documents/upload/` — Upload PDF/DOCX/ePub/TXT → Azure AI Document Intelligence extract (POST)
 - `brain/sync/` — GitHub scott-brain repo → context_files sync (POST, BRAIN_SYNC_KEY auth)
 - `cron/brain-sync/` — Daily noon UTC (GET, CRON_SECRET-protected)
+- `focus-items/` — Focus Board item list (GET) + create (POST)
+- `focus-items/[id]/` — PATCH (complete/reorder) + DELETE single focus item
+- `focus-items/populate/` — AI-fill: reads Folio + Brief → generates top focus items, clears + repopulates (POST)
+- `scratch-notes/` — GET current scratchpad content + POST to save (upsert per user)
+- `blog/posts/` — Blog post list + create (GET/POST)
+- `blog/posts/[id]/` — Get/update/delete single blog post
+- `blog/calendar/` — Calendar view of blog posts grouped by `calendar_month`
+- `blog/draft/[id]/` — Generate Claude AI draft for a planned blog post → saves body + SEO fields (POST)
+- `blog/publish/[id]/` — Publish post to Shopify via Admin API, sets `shopify_article_id` + `published_at` (POST)
+- `cron/social-publish-check/` — Cron: checks Buffer GraphQL for post confirmations → updates `social_posts.status`
+- `webhooks/shopify-blog-post/` — HMAC-verified Shopify webhook for blog post lifecycle events
+- `lessons/pipeline/` — Trigger SomersSchool lesson asset generation pipeline job on Railway
+- `email/messages/` — IMAP live email message list for configured accounts (GET)
+- `email/messages/[uid]/` — Single IMAP message content by UID (GET)
+- `email/persisted/[uid]/` — Retrieve a single persisted email from Supabase by UID (GET)
+- `email/test/` — Test IMAP connection health for configured accounts (POST)
 
 **Supabase tables:**
-- `briefs`, `research_items`, `opportunities`, `tasks`, `chat_threads`, `knowledge_summaries`, `founder_notes`, `jobs`, `social_accounts`, `social_posts`, `emails`, `context_files`, `dreams`, `dream_log`, `intel_sessions`, `intel_categories`, `generated_images`, `brand_voices`, `characters`, `documents`, `folio_entries`
+- `briefs`, `research_items`, `opportunities`, `tasks`, `chat_threads`, `knowledge_summaries`, `founder_notes`, `jobs`, `social_accounts`, `social_posts`, `emails`, `context_files`, `dreams`, `dream_log`, `intel_sessions`, `intel_categories`, `generated_images`, `brand_voices`, `characters`, `documents`, `folio_entries`, `focus_items`, `scratch_notes`, `blog_posts`
 
 **Key env vars:** `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `TAVILY_API_KEY`, `NEWSAPI_API_KEY`, `N8N_BASE_URL`, `N8N_API_KEY`, `RAILWAY_WORKER_URL`, `GITHUB_TOKEN`, `CRON_SECRET`, `NEXT_PUBLIC_APP_URL`, `ALLOWED_EMAILS`, `BUFFER_ACCESS_TOKEN`, `SHOPIFY_WEBHOOK_SECRET`, `YOUTUBE_API_KEY`, `GEMINI_API_KEY`, `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION`, `DAILYDEV_TOKEN`, `GITHUB_BRAIN_TOKEN`, `BRAIN_SYNC_KEY`, `COURSE_SUPABASE_URL`, `COURSE_SUPABASE_SERVICE_ROLE_KEY`
 
@@ -1327,7 +1360,7 @@ Effort: 2–3 days.
 | `briefs` | 001 | Daily brief records |
 | `research_items` | 003 | Research library + verdicts |
 | `opportunities` | 004 | Product intelligence cards |
-| `tasks` | 005 | Task board |
+| `tasks` | 005 | Task board — status: open/in-progress/blocked/done/canceled. Subtasks via parent_id (migration 042). Added columns: description, source_type, source_id, source_title (migration 043). |
 | `chat_threads` | 006 | Persistent chat threads |
 | `knowledge_summaries` | 007 | Condensed topic summaries |
 | `jobs` | 008 | Background AI job queue |
@@ -1342,13 +1375,16 @@ Effort: 2–3 days.
 | `generated_images` | 021 | Creative Studio generation history — provider, prompt, image_url, cloudinary_url, character_id, prompt_original, prompt_enhanced, enhancement_notes |
 | `brand_voices` | 023 | Social post voice definitions per brand — 4 brands, editable from Settings. Replaces hardcoded BRAND_VOICE_SYSTEM constant. |
 | `characters` | 024 | Character Library — Gimli seed + any future characters. physical_description, art_style, negative_prompt, reference_images[], lora_model_id, preferred_provider. |
+| `focus_items` | 039 | Focus Board working list — content, completed, sort_order, source enum (manual/folio/brief/dream), user_id. Capped at 10 in app layer. |
+| `scratch_notes` | 039 | Scratchpad — one row per user (UNIQUE user_id). Tiptap HTML content, updated_at. Upsert-only pattern. |
+| `blog_posts` | 041 | Blog calendar + publishing pipeline — target_date, post_type (sales/authority/holiday/seasonal), title, slug, body, excerpt, tags[], SEO fields, status (planned→drafting→draft→review→published\|rejected), shopify_article_id/url, calendar_month. Realtime enabled. |
 
 **CoursePlatform Supabase (separate DB — `COURSE_SUPABASE_URL`):**
 | Table | Purpose |
 |---|---|
 | `bundles` | Lesson content bundles — slides_count, slides_generated, audio_generated, audio_url, videos_count, videos_generated, worksheet_present, content JSONB |
 
-**Migration numbering note:** Migrations 009, 013, 014, 016 also exist for intermediate steps. Check `supabase/migrations/` for canonical list. Last migration: `20260327_028_add_bundle_anchor_job_type.sql`.
+**Migration numbering note:** Migrations 009, 013, 014, 016 also exist for intermediate steps. Check `supabase/migrations/` for canonical list. Last migration: `20260412_043_fix_tasks_schema.sql`.
 
 **The Build Bible:** `chapterhouse-implementation-spec.md` is the original phase-by-phase Chapterhouse feature build plan. **`production-pipeline-build-bible.md`** is the Production Pipeline plan (Phases 0–7, SomersSchool course asset generation). CLAUDE.md is the living technical reference. Spec = where to go. CLAUDE.md = where you are. Always read both build bibles before starting work.
 
@@ -1374,6 +1410,8 @@ Effort: 2–3 days.
 - Phase 7 (Voice Studio Narration): 🔴 NOT YET STARTED — gates on Phase 5. ElevenLabs batch narration for bundle audio_url fields.
 
 ---
+
+*Document version: April 10–12, 2026 (Focus Board + Blog Pipeline + Task Schema) — **New: Focus Board, Scratchpad, Blog Calendar + 5 new migrations (039–043).** (1) `focus_items` + `scratch_notes` tables (migration 039): Focus Board panel renders at `/` — working list capped at 10 items, source-colored (folio=gold, brief=blue, dream=green, manual=gray), drag-to-reorder. Scratchpad panel with Tiptap editor, auto-save, Bold/Italic/List toolbar. Both persist in righthand column of chat interface. (2) YouTube platform added to social constraints (migration 040): `social_accounts_platform_check` and `social_posts_platform_check` now include `youtube`. (3) `blog_posts` table (migration 041): full blog calendar + publishing pipeline — `target_date`, `post_type` (sales/authority/holiday/seasonal), full body + SEO fields, status lifecycle (planned→drafting→draft→review→published|rejected), Shopify article fields, `calendar_month` grouping, Realtime enabled. Routes: `blog/posts/`, `blog/posts/[id]/`, `blog/calendar/`, `blog/draft/[id]/`, `blog/publish/[id]/`. Webhook: `webhooks/shopify-blog-post/`. (4) Subtasks via `parent_id` on tasks (migration 042). (5) Tasks schema fix (migration 043): added description/source columns, migrated status vocab (todo→open, in_progress→in-progress, archived→canceled), status CHECK updated to `(open, in-progress, blocked, done, canceled)`. (6) UI: hero/logo/pills removed from chat header (`2412b7f`). Task POST 500 error fixed via migration 043 (`050be6e`). Panels remain visible during chat (`0ed457d`). Tasks rendered above Today's Focus in FocusBoardPanel (`2509712`). Last migration: 043. Next migration: 044.*
 
 *Document version: April 6, 2026 (Security Audit) — **npm audit fix: 7 of 9 vulnerabilities patched.** Triggered by North Korea npm hijack (TechCrunch April 6, 2026). `npm audit fix` (safe-only, no --force) changed 11 packages. **Fixed (7):** @xmldom/xmldom XML injection via unsafe CDATA serialization (HIGH), lodash code injection via _.template + prototype pollution (HIGH), flatted prototype pollution via parse() (HIGH), picomatch method injection + ReDoS (HIGH), brace-expansion zero-step sequence DoS (MODERATE), plus 2 additional transitive dependency patches. **Remaining (2, require --force / manual verification before applying):** (1) `next` 16.0–16.1.6 → 16.2.2 — 5 moderate vulns (CSRF bypass via null origin, DoS via postponed resume buffering, HTTP request smuggling in rewrites, unbounded image cache growth, dev HMR websocket CSRF). Breaking semver — test locally first. (2) `nodemailer` ≤8.0.3 → 8.0.4 — 3 HIGH vulns (email domain interpretation conflict, DoS via recursive addressparser, SMTP command injection). Breaking change — chains through imapflow + mailparser. **Also confirmed clean:** No `litellm` anywhere in repo (Pending Action #29 ✅). No `axios` dependency (Pending Action #37 ✅). Last migration: 038. Next migration: 039. Next decision: D133.*
 
