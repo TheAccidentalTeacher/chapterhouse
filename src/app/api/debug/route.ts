@@ -136,6 +136,7 @@ export async function GET(request: Request) {
     azureTranslator: Boolean(process.env.AZURE_TRANSLATOR_KEY),
     buffer: Boolean(process.env.BUFFER_ACCESS_TOKEN),
     shopifyWebhook: Boolean(process.env.SHOPIFY_WEBHOOK_SECRET),
+    shopifyDirectApi: Boolean(process.env.SHOPIFY_CLIENT_ID) && Boolean(process.env.SHOPIFY_CLIENT_SECRET),
     heygen: Boolean(process.env.HEYGEN_API_KEY),
     stabilityAi: Boolean(process.env.STABILITY_AI_KEY),
     replicate: Boolean(process.env.REPLICATE_TOKEN),
@@ -148,6 +149,16 @@ export async function GET(request: Request) {
     upstashRedis: Boolean(process.env.UPSTASH_REDIS_REST_URL),
     cronSecret: Boolean(process.env.CRON_SECRET),
   };
+
+  // Shopify Direct API — live connection test
+  if (process.env.SHOPIFY_CLIENT_ID && process.env.SHOPIFY_CLIENT_SECRET) {
+    try {
+      const { shopifyHealthCheck } = await import("@/lib/shopify");
+      results.shopify = await shopifyHealthCheck();
+    } catch (e) {
+      results.shopify = { ok: false, error: String(e) };
+    }
+  }
 
   return Response.json(results, {
     headers: { "Cache-Control": "no-store" },

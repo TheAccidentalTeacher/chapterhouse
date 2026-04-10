@@ -66,6 +66,11 @@ const environmentSchema = z.object({
   // Brain Sync (scott-brain GitHub repo)
   GITHUB_BRAIN_TOKEN: z.string().min(1).optional(),
   BRAIN_SYNC_KEY: z.string().min(1).optional(),
+  // NCHO Shopify Store (Direct API)
+  SHOPIFY_STORE: z.string().min(1).optional(),
+  SHOPIFY_CLIENT_ID: z.string().min(1).optional(),
+  SHOPIFY_CLIENT_SECRET: z.string().min(1).optional(),
+  SHOPIFY_API_VERSION: z.string().min(1).optional(),
   // Social Media
   BUFFER_ACCESS_TOKEN: z.string().min(1).optional(),
   SHOPIFY_WEBHOOK_SECRET: z.string().min(1).optional(),
@@ -139,6 +144,11 @@ const envSource = {
   // Brain Sync
   GITHUB_BRAIN_TOKEN: process.env.GITHUB_BRAIN_TOKEN,
   BRAIN_SYNC_KEY: process.env.BRAIN_SYNC_KEY,
+  // NCHO Shopify Store (Direct API)
+  SHOPIFY_STORE: process.env.SHOPIFY_STORE,
+  SHOPIFY_CLIENT_ID: process.env.SHOPIFY_CLIENT_ID,
+  SHOPIFY_CLIENT_SECRET: process.env.SHOPIFY_CLIENT_SECRET,
+  SHOPIFY_API_VERSION: process.env.SHOPIFY_API_VERSION,
   // Social Media
   BUFFER_ACCESS_TOKEN: process.env.BUFFER_ACCESS_TOKEN,
   SHOPIFY_WEBHOOK_SECRET: process.env.SHOPIFY_WEBHOOK_SECRET,
@@ -183,6 +193,8 @@ export function getEnvironmentStatus() {
         ? "course-platform"
         : key === "GITHUB_BRAIN_TOKEN" || key === "BRAIN_SYNC_KEY"
         ? "brain-sync"
+        : key === "SHOPIFY_STORE" || key === "SHOPIFY_CLIENT_ID" || key === "SHOPIFY_CLIENT_SECRET" || key === "SHOPIFY_API_VERSION"
+        ? "shopify"
         : key === "BUFFER_ACCESS_TOKEN" || key === "SHOPIFY_WEBHOOK_SECRET" || key === "CRON_SECRET"
         ? "social"
         : "ai",
