@@ -20,6 +20,16 @@ export async function PATCH(
       .single();
 
     if (error) return Response.json({ error: error.message }, { status: 500 });
+
+    // Cascade status to sub-tasks when parent is completed or canceled
+    if (body.status === "done" || body.status === "canceled") {
+      await supabase
+        .from("tasks")
+        .update({ status: body.status, updated_at: new Date().toISOString() })
+        .eq("parent_id", id)
+        .in("status", ["open", "in-progress", "blocked"]);
+    }
+
     return Response.json({ task: data });
   } catch (e) {
     return Response.json({ error: String(e) }, { status: 500 });

@@ -14,6 +14,7 @@ type Task = {
   source_id: string | null;
   source_title: string | null;
   status: string;
+  parent_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -31,21 +32,156 @@ const STATUS_META: Record<StatusKey, { label: string; color: string }> = {
 const ACTIVE_STATUSES: StatusKey[] = ["open", "in-progress", "blocked"];
 const CLOSED_STATUSES: StatusKey[] = ["done", "canceled"];
 
+// ── Sub-task Row ─────────────────────────────────────────────────────────────
+
+function SubTaskRow({
+  task,
+  onChange,
+}: {
+  task: Task;
+  onChange: (id: string, status: string) => void;
+}) {
+  const [saving, setSaving] = useState(false);
+  const isDone = task.status === "done" || task.status === "canceled";
+
+  async function toggle() {
+    if (saving) return;
+    const next = isDone ? "open" : "done";
+    setSaving(true);
+    try {
+      await fetch(`/api/tasks/${task.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: next }),
+      });
+      onChange(task.id, next);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-2.5 py-1 group">
+      <button
+        onClick={toggle}
+        disabled={saving}
+        className={`flex-shrink-0 h-4 w-4 rounded border transition-all flex items-center justify-center ${
+          isDone
+            ? "border-emerald-500/60 bg-emerald-500/15 text-emerald-400"
+            : "border-border/60 hover:border-accent/60"
+        }`}
+        aria-label={isDone ? "Mark incomplete" : "Mark done"}
+      >
+        {saving ? (
+          <Loader2 className="h-3 w-3 animate-spin" />
+        ) : isDone ? (
+          <CheckCircle className="h-3 w-3" />
+        ) : null}
+      </button>
+      <span className={`text-sm flex-1 leading-snug ${isDone ? "line-through text-muted/60" : ""}`}>
+        {task.title}
+      </span>
+    </div>
+  );
+}
+
+// ── Add Sub-step Form ─────────────────────────────────────────────────────────
+
+function AddSubStepForm({
+  parentId,
+  onAdd,
+}: {
+  parentId: string;
+  onAdd: (task: Task) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!title.trim()) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: title.trim(), source_type: "manual", parent_id: parentId }),
+      });
+      const data = await res.json();
+      if (data.task) {
+        onAdd(data.task);
+        setTitle("");
+        setOpen(false);
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="flex items-center gap-1.5 text-xs text-muted/70 hover:text-foreground transition"
+      >
+        <Plus className="h-3 w-3" /> Add sub-step
+      </button>
+    );
+  }
+
+  return (
+    <form onSubmit={submit} className="flex items-center gap-2">
+      <input
+        autoFocus
+        type="text"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
+        placeholder="Sub-step name…"
+        className="flex-1 rounded-lg border border-border/60 bg-muted-surface px-3 py-1 text-xs placeholder:text-muted focus:border-accent/50 focus:outline-none"
+      />
+      <button
+        type="submit"
+        disabled={saving || !title.trim()}
+        className="rounded-full border border-accent/40 bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent hover:bg-accent/20 disabled:opacity-40"
+      >
+        {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : "Add"}
+      </button>
+      <button
+        type="button"
+        onClick={() => setOpen(false)}
+        className="rounded-full border border-border/70 px-2.5 py-1 text-xs text-muted hover:text-foreground"
+      >
+        ✕
+      </button>
+    </form>
+  );
+}
+
 // ── Task Card ─────────────────────────────────────────────────────────────────
 
 function TaskCard({
   task,
+  subtasks,
   onChange,
   onDelete,
+  onAddSubTask,
 }: {
   task: Task;
+  subtasks: Task[];
   onChange: (id: string, status: string) => void;
   onDelete: (id: string) => void;
+  onAddSubTask: (task: Task) => void;
 }) {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   const meta = STATUS_META[task.status as StatusKey] ?? STATUS_META["open"];
+  const isClosed = CLOSED_STATUSES.includes(task.status as StatusKey);
+  const completedCount = subtasks.filter((s) =>
+    CLOSED_STATUSES.includes(s.status as StatusKey)
+  ).length;
 
   async function setStatus(status: string) {
     setSaving(true);
@@ -56,6 +192,13 @@ function TaskCard({
         body: JSON.stringify({ status }),
       });
       onChange(task.id, status);
+      if (status === "done" || status === "canceled") {
+        subtasks.forEach((s) => {
+          if (!CLOSED_STATUSES.includes(s.status as StatusKey)) {
+            onChange(s.id, status);
+          }
+        });
+      }
     } finally {
       setSaving(false);
     }
@@ -66,6 +209,7 @@ function TaskCard({
     try {
       await fetch(`/api/tasks/${task.id}`, { method: "DELETE" });
       onDelete(task.id);
+      subtasks.forEach((s) => onDelete(s.id));
     } finally {
       setDeleting(false);
     }
@@ -86,6 +230,11 @@ function TaskCard({
                 from {task.source_type}
               </span>
             )}
+            {subtasks.length > 0 && (
+              <span className="rounded-full border border-border/50 px-2.5 py-0.5 text-xs text-muted">
+                {completedCount}/{subtasks.length} steps
+              </span>
+            )}
           </div>
           <h2 className="font-semibold leading-snug">{task.title}</h2>
           {task.description && (
@@ -99,6 +248,20 @@ function TaskCard({
           )}
         </div>
       </div>
+
+      {subtasks.length > 0 && (
+        <div className="border-t border-border/30 pt-2 space-y-0.5 pl-1">
+          {subtasks.map((sub) => (
+            <SubTaskRow key={sub.id} task={sub} onChange={onChange} />
+          ))}
+        </div>
+      )}
+
+      {!isClosed && (
+        <div className="pl-1">
+          <AddSubStepForm parentId={task.id} onAdd={onAddSubTask} />
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/40">
         {task.status !== "in-progress" && task.status !== "done" && task.status !== "canceled" && (
@@ -264,8 +427,15 @@ export default function TasksPage() {
     setTasks((prev) => [task, ...prev]);
   }
 
-  const active = tasks.filter((t) => ACTIVE_STATUSES.includes(t.status as StatusKey));
-  const closed = tasks.filter((t) => CLOSED_STATUSES.includes(t.status as StatusKey));
+  const topLevel = tasks.filter((t) => t.parent_id === null);
+  const childrenMap = tasks
+    .filter((t) => t.parent_id !== null)
+    .reduce<Record<string, Task[]>>((acc, t) => {
+      acc[t.parent_id!] = [...(acc[t.parent_id!] ?? []), t];
+      return acc;
+    }, {});
+  const active = topLevel.filter((t) => ACTIVE_STATUSES.includes(t.status as StatusKey));
+  const closed = topLevel.filter((t) => CLOSED_STATUSES.includes(t.status as StatusKey));
 
   return (
     <PageFrame
@@ -306,7 +476,7 @@ export default function TasksPage() {
                 Active — {active.length}
               </h2>
               {active.map((task) => (
-                <TaskCard key={task.id} task={task} onChange={updateTask} onDelete={removeTask} />
+                <TaskCard key={task.id} task={task} subtasks={childrenMap[task.id] ?? []} onChange={updateTask} onDelete={removeTask} onAddSubTask={addTask} />
               ))}
             </section>
           )}
@@ -320,7 +490,7 @@ export default function TasksPage() {
                 {showClosed ? "▾" : "▸"} Closed — {closed.length}
               </button>
               {showClosed && closed.map((task) => (
-                <TaskCard key={task.id} task={task} onChange={updateTask} onDelete={removeTask} />
+                <TaskCard key={task.id} task={task} subtasks={childrenMap[task.id] ?? []} onChange={updateTask} onDelete={removeTask} onAddSubTask={addTask} />
               ))}
             </section>
           )}
