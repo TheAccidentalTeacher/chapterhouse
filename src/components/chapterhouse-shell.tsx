@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, ChevronDown, HelpCircle, LogOut, Menu, Search, Settings2, Sparkles, X } from "lucide-react";
+import { Bell, ChevronDown, HelpCircle, LogOut, Menu, Moon, Search, Settings2, Sparkles, Sun, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { navigationGroups } from "@/lib/navigation";
@@ -33,11 +33,37 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
   const [mounted, setMounted] = useState(false);
   const [statusCollapsed, setStatusCollapsed] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     installDebugInterceptors();
+
+    // Init theme state from localStorage or system preference
+    const stored = localStorage.getItem('chapterhouse-theme');
+    if (stored === 'dark') {
+      setIsDark(true);
+    } else if (stored === 'light') {
+      setIsDark(false);
+    } else {
+      setIsDark(window.matchMedia('(prefers-color-scheme: dark)').matches);
+    }
+
+    // Track system preference changes when no stored override
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onSystemChange = (e: MediaQueryListEvent) => {
+      if (!localStorage.getItem('chapterhouse-theme')) setIsDark(e.matches);
+    };
+    mq.addEventListener('change', onSystemChange);
+    return () => mq.removeEventListener('change', onSystemChange);
   }, []);
+
+  function toggleTheme() {
+    const next = !isDark;
+    document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light');
+    localStorage.setItem('chapterhouse-theme', next ? 'dark' : 'light');
+    setIsDark(next);
+  }
 
   // Auto-open group containing the active route
   useEffect(() => {
@@ -367,6 +393,13 @@ export function ChapterhouseShell({ children }: ChapterhouseShellProps) {
                 >
                   <Bell className="h-4 w-4" />
                 </Link>
+                <button
+                  onClick={toggleTheme}
+                  title={isDark ? 'Switch to day mode' : 'Switch to night mode'}
+                  className="hidden sm:inline-flex rounded-full border border-border bg-card px-3 py-2 text-muted transition hover:bg-muted-surface hover:text-foreground"
+                >
+                  {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </button>
                 <Link
                   href="/settings"
                   title="Settings"

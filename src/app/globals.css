@@ -41,23 +41,42 @@
 
 /* ─── NIGHT GOLD ────────────────────────────────────────────────────────────── */
 /* Deep amber-night. Same gold family — dark bg, glowing gold text/accents.     */
+/* Applied when: system prefers dark (unless user forced light), OR user forced dark. */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #2A1A00;                    /* deep night amber */
-    --foreground: #F5D667;                    /* glowing warm gold text */
-    --card: rgba(44, 28, 0, 0.90);           /* very dark amber card */
+  html:not([data-theme="light"]) {
+    --background: #2A1A00;
+    --foreground: #F5D667;
+    --card: rgba(44, 28, 0, 0.90);
     --card-foreground: #F5D667;
     --border: rgba(210, 162, 10, 0.15);
     --muted: #A88030;
     --muted-surface: rgba(210, 162, 10, 0.08);
-    --accent: #D4A80E;                        /* bright gold accent on dark */
+    --accent: #D4A80E;
     --accent-foreground: #1A0800;
     --success: #54c59d;
     --warning: #ffbf70;
     --danger: #ef4458;
-    --sidebar: rgba(20, 12, 0, 0.95);        /* near-black amber sidebar */
+    --sidebar: rgba(20, 12, 0, 0.95);
     --rail: rgba(28, 18, 0, 0.80);
   }
+}
+
+/* Explicit dark mode — user toggled, overrides system preference */
+html[data-theme="dark"] {
+  --background: #2A1A00;
+  --foreground: #F5D667;
+  --card: rgba(44, 28, 0, 0.90);
+  --card-foreground: #F5D667;
+  --border: rgba(210, 162, 10, 0.15);
+  --muted: #A88030;
+  --muted-surface: rgba(210, 162, 10, 0.08);
+  --accent: #D4A80E;
+  --accent-foreground: #1A0800;
+  --success: #54c59d;
+  --warning: #ffbf70;
+  --danger: #ef4458;
+  --sidebar: rgba(20, 12, 0, 0.95);
+  --rail: rgba(28, 18, 0, 0.80);
 }
 
 * {
