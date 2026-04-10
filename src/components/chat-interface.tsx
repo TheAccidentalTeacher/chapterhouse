@@ -11,6 +11,7 @@ import {
   LinkIcon,
   Loader2,
   MessageSquarePlus,
+  PanelLeft,
   Pin,
   PinOff,
   Trash2,
@@ -128,6 +129,9 @@ export function ChatInterface() {
 
   // Whether thread persistence is available (null = unknown, true = ok, false = unavailable)
   const [threadsAvailable, setThreadsAvailable] = useState<boolean | null>(null);
+
+  // Thread sidebar open/closed state (hidden by default)
+  const [threadsOpen, setThreadsOpen] = useState(false);
 
   // ── Thread list operations ────────────────────────────────────────────────
 
@@ -707,7 +711,7 @@ export function ChatInterface() {
   return (
     <div className="flex h-full">
       {/* ── Thread Sidebar ─────────────────────────────────────────────────── */}
-      <div className="hidden w-64 shrink-0 flex-col border-r border-border/70 bg-sidebar/50 md:flex">
+      <div className={`shrink-0 flex-col border-r border-border/70 bg-sidebar/50 transition-all duration-300 overflow-hidden ${threadsOpen ? "w-64 flex" : "w-0 hidden"}`}>
         <div className="flex items-center justify-between border-b border-border/70 px-4 py-3">
           <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">
             Threads
@@ -804,6 +808,16 @@ export function ChatInterface() {
 
       {/* ── Main Chat Area ─────────────────────────────────────────────────── */}
       <div className="flex min-w-0 flex-1 flex-col">
+        {/* Thread toggle button — always visible, top-left of main area */}
+        <div className="flex items-center border-b border-border/40 px-3 py-2">
+          <button
+            onClick={() => setThreadsOpen((o) => !o)}
+            title={threadsOpen ? "Hide threads" : "Show threads"}
+            className={`flex h-7 w-7 items-center justify-center rounded-lg text-muted transition hover:bg-muted-surface hover:text-foreground ${threadsOpen ? "bg-muted-surface text-foreground" : ""}`}
+          >
+            <PanelLeft className="h-4 w-4" />
+          </button>
+        </div>
         {/* Message area */}
         <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">
           {isEmpty ? (
@@ -813,7 +827,7 @@ export function ChatInterface() {
                 <FocusBoardPanel />
               </div>
               {/* Scratchpad */}
-              <div className="flex w-[38%] flex-col rounded-2xl border border-border/40 bg-card/60 p-4">
+              <div className="flex w-72 shrink-0 flex-col rounded-2xl border border-border/40 bg-card/60 p-4">
                 <ScratchpadPanel />
               </div>
             </div>
