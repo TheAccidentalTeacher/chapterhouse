@@ -187,15 +187,16 @@ function SubTaskItem({
 /* ── Task row ───────────────────────────────────────────────────── */
 function TaskRow({
   task,
-  children: childTasks,
+  subTasks,
   onDone,
   onAddSub,
 }: {
   task: Task;
-  children: Task[];
+  subTasks: Task[];
   onDone: (id: string) => void;
   onAddSub: (parentId: string, title: string) => Promise<void>;
 }) {
+  const childTasks = subTasks;
   const [expanded, setExpanded] = useState(false);
   const [addingChild, setAddingChild] = useState(false);
   const [childInput, setChildInput] = useState("");
@@ -585,13 +586,10 @@ export function FocusBoardPanel() {
               <TaskRow
                 key={task.id}
                 task={task}
+                subTasks={childrenMap[task.id] ?? []}
                 onDone={markDone}
                 onAddSub={addSub}
-              >
-                {(childrenMap[task.id] ?? []).map((child) => (
-                  <SubTaskItem key={child.id} task={child} onDone={markDone} />
-                ))}
-              </TaskRow>
+              />
             ))}
           </ul>
         )}
