@@ -8,6 +8,7 @@ import {
   ExternalLink,
   Loader2,
   Plus,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -23,6 +24,18 @@ type Task = {
 };
 
 const ACTIVE_STATUSES = ["open", "in-progress", "blocked"];
+
+const STATUS_DOT: Record<string, string> = {
+  "in-progress": "bg-amber-400/80",
+  blocked: "bg-red-400/80",
+};
+
+const SOURCE_COLOR: Record<string, string> = {
+  brief: "#3B82F6",
+  research: "#22C55E",
+  opportunity: "#A855F7",
+  manual: "#71717A",
+};
 
 /* ── Sub-task row ────────────────────────────────────────────────── */
 function SubTaskItem({
@@ -45,7 +58,7 @@ function SubTaskItem({
   };
 
   return (
-    <li className="flex items-center gap-1.5 py-0.5 pl-6">
+    <li className="flex items-center gap-1 py-0.5 pl-5">
       <button
         onClick={handleCheck}
         disabled={checking}
@@ -53,7 +66,7 @@ function SubTaskItem({
       >
         {checking && <Check className="h-2.5 w-2.5 text-accent" />}
       </button>
-      <span className="truncate text-[11px] text-muted/70">{task.title}</span>
+      <span className="truncate text-[11px] text-muted/70 leading-tight">{task.title}</span>
     </li>
   );
 }
@@ -64,18 +77,22 @@ function TaskRow({
   subtasks,
   onDone,
   onSubDone,
+  onSubAdded,
 }: {
   task: Task;
   subtasks: Task[];
   onDone: (id: string) => void;
   onSubDone: (id: string) => void;
+  onSubAdded: (sub: Task) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [addingSubtask, setAddingSubtask] = useState(false);
+  const [subTitle, setSubTitle] = useState("");
+  const [savingSub, setSavingSub] = useState(false);
+  const subInputRef = useRef<HTMLInputElement>(null);
 
-  const activeSubtasks = subtasks.filter((s) =>
-    ACTIVE_STATUSES.includes(s.status)
-  );
+  const activeSubtasks = subtasks.filter((s) => ACTIVE_STATUSES.includes(s.status));
 
   const handleCheck = async () => {
     setChecking(true);
@@ -87,21 +104,57 @@ function TaskRow({
     onDone(task.id);
   };
 
+  const openSubtaskInput = () => {
+    setAddingSubtask(true);
+    setExpanded(true);
+    setTimeout(() => subInputRef.current?.focus(), 40);
+  };
+
+  const handleAddSubtask = async () => {
+    const title = subTitle.trim();
+    if (!title) return;
+    setSavingSub(true);
+    try {
+      const res = await fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, parent_id: task.id }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        onSubAdded(data.task);
+        setSubTitle("");
+        setAddingSubtask(false);
+      }
+    } finally {
+      setSavingSub(false);
+    }
+  };
+
+  const sourceColor =
+    SOURCE_COLOR[task.source_type ?? "manual"] ?? SOURCE_COLOR.manual;
+
   return (
     <li className="group">
-      <div className="flex items-center gap-1.5 rounded px-1 py-0.5 hover:bg-card/60">
-        {/* Expand chevron — only shown when sub-tasks exist */}
+      <div className="flex items-center gap-1 rounded px-1 py-0.5 hover:bg-card/60">
+        {/* Chevron (when sub-tasks exist) OR + button (always visible on hover) */}
         {activeSubtasks.length > 0 ? (
           <button
             onClick={() => setExpanded(!expanded)}
             className="flex h-3.5 w-3.5 shrink-0 items-center justify-center text-muted/40 transition hover:text-muted"
           >
             <ChevronRight
-              className={`h-3 w-3 transition-transform ${expanded ? "rotate-90" : ""}`}
+              className={`h-3 w-3 transition-transform duration-150 ${expanded ? "rotate-90" : ""}`}
             />
           </button>
         ) : (
-          <span className="w-3.5 shrink-0" />
+          <button
+            onClick={openSubtaskInput}
+            title="Add sub-task"
+            className="flex h-3.5 w-3.5 shrink-0 items-center justify-center text-muted/20 opacity-0 transition hover:text-accent/60 group-hover:opacity-100"
+          >
+            <Plus className="h-2.5 w-2.5" />
+          </button>
         )}
 
         {/* Checkbox */}
@@ -113,33 +166,87 @@ function TaskRow({
           {checking && <Check className="h-2.5 w-2.5 text-accent" />}
         </button>
 
+        {/* Source type dot */}
+        <span
+          className="h-1.5 w-1.5 shrink-0 rounded-full"
+          style={{ backgroundColor: sourceColor }}
+          title={task.source_type ?? "manual"}
+        />
+
         {/* Title */}
-        <span className="flex-1 truncate text-xs leading-tight">
-          {task.title}
-        </span>
+        <span className="flex-1 truncate text-xs leading-tight">{task.title}</span>
 
-        {/* Status indicators */}
-        {task.status === "in-progress" && (
-          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400/70" title="In progress" />
-        )}
-        {task.status === "blocked" && (
-          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-400/70" title="Blocked" />
+        {/* Status dot */}
+        {STATUS_DOT[task.status] && (
+          <span
+            className={`h-1.5 w-1.5 shrink-0 rounded-full ${STATUS_DOT[task.status]}`}
+            title={task.status}
+          />
         )}
 
-        {/* Sub-task count */}
+        {/* Sub-task count badge */}
         {activeSubtasks.length > 0 && (
-          <span className="text-[10px] text-muted/50">
+          <span className="text-[10px] tabular-nums text-muted/50">
             {activeSubtasks.length}
           </span>
         )}
+
+        {/* + button when sub-tasks already exist (add more) */}
+        {activeSubtasks.length > 0 && (
+          <button
+            onClick={openSubtaskInput}
+            title="Add sub-task"
+            className="flex h-3.5 w-3.5 shrink-0 items-center justify-center text-muted/20 opacity-0 transition hover:text-accent/60 group-hover:opacity-100"
+          >
+            <Plus className="h-2.5 w-2.5" />
+          </button>
+        )}
       </div>
 
-      {/* Sub-tasks */}
-      {expanded && activeSubtasks.length > 0 && (
+      {/* Sub-tasks + inline add */}
+      {expanded && (
         <ul className="pb-0.5">
           {activeSubtasks.map((s) => (
             <SubTaskItem key={s.id} task={s} onDone={onSubDone} />
           ))}
+          {addingSubtask && (
+            <li className="flex items-center gap-1.5 py-0.5 pl-5">
+              <input
+                ref={subInputRef}
+                type="text"
+                value={subTitle}
+                onChange={(e) => setSubTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleAddSubtask();
+                  if (e.key === "Escape") {
+                    setAddingSubtask(false);
+                    setSubTitle("");
+                    if (activeSubtasks.length === 0) setExpanded(false);
+                  }
+                }}
+                placeholder="Sub-task…"
+                className="flex-1 rounded border border-border/30 bg-transparent px-1.5 py-0.5 text-[11px] placeholder:text-muted/40 focus:border-accent/40 focus:outline-none"
+                maxLength={200}
+              />
+              <button
+                onClick={handleAddSubtask}
+                disabled={savingSub || !subTitle.trim()}
+                className="flex h-4 w-4 shrink-0 items-center justify-center text-accent transition disabled:opacity-30"
+              >
+                {savingSub ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Check className="h-3 w-3" />
+                )}
+              </button>
+              <button
+                onClick={() => { setAddingSubtask(false); setSubTitle(""); if (activeSubtasks.length === 0) setExpanded(false); }}
+                className="flex h-4 w-4 shrink-0 items-center justify-center text-muted/40 transition hover:text-muted"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </li>
+          )}
         </ul>
       )}
     </li>
@@ -182,6 +289,8 @@ export function HomeTasksPanel() {
     setTasks((prev) =>
       prev.map((t) => (t.id === id ? { ...t, status: "done" } : t))
     );
+
+  const addSub = (sub: Task) => setTasks((prev) => [...prev, sub]);
 
   const handleAdd = async () => {
     const title = newTitle.trim();
@@ -246,6 +355,7 @@ export function HomeTasksPanel() {
                 subtasks={childrenMap[task.id] ?? []}
                 onDone={markDone}
                 onSubDone={markDone}
+                onSubAdded={addSub}
               />
             ))}
           </ul>
