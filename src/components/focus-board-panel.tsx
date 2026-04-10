@@ -530,8 +530,35 @@ export function FocusBoardPanel() {
 
       {/* Scrollable content area */}
       <div className="flex-1 overflow-y-auto">
-        {/* ── Today's Focus ── */}
+        {/* ── Tasks ── */}
         <p className="mb-1 text-[9px] font-semibold uppercase tracking-widest text-muted/40">
+          Tasks
+        </p>
+        {loadingTasks ? (
+          <div className="flex items-center gap-1.5 py-2">
+            <Loader2 className="h-3 w-3 animate-spin text-muted/40" />
+            <span className="text-[10px] text-muted/40">Loading…</span>
+          </div>
+        ) : topLevel.length === 0 ? (
+          <p className="py-2 text-center text-[10px] text-muted/50">
+            No active tasks. Add one below.
+          </p>
+        ) : (
+          <ul className="space-y-0.5">
+            {topLevel.map((task) => (
+              <TaskRow
+                key={task.id}
+                task={task}
+                subTasks={childrenMap[task.id] ?? []}
+                onDone={markDone}
+                onAddSub={addSub}
+              />
+            ))}
+          </ul>
+        )}
+
+        {/* ── Today's Focus ── */}
+        <p className="mb-1 mt-3 text-[9px] font-semibold uppercase tracking-widest text-muted/40">
           Today&apos;s Focus
         </p>
         {items.length === 0 && !populating && (
@@ -570,33 +597,6 @@ export function FocusBoardPanel() {
           <p className="mt-1 text-center text-[10px] text-muted/40">
             +{hiddenCount} more · check off items to surface them
           </p>
-        )}
-
-        {/* ── Tasks ── */}
-        <p className="mb-1 mt-3 text-[9px] font-semibold uppercase tracking-widest text-muted/40">
-          Tasks
-        </p>
-        {loadingTasks ? (
-          <div className="flex items-center gap-1.5 py-2">
-            <Loader2 className="h-3 w-3 animate-spin text-muted/40" />
-            <span className="text-[10px] text-muted/40">Loading…</span>
-          </div>
-        ) : topLevel.length === 0 ? (
-          <p className="py-2 text-center text-[10px] text-muted/50">
-            No active tasks. Add one below.
-          </p>
-        ) : (
-          <ul className="space-y-0.5">
-            {topLevel.map((task) => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                subTasks={childrenMap[task.id] ?? []}
-                onDone={markDone}
-                onAddSub={addSub}
-              />
-            ))}
-          </ul>
         )}
       </div>
 
