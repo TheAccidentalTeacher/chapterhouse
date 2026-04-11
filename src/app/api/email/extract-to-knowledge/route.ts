@@ -15,6 +15,10 @@ const client = new Anthropic();
 
 export async function POST(req: NextRequest) {
   const supabase = getSupabaseServiceRoleClient();
+  if (!supabase) {
+    return NextResponse.json({ error: "Supabase service role not configured" }, { status: 500 });
+  }
+
   const body = await req.json();
 
   const { uid, account, subject, from: fromName, fromAddress, date, reason, folder, subfolder } = body;
