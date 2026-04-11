@@ -21,7 +21,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 function getAnthropic() {
   return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });

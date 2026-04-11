@@ -79,7 +79,7 @@
       "maxDuration": 30
     },
     "src/app/api/cron/email-digest/route.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "src/app/api/brain/sync/route.ts": {
       "maxDuration": 60
