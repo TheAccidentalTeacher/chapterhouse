@@ -17,6 +17,7 @@ import {
   Trash2,
   Users,
   X,
+  Zap,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -89,6 +90,24 @@ function isCouncilMessage(msg: DisplayMessage): msg is CouncilMessage {
   return msg.role === "council";
 }
 
+// ── Quick Command Palette ────────────────────────────────────────────────────────
+
+type EmailCommand = {
+  emoji: string;
+  command: string;
+  description: string;
+  needsInput: boolean;
+};
+
+const EMAIL_COMMANDS: EmailCommand[] = [
+  { emoji: "📬", command: "/inbox",                description: "Show 20 recent unread emails",             needsInput: false },
+  { emoji: "🔃", command: "/triage",               description: "Fetch & store latest emails (default 200)",  needsInput: false },
+  { emoji: "🗑️", command: "/archive-spam",         description: "Archive all spam emails",                   needsInput: false },
+  { emoji: "📰", command: "/archive-newsletters",  description: "Archive all newsletters",                   needsInput: false },
+  { emoji: "🔔", command: "/archive-notifications",description: "Archive all notifications",                 needsInput: false },
+  { emoji: "📌", command: "/remember",             description: "Save a fact — type it after clicking",      needsInput: true  },
+];
+
 // ── Chat Interface ─────────────────────────────────────────────────────────────
 
 export function ChatInterface() {
@@ -103,6 +122,7 @@ export function ChatInterface() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [selectedModel, setSelectedModel] = useState<ModelOption>(MODELS[0]);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [learnedCount, setLearnedCount] = useState(0);
   const [isLearning, setIsLearning] = useState(false);
   const [fetchingUrls, setFetchingUrls] = useState<string[]>([]);
@@ -702,6 +722,16 @@ export function ChatInterface() {
     }
   }
 
+  function runCommand(cmd: EmailCommand) {
+    setCommandPaletteOpen(false);
+    if (cmd.needsInput) {
+      setInput(cmd.command + " ");
+      setTimeout(() => textareaRef.current?.focus(), 0);
+    } else {
+      sendMessage(cmd.command);
+    }
+  }
+
   const isEmpty = messages.length === 0;
   const pinnedThreads = threads.filter((t) => t.pinned);
   const recentThreads = threads.filter((t) => !t.pinned);
@@ -1129,6 +1159,38 @@ export function ChatInterface() {
                         <div className="min-w-0">
                           <div className="font-medium truncate">{p.name}</div>
                           <div className="text-xs text-muted truncate">{p.specialty}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Command palette */}
+              <div className="relative">
+                <button
+                  onClick={() => setCommandPaletteOpen((o) => !o)}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition ${commandPaletteOpen ? "border-accent/40 bg-accent/10 text-accent" : "border-border/70 bg-card/60 text-muted hover:border-accent/40 hover:text-foreground"}`}
+                  title="Quick email commands"
+                >
+                  <Zap className="h-3 w-3" />
+                  Commands
+                </button>
+                {commandPaletteOpen && (
+                  <div className="absolute bottom-full left-0 mb-2 w-80 overflow-hidden rounded-2xl border border-border bg-card shadow-xl shadow-black/20">
+                    <div className="border-b border-border/50 px-4 py-2">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted">Quick Commands</p>
+                    </div>
+                    {EMAIL_COMMANDS.map((cmd) => (
+                      <button
+                        key={cmd.command}
+                        onClick={() => runCommand(cmd)}
+                        className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition hover:bg-muted-surface"
+                      >
+                        <span className="text-base shrink-0">{cmd.emoji}</span>
+                        <div className="min-w-0">
+                          <div className="font-mono text-xs text-foreground">{cmd.command}{cmd.needsInput ? " …" : ""}</div>
+                          <div className="text-xs text-muted">{cmd.description}</div>
                         </div>
                       </button>
                     ))}
