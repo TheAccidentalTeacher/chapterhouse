@@ -794,12 +794,18 @@ export async function POST(request: Request) {
           },
           body: JSON.stringify({ limit }),
         });
+        if (!res.ok) {
+          const text = await res.text();
+          console.error(`[/triage] bulk-triage returned ${res.status}: ${text.slice(0, 500)}`);
+          return new Response(`❌ Triage failed (HTTP ${res.status}). Check server logs.`, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+        }
         const data = (await res.json()) as { fetched?: number; inserted?: number; skipped?: number };
         return new Response(
           `📥 Triage complete. Fetched **${data.fetched ?? 0}** messages — **${data.inserted ?? 0}** new, ${data.skipped ?? 0} already stored. Use \`/inbox\` to see unread messages.`,
           { headers: { "Content-Type": "text/plain; charset=utf-8" } }
         );
-      } catch {
+      } catch (err) {
+        console.error("[/triage] bulk-triage threw:", err);
         return new Response("❌ Triage failed. Check server logs.", { headers: { "Content-Type": "text/plain; charset=utf-8" } });
       }
     }
@@ -815,13 +821,19 @@ export async function POST(request: Request) {
           },
           body: JSON.stringify({ category: "spam" }),
         });
+        if (!res.ok) {
+          const text = await res.text();
+          console.error(`[/archive-spam] bulk-archive returned ${res.status}: ${text.slice(0, 500)}`);
+          return new Response(`❌ Archive failed (HTTP ${res.status}). Check server logs.`, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+        }
         const data = (await res.json()) as { archived?: number; failed?: number };
         const failNote = (data.failed ?? 0) > 0 ? ` (${data.failed} IMAP error(s) — DB still cleaned)` : "";
         return new Response(
           `🗑️ Archived **${data.archived ?? 0}** spam email(s)${failNote}.`,
           { headers: { "Content-Type": "text/plain; charset=utf-8" } }
         );
-      } catch {
+      } catch (err) {
+        console.error("[/archive-spam] bulk-archive threw:", err);
         return new Response("❌ Archive failed. Check server logs.", { headers: { "Content-Type": "text/plain; charset=utf-8" } });
       }
     }
@@ -837,13 +849,19 @@ export async function POST(request: Request) {
           },
           body: JSON.stringify({ category: "newsletter" }),
         });
+        if (!res.ok) {
+          const text = await res.text();
+          console.error(`[/archive-newsletters] bulk-archive returned ${res.status}: ${text.slice(0, 500)}`);
+          return new Response(`❌ Archive failed (HTTP ${res.status}). Check server logs.`, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+        }
         const data = (await res.json()) as { archived?: number; failed?: number };
         const failNote = (data.failed ?? 0) > 0 ? ` (${data.failed} IMAP error(s) — DB still cleaned)` : "";
         return new Response(
           `📰 Archived **${data.archived ?? 0}** newsletter email(s)${failNote}.`,
           { headers: { "Content-Type": "text/plain; charset=utf-8" } }
         );
-      } catch {
+      } catch (err) {
+        console.error("[/archive-newsletters] bulk-archive threw:", err);
         return new Response("❌ Archive failed. Check server logs.", { headers: { "Content-Type": "text/plain; charset=utf-8" } });
       }
     }
@@ -859,13 +877,19 @@ export async function POST(request: Request) {
           },
           body: JSON.stringify({ category: "notification" }),
         });
+        if (!res.ok) {
+          const text = await res.text();
+          console.error(`[/archive-notifications] bulk-archive returned ${res.status}: ${text.slice(0, 500)}`);
+          return new Response(`❌ Archive failed (HTTP ${res.status}). Check server logs.`, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+        }
         const data = (await res.json()) as { archived?: number; failed?: number };
         const failNote = (data.failed ?? 0) > 0 ? ` (${data.failed} IMAP error(s) — DB still cleaned)` : "";
         return new Response(
           `🔔 Archived **${data.archived ?? 0}** notification email(s)${failNote}.`,
           { headers: { "Content-Type": "text/plain; charset=utf-8" } }
         );
-      } catch {
+      } catch (err) {
+        console.error("[/archive-notifications] bulk-archive threw:", err);
         return new Response("❌ Archive failed. Check server logs.", { headers: { "Content-Type": "text/plain; charset=utf-8" } });
       }
     }

@@ -89,6 +89,9 @@
     },
     "src/app/api/folio/trigger/route.ts": {
       "maxDuration": 300
+    },
+    "src/app/api/chat/route.ts": {
+      "maxDuration": 60
     }
   }
 }
