@@ -458,6 +458,23 @@ async function buildLiveContext(userMessage: string): Promise<string> {
     }
   } catch { /* dismissed notes may not exist — ignore */ }
 
+  // Active Knowledge Library — promoted newsletter insights and manual notes
+  try {
+    const { data: activeNodes } = await supabase
+      .from("knowledge_nodes")
+      .select("folder, subfolder, title, body")
+      .eq("is_active", true)
+      .order("inject_order", { ascending: true })
+      .limit(20);
+    if (activeNodes && activeNodes.length > 0) {
+      const nodeLines = activeNodes.map((n) => {
+        const path = n.subfolder ? `${n.folder} / ${n.subfolder}` : n.folder;
+        return `**${n.title}** [${path}]\n${n.body}`;
+      }).join("\n\n---\n\n");
+      blocks.push(`## Active Knowledge Library\n\n${nodeLines}`);
+    }
+  } catch { /* knowledge_nodes not yet migrated */ }
+
   // Context Brain — inject shared knowledge from context_files (email digest, intel, dreamer, etc.)
   // Skips persona files (injected per-member in POST handler) and huge master context docs
   try {

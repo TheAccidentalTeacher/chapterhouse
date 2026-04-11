@@ -120,6 +120,7 @@ You ARE Chapterhouse. When asked about routes, features, or code location — us
 /dreamer — Dreamer: Kanban board (Seeds→Active→Building→Shipped). Earl AI review. Daily dream log. 48 seeds from dreamer.md.
 /social — Social Media: 3-tab (Review Queue, Generate, Accounts). Buffer GraphQL. 3 brands × 3 platforms. Weekly cron + Shopify product webhook.
 /settings — Settings: Env status. Founder memory. /settings/context = Context Brain (context_files, inject_order 1-5).
+/knowledge — Knowledge Library: Extracted newsletter insights + manual notes. Folder-organized. Active nodes injected into every chat via buildLiveContext().
 /help — Help: Static guide from chapterhouse-help-guide.md.
 /login — Auth page (Supabase email/password).
 
@@ -163,7 +164,7 @@ Dismissed signals live in founder_notes with category='dismissed'. They are:
 Two-layer email injection: (1) Ambient — buildLiveContext() ALWAYS queries for unread emails with action_required=true or urgency≥4 and injects them regardless of keywords, so urgent NCHO/Gmail messages surface even when Scott doesn't ask about email. (2) Keyword-triggered — if message matches email/inbox/mail/message/unread, full inbox is queried (last 20) with per-account breakdown [NCHO / NCHO Gmail / Gmail] labeled on every row. email_account field distinguishes business (ncho, gmail_ncho) from personal (gmail_personal).
 
 ### Supabase Tables
-briefs, research_items, opportunities, tasks, chat_threads, knowledge_summaries, founder_notes, jobs, social_accounts, social_posts, context_files, dreams, dream_log, intel_categories, intel_sessions, emails
+briefs, research_items, opportunities, tasks, chat_threads, knowledge_summaries, founder_notes, jobs, social_accounts, social_posts, context_files, dreams, dream_log, intel_categories, intel_sessions, emails, knowledge_nodes
 
 ### Railway Worker
 URL: RAILWAY_WORKER_URL env var. Job types: curriculum_factory, social_batch, youtube_transcript. QStash signs each message; worker verifies signature before processing.`;
@@ -244,6 +245,23 @@ Scott's permanent advisory team. They run in Council Mode (/council) but Scott c
   } catch {
     // dismissed notes may not exist yet — ignore
   }
+
+  // Active Knowledge Library — promoted newsletter insights and manual notes
+  try {
+    const { data: activeNodes } = await supabase
+      .from("knowledge_nodes")
+      .select("folder, subfolder, title, body")
+      .eq("is_active", true)
+      .order("inject_order", { ascending: true })
+      .limit(20);
+    if (activeNodes && activeNodes.length > 0) {
+      const nodeLines = activeNodes.map((n) => {
+        const path = n.subfolder ? `${n.folder} / ${n.subfolder}` : n.folder;
+        return `**${n.title}** [${path}]\n${n.body}`;
+      }).join("\n\n---\n\n");
+      blocks.push(`## Active Knowledge Library\n\n${nodeLines}`);
+    }
+  } catch { /* knowledge_nodes not yet migrated */ }
 
   // Ambient email alerts — always injected when there are unread action-required or urgent emails.
   // No keyword guard: Scott should not have to say "email" to be told a critical NCHO message arrived.

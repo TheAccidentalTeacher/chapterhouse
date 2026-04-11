@@ -274,6 +274,28 @@ export const navigationGroups: NavigationGroup[] = [
         },
         status: "live",
       },
+      {
+        label: "Knowledge Library",
+        href: "/knowledge",
+        description: "Extracted newsletter insights and manual research notes.",
+        icon: BookOpen,
+        tooltip: {
+          summary: "Folder-organized knowledge base built from promoted newsletter content and manual notes. Active nodes are injected into every chat session automatically.",
+          features: [
+            "Extract insights from newsletter emails with one click",
+            "Organize notes into folders and subfolders",
+            "Toggle any node active to inject it into every chat and Council session",
+            "Inline editor — edit title and body without leaving the page",
+            "In-context count shows how many nodes are currently in every chat",
+          ],
+          tips: [
+            "Mark nodes active to inject them into chat — deactivate to stop surfacing",
+            "Use folders like 'ai', 'marketing', 'curriculum' to organize",
+            "Extraction runs silently — check /knowledge after triaging newsletters",
+          ],
+        },
+        status: "live",
+      },
     ],
   },
   {

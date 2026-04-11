@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { CheckCheck, MailOpen, Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { CheckCheck, MailOpen, Loader2, AlertCircle, RefreshCw, BookOpen } from "lucide-react";
 import type { ClassifiedEmail } from "@/app/api/email/unread-classify/route";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -85,10 +85,16 @@ function EmailRow({
   email,
   checked,
   onChange,
+  onExtract,
+  extracting,
+  extracted,
 }: {
   email: ClassifiedEmail;
   checked: boolean;
   onChange: (uid: number, account: string, checked: boolean) => void;
+  onExtract?: (email: ClassifiedEmail) => void;
+  extracting?: boolean;
+  extracted?: boolean;
 }) {
   const id = `triage-${email.account}-${email.uid}`;
   return (
@@ -122,6 +128,19 @@ function EmailRow({
         </p>
         <p className="text-xs text-zinc-500 mt-0.5 line-clamp-1">{email.reason}</p>
       </div>
+      <button
+        type="button"
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); onExtract?.(email); }}
+        disabled={extracting || extracted}
+        className="flex-shrink-0 p-1.5 rounded text-zinc-500 hover:text-amber-400 disabled:opacity-40 transition-colors"
+        title={extracted ? "Extracted" : "Extract to Knowledge"}
+      >
+        {extracting ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <BookOpen className={`h-3.5 w-3.5 ${extracted ? "text-emerald-400" : ""}`} />
+        )}
+      </button>
     </label>
   );
 }
@@ -134,12 +153,18 @@ function TriageSection({
   checkedSet,
   onToggle,
   onSelectAll,
+  onExtract,
+  extractingSet,
+  extractedSet,
 }: {
   classification: Classification;
   emails: ClassifiedEmail[];
   checkedSet: Set<string>;
   onToggle: (uid: number, account: string, checked: boolean) => void;
   onSelectAll: (classification: Classification, checked: boolean) => void;
+  onExtract?: (email: ClassifiedEmail) => void;
+  extractingSet?: Set<string>;
+  extractedSet?: Set<string>;
 }) {
   const cfg = SECTION_CONFIG[classification];
   if (emails.length === 0) return null;
@@ -189,6 +214,9 @@ function TriageSection({
             email={e}
             checked={checkedSet.has(`${e.account}:${e.uid}`)}
             onChange={onToggle}
+            onExtract={onExtract}
+            extracting={extractingSet?.has(`${e.account}:${e.uid}`)}
+            extracted={extractedSet?.has(`${e.account}:${e.uid}`)}
           />
         ))}
       </div>
@@ -211,6 +239,33 @@ export function UnreadTriage() {
 
   // checked = "will be marked as read"
   const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [extracting, setExtracting] = useState<Set<string>>(new Set());
+  const [extracted, setExtracted] = useState<Set<string>>(new Set());
+
+  const handleExtract = async (email: ClassifiedEmail) => {
+    const key = `${email.account}:${email.uid}`;
+    setExtracting((prev) => new Set([...prev, key]));
+    try {
+      await fetch("/api/email/extract-to-knowledge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          uid: email.uid,
+          account: email.account,
+          subject: email.subject,
+          from: email.from,
+          fromAddress: email.fromAddress,
+          date: email.date,
+          reason: email.reason,
+        }),
+      });
+      setExtracted((prev) => new Set([...prev, key]));
+    } catch {
+      // extract failed silently
+    } finally {
+      setExtracting((prev) => { const s = new Set(prev); s.delete(key); return s; });
+    }
+  };
 
   // ── Classify ───────────────────────────────────────────────────────────────
 
@@ -486,6 +541,9 @@ export function UnreadTriage() {
         checkedSet={checked}
         onToggle={handleToggle}
         onSelectAll={handleSelectAll}
+        onExtract={handleExtract}
+        extractingSet={extracting}
+        extractedSet={extracted}
       />
       <TriageSection
         classification="routine"
@@ -493,6 +551,9 @@ export function UnreadTriage() {
         checkedSet={checked}
         onToggle={handleToggle}
         onSelectAll={handleSelectAll}
+        onExtract={handleExtract}
+        extractingSet={extracting}
+        extractedSet={extracted}
       />
       <TriageSection
         classification="skip"
@@ -500,6 +561,9 @@ export function UnreadTriage() {
         checkedSet={checked}
         onToggle={handleToggle}
         onSelectAll={handleSelectAll}
+        onExtract={handleExtract}
+        extractingSet={extracting}
+        extractedSet={extracted}
       />
 
       {/* Floating re-run button */}
