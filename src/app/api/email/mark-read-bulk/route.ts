@@ -10,7 +10,7 @@
 
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getImapClient } from "@/lib/email-client";
+import { getImapClient, type EmailAccount } from "@/lib/email-client";
 import { requireEmailAuth } from "@/lib/email-auth";
 
 export const dynamic = "force-dynamic";
@@ -60,7 +60,7 @@ export async function POST(req: Request): Promise<NextResponse> {
   const byAccount: Record<string, number> = {};
 
   for (const [account, uids] of grouped.entries()) {
-    const client = getImapClient(account, { socketTimeout: 15000 });
+    const client = getImapClient(account as EmailAccount, { socketTimeout: 15000 });
     if (!client) {
       failed += uids.length;
       byAccount[account] = 0;
