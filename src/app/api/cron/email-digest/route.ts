@@ -352,7 +352,7 @@ ${(e.text_body ?? "").slice(0, 3000)}`
       inject_order: 5,
       is_active: true,
       content: digestMarkdown,
-      label: `Email Digest — ${today}`,
+      name: `Email Digest — ${today}`,
     });
 
   if (insertError) {
