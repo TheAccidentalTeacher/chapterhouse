@@ -168,7 +168,7 @@ export async function POST(req: Request): Promise<NextResponse> {
       // Search for all UNSEEN messages, return UIDs
       const unseenUids = await client.search({ seen: false }, { uid: true });
 
-      if (unseenUids.length === 0) {
+      if (!unseenUids || unseenUids.length === 0) {
         byAccount[account] = 0;
         continue;
       }
