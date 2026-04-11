@@ -208,6 +208,7 @@ function TaskRow({
     await onAddSub(task.id, t);
     setChildInput("");
     setAddingChild(false);
+    setExpanded(true); // auto-expand to show the newly added sub-task
   };
 
   return (
@@ -275,6 +276,22 @@ function TaskRow({
             <SubTaskItem key={c.id} task={c} onDone={onDone} />
           ))}
         </ul>
+      )}
+
+      {/* Add another sub-task — visible whenever the list is expanded */}
+      {expanded && childTasks.length > 0 && !addingChild && (
+        <div className="py-0.5 pl-5">
+          <button
+            onClick={() => {
+              setAddingChild(true);
+              setTimeout(() => childRef.current?.focus(), 50);
+            }}
+            className="flex items-center gap-0.5 text-[10px] text-muted/30 transition hover:text-accent/60"
+          >
+            <Plus className="h-2.5 w-2.5" />
+            sub-task
+          </button>
+        </div>
       )}
 
       {/* Inline sub-task input */}
