@@ -85,6 +85,9 @@ interface HaikuClassifyResult {
 
 const VALID_CLASSIFICATIONS = new Set(["important", "routine", "skip"]);
 const BATCH_SIZE = 25;
+// Process at most this many unread emails per run (most recent by UID).
+// Keeps IMAP + Haiku within the Vercel timeout. Run again to process older batches.
+const MAX_EMAILS_PER_RUN = 75;
 
 async function classifyBatch(
   anthropic: Anthropic,
@@ -173,9 +176,14 @@ export async function POST(req: Request): Promise<NextResponse> {
         continue;
       }
 
+      // Cap to most recent N UIDs (highest UIDs = most recent in standard IMAP)
+      const uidsToFetch = unseenUids.length > MAX_EMAILS_PER_RUN
+        ? unseenUids.slice(-MAX_EMAILS_PER_RUN)
+        : unseenUids;
+
       // Fetch envelopes only (no body — fast)
       for await (const msg of client.fetch(
-        unseenUids.join(","),
+        uidsToFetch.join(","),
         { envelope: true, uid: true },
         { uid: true }
       )) {
@@ -191,6 +199,7 @@ export async function POST(req: Request): Promise<NextResponse> {
         });
       }
 
+      // Store total unseen count (may be > what we fetched)
       byAccount[account] = unseenUids.length;
     } catch (err) {
       console.error(`[unread-classify] IMAP error on ${account}:`, err);
@@ -217,15 +226,24 @@ export async function POST(req: Request): Promise<NextResponse> {
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
-  // ── Step 2: Classify in batches of 25 ──────────────────────────────────────
+  // ── Step 2: Classify — build batches, run all in parallel ────────────────
   const anthropic = getAnthropic();
   const classificationMap = new Map<number, HaikuClassifyResult>();
 
+  // Build batch array first
+  const batches: RawEmail[][] = [];
   for (let i = 0; i < rawEmails.length; i += BATCH_SIZE) {
-    const batch = rawEmails.slice(i, i + BATCH_SIZE);
-    try {
-      const results = await classifyBatch(anthropic, batch);
-      for (const r of results) {
+    batches.push(rawEmails.slice(i, i + BATCH_SIZE));
+  }
+
+  // Run all batches in parallel — 3 concurrent Haiku calls × ~2s = ~6s total vs ~50s sequential
+  const batchResults = await Promise.allSettled(
+    batches.map((batch) => classifyBatch(anthropic, batch))
+  );
+
+  batchResults.forEach((result, idx) => {
+    if (result.status === "fulfilled") {
+      for (const r of result.value) {
         if (VALID_CLASSIFICATIONS.has(r.classification)) {
           classificationMap.set(r.uid, r);
         } else {
@@ -236,10 +254,9 @@ export async function POST(req: Request): Promise<NextResponse> {
           });
         }
       }
-    } catch (err) {
-      console.error(`[unread-classify] Batch ${i / BATCH_SIZE + 1} failed:`, err);
-      // Mark whole batch as routine on error
-      for (const e of batch) {
+    } else {
+      console.error(`[unread-classify] Batch ${idx + 1} failed:`, result.reason);
+      for (const e of batches[idx]) {
         classificationMap.set(e.uid, {
           uid: e.uid,
           classification: "routine",
@@ -247,7 +264,7 @@ export async function POST(req: Request): Promise<NextResponse> {
         });
       }
     }
-  }
+  });
 
   // ── Step 3: Merge classifications back onto raw emails ─────────────────────
   const classified: ClassifiedEmail[] = rawEmails.map((e) => {
@@ -267,8 +284,11 @@ export async function POST(req: Request): Promise<NextResponse> {
     };
   });
 
+  const total_unseen = Object.values(byAccount).reduce((a, b) => a + b, 0);
+
   return NextResponse.json({
     total: classified.length,
+    total_unseen,
     emails: classified,
     byAccount,
   });

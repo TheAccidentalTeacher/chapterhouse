@@ -13,6 +13,7 @@ interface TriageState {
   emails: ClassifiedEmail[];
   byAccount: Record<string, number>;
   total: number;
+  total_unseen: number;
   error: string | null;
   markedCount: number;
 }
@@ -203,6 +204,7 @@ export function UnreadTriage() {
     emails: [],
     byAccount: {},
     total: 0,
+    total_unseen: 0,
     error: null,
     markedCount: 0,
   });
@@ -222,6 +224,7 @@ export function UnreadTriage() {
       }
       const data = await res.json() as {
         total: number;
+        total_unseen: number;
         emails: ClassifiedEmail[];
         byAccount: Record<string, number>;
       };
@@ -242,6 +245,7 @@ export function UnreadTriage() {
         emails: data.emails,
         byAccount: data.byAccount,
         total: data.total,
+        total_unseen: data.total_unseen ?? data.total,
       }));
     } catch (err) {
       setState((s) => ({
@@ -367,10 +371,10 @@ export function UnreadTriage() {
       <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4">
         <Loader2 className="h-10 w-10 text-amber-400 animate-spin" />
         <p className="text-zinc-300 text-sm">
-          Fetching unread emails from IMAP and classifying with Haiku…
+          Classifying your most recent unread emails with Haiku…
         </p>
         <p className="text-zinc-500 text-xs">
-          This takes 30–60 s for ~500 emails. Hang tight.
+          Takes ~20 s. Hang tight.
         </p>
       </div>
     );
@@ -401,6 +405,7 @@ export function UnreadTriage() {
               emails: [],
               byAccount: {},
               total: 0,
+              total_unseen: 0,
               error: null,
               markedCount: 0,
             });
@@ -411,6 +416,7 @@ export function UnreadTriage() {
           <RefreshCw className="h-4 w-4" />
           Run Again
         </button>
+
       </div>
     );
   }
@@ -425,7 +431,9 @@ export function UnreadTriage() {
       <div className="flex items-center justify-between flex-wrap gap-3 bg-zinc-800/60 rounded-xl px-4 py-3 border border-zinc-700">
         <div className="flex items-center gap-4 text-sm flex-wrap">
           <span className="text-zinc-100 font-semibold">
-            {state.total} unread found
+            {state.total_unseen > state.total
+              ? `${state.total} of ${state.total_unseen} most recent unread`
+              : `${state.total} unread`}
           </span>
           {Object.entries(state.byAccount).map(([acct, n]) => (
             <span key={acct} className="flex items-center gap-1">
@@ -503,6 +511,7 @@ export function UnreadTriage() {
               emails: [],
               byAccount: {},
               total: 0,
+              total_unseen: 0,
               error: null,
               markedCount: 0,
             });
