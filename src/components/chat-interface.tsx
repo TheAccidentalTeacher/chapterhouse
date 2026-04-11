@@ -1088,115 +1088,115 @@ export function ChatInterface() {
               </button>
             </div>
             <div className="mt-2 flex items-center justify-between px-1">
-              {/* Model picker */}
+              {/* Left pill row: model + persona + commands */}
               <div className="flex items-center gap-2">
+                {/* Model picker */}
                 <div className="relative">
-                <button
-                  onClick={() => setModelPickerOpen((o) => !o)}
-                  className={`inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-card/60 px-3 py-1 text-xs text-muted transition hover:border-accent/40 hover:text-foreground ${councilMode ? "opacity-50 pointer-events-none" : ""}`}
-                >
-                  <span className={`h-1.5 w-1.5 rounded-full ${selectedModel.provider === "openai" ? "bg-green-400" : "bg-orange-400"}`} />
-                  {councilMode ? "Multi-model" : selectedModel.label}
-                  <ChevronDown className="h-3 w-3" />
-                </button>
-                {modelPickerOpen && (
-                  <div className="absolute bottom-full left-0 mb-2 min-w-48 overflow-hidden rounded-2xl border border-border bg-card shadow-xl shadow-black/20">
-                    {MODELS.map((m) => (
-                      <button
-                        key={m.id}
-                        onClick={() => {
-                          log.info(`Model switched → ${m.id} (${m.provider})`);
-                          setSelectedModel(m);
-                          setModelPickerOpen(false);
-                        }}
-                        className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition hover:bg-muted-surface ${m.id === selectedModel.id ? "text-accent" : "text-foreground"}`}
-                      >
-                        <span className={`h-1.5 w-1.5 rounded-full ${m.provider === "openai" ? "bg-green-400" : "bg-orange-400"}`} />
-                        {m.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              {/* Persona picker */}
-              <div className="relative">
-                <button
-                  onClick={() => setPersonaPickerOpen((o) => !o)}
-                  className={`inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-card/60 px-3 py-1 text-xs text-muted transition hover:border-accent/40 hover:text-foreground ${councilMode ? "opacity-50 pointer-events-none" : ""}`}
-                >
-                  {selectedPersona ? (
-                    <>
-                      <span>{selectedPersona.icon}</span>
-                      <span style={{ color: selectedPersona.color }}>{selectedPersona.name.split(" ").slice(-1)[0]}</span>
-                    </>
-                  ) : (
-                    "No Persona"
-                  )}
-                  <ChevronDown className="h-3 w-3" />
-                </button>
-                {personaPickerOpen && (
-                  <div className="absolute bottom-full left-0 mb-2 max-h-80 min-w-64 overflow-y-auto overflow-x-hidden rounded-2xl border border-border bg-card shadow-xl shadow-black/20">
-                    <button
-                      onClick={() => {
-                        setSelectedPersona(null);
-                        setPersonaPickerOpen(false);
-                      }}
-                      className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition hover:bg-muted-surface ${!selectedPersona ? "text-accent" : "text-foreground"}`}
-                    >
-                      No Persona
-                    </button>
-                    {personas.map((p) => (
-                      <button
-                        key={p.id}
-                        onClick={() => {
-                          setSelectedPersona(p);
-                          setPersonaPickerOpen(false);
-                          setCouncilMode(false);
-                        }}
-                        className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition hover:bg-muted-surface ${selectedPersona?.id === p.id ? "text-accent" : "text-foreground"}`}
-                      >
-                        <span className="text-base">{p.icon}</span>
-                        <div className="min-w-0">
-                          <div className="font-medium truncate">{p.name}</div>
-                          <div className="text-xs text-muted truncate">{p.specialty}</div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Command palette */}
-              <div className="relative">
-                <button
-                  onClick={() => setCommandPaletteOpen((o) => !o)}
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition ${commandPaletteOpen ? "border-accent/40 bg-accent/10 text-accent" : "border-border/70 bg-card/60 text-muted hover:border-accent/40 hover:text-foreground"}`}
-                  title="Quick email commands"
-                >
-                  <Zap className="h-3 w-3" />
-                  Commands
-                </button>
-                {commandPaletteOpen && (
-                  <div className="absolute bottom-full left-0 mb-2 w-80 overflow-hidden rounded-2xl border border-border bg-card shadow-xl shadow-black/20">
-                    <div className="border-b border-border/50 px-4 py-2">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-muted">Quick Commands</p>
+                  <button
+                    onClick={() => setModelPickerOpen((o) => !o)}
+                    className={`inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-card/60 px-3 py-1 text-xs text-muted transition hover:border-accent/40 hover:text-foreground ${councilMode ? "opacity-50 pointer-events-none" : ""}`}
+                  >
+                    <span className={`h-1.5 w-1.5 rounded-full ${selectedModel.provider === "openai" ? "bg-green-400" : "bg-orange-400"}`} />
+                    {councilMode ? "Multi-model" : selectedModel.label}
+                    <ChevronDown className="h-3 w-3" />
+                  </button>
+                  {modelPickerOpen && (
+                    <div className="absolute bottom-full left-0 mb-2 min-w-48 overflow-hidden rounded-2xl border border-border bg-card shadow-xl shadow-black/20">
+                      {MODELS.map((m) => (
+                        <button
+                          key={m.id}
+                          onClick={() => {
+                            log.info(`Model switched → ${m.id} (${m.provider})`);
+                            setSelectedModel(m);
+                            setModelPickerOpen(false);
+                          }}
+                          className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition hover:bg-muted-surface ${m.id === selectedModel.id ? "text-accent" : "text-foreground"}`}
+                        >
+                          <span className={`h-1.5 w-1.5 rounded-full ${m.provider === "openai" ? "bg-green-400" : "bg-orange-400"}`} />
+                          {m.label}
+                        </button>
+                      ))}
                     </div>
-                    {EMAIL_COMMANDS.map((cmd) => (
+                  )}
+                </div>
+                {/* Persona picker */}
+                <div className="relative">
+                  <button
+                    onClick={() => setPersonaPickerOpen((o) => !o)}
+                    className={`inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-card/60 px-3 py-1 text-xs text-muted transition hover:border-accent/40 hover:text-foreground ${councilMode ? "opacity-50 pointer-events-none" : ""}`}
+                  >
+                    {selectedPersona ? (
+                      <>
+                        <span>{selectedPersona.icon}</span>
+                        <span style={{ color: selectedPersona.color }}>{selectedPersona.name.split(" ").slice(-1)[0]}</span>
+                      </>
+                    ) : (
+                      "No Persona"
+                    )}
+                    <ChevronDown className="h-3 w-3" />
+                  </button>
+                  {personaPickerOpen && (
+                    <div className="absolute bottom-full left-0 mb-2 max-h-80 min-w-64 overflow-y-auto overflow-x-hidden rounded-2xl border border-border bg-card shadow-xl shadow-black/20">
                       <button
-                        key={cmd.command}
-                        onClick={() => runCommand(cmd)}
-                        className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition hover:bg-muted-surface"
+                        onClick={() => {
+                          setSelectedPersona(null);
+                          setPersonaPickerOpen(false);
+                        }}
+                        className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition hover:bg-muted-surface ${!selectedPersona ? "text-accent" : "text-foreground"}`}
                       >
-                        <span className="text-base shrink-0">{cmd.emoji}</span>
-                        <div className="min-w-0">
-                          <div className="font-mono text-xs text-foreground">{cmd.command}{cmd.needsInput ? " …" : ""}</div>
-                          <div className="text-xs text-muted">{cmd.description}</div>
-                        </div>
+                        No Persona
                       </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+                      {personas.map((p) => (
+                        <button
+                          key={p.id}
+                          onClick={() => {
+                            setSelectedPersona(p);
+                            setPersonaPickerOpen(false);
+                            setCouncilMode(false);
+                          }}
+                          className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition hover:bg-muted-surface ${selectedPersona?.id === p.id ? "text-accent" : "text-foreground"}`}
+                        >
+                          <span className="text-base">{p.icon}</span>
+                          <div className="min-w-0">
+                            <div className="font-medium truncate">{p.name}</div>
+                            <div className="text-xs text-muted truncate">{p.specialty}</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {/* Command palette */}
+                <div className="relative">
+                  <button
+                    onClick={() => setCommandPaletteOpen((o) => !o)}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition ${commandPaletteOpen ? "border-accent/40 bg-accent/10 text-accent" : "border-border/70 bg-card/60 text-muted hover:border-accent/40 hover:text-foreground"}`}
+                    title="Quick email commands"
+                  >
+                    <Zap className="h-3 w-3" />
+                    Commands
+                  </button>
+                  {commandPaletteOpen && (
+                    <div className="absolute bottom-full left-0 mb-2 w-80 overflow-hidden rounded-2xl border border-border bg-card shadow-xl shadow-black/20">
+                      <div className="border-b border-border/50 px-4 py-2">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted">Quick Commands</p>
+                      </div>
+                      {EMAIL_COMMANDS.map((cmd) => (
+                        <button
+                          key={cmd.command}
+                          onClick={() => runCommand(cmd)}
+                          className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition hover:bg-muted-surface"
+                        >
+                          <span className="text-base shrink-0">{cmd.emoji}</span>
+                          <div className="min-w-0">
+                            <div className="font-mono text-xs text-foreground">{cmd.command}{cmd.needsInput ? " …" : ""}</div>
+                            <div className="text-xs text-muted">{cmd.description}</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Brain indicator */}
