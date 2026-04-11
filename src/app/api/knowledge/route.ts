@@ -8,6 +8,7 @@ import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
 
 export async function GET(req: NextRequest) {
   const supabase = getSupabaseServiceRoleClient();
+  if (!supabase) return NextResponse.json({ error: "Supabase service role not configured" }, { status: 500 });
   const { searchParams } = new URL(req.url);
   const folder = searchParams.get("folder");
   const activeOnly = searchParams.get("active_only") === "true";
@@ -37,6 +38,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const supabase = getSupabaseServiceRoleClient();
+  if (!supabase) return NextResponse.json({ error: "Supabase service role not configured" }, { status: 500 });
   const body = await req.json();
 
   const { folder, subfolder, title, body: nodeBody, source_type, source_ref, tags, inject_order } = body;
@@ -67,6 +69,7 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   const supabase = getSupabaseServiceRoleClient();
+  if (!supabase) return NextResponse.json({ error: "Supabase service role not configured" }, { status: 500 });
   const body = await req.json();
 
   const { id, ...rest } = body;
@@ -95,6 +98,7 @@ export async function PATCH(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   const supabase = getSupabaseServiceRoleClient();
+  if (!supabase) return NextResponse.json({ error: "Supabase service role not configured" }, { status: 500 });
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
 
