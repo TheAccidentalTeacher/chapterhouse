@@ -826,10 +826,13 @@ export async function POST(request: Request) {
           console.error(`[/archive-spam] bulk-archive returned ${res.status}: ${text.slice(0, 500)}`);
           return new Response(`❌ Archive failed (HTTP ${res.status}). Check server logs.`, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
         }
-        const data = (await res.json()) as { archived?: number; failed?: number };
-        const failNote = (data.failed ?? 0) > 0 ? ` (${data.failed} IMAP error(s) — DB still cleaned)` : "";
+        const data = (await res.json()) as { archived?: number; failed?: number; byAccount?: Record<string, number> };
+        const failNote = (data.failed ?? 0) > 0 ? ` (${data.failed} IMAP error(s))` : "";
+        const acctLines = data.byAccount && Object.keys(data.byAccount).length > 0
+          ? `\n\n*By account:* ${Object.entries(data.byAccount).map(([k, v]) => `${k}: ${v}`).join(", ")}`
+          : "";
         return new Response(
-          `🗑️ Archived **${data.archived ?? 0}** spam email(s)${failNote}.`,
+          `🗑️ Archived **${data.archived ?? 0}** spam email(s)${failNote}.${acctLines}`,
           { headers: { "Content-Type": "text/plain; charset=utf-8" } }
         );
       } catch (err) {
@@ -854,10 +857,13 @@ export async function POST(request: Request) {
           console.error(`[/archive-newsletters] bulk-archive returned ${res.status}: ${text.slice(0, 500)}`);
           return new Response(`❌ Archive failed (HTTP ${res.status}). Check server logs.`, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
         }
-        const data = (await res.json()) as { archived?: number; failed?: number };
-        const failNote = (data.failed ?? 0) > 0 ? ` (${data.failed} IMAP error(s) — DB still cleaned)` : "";
+        const data = (await res.json()) as { archived?: number; failed?: number; byAccount?: Record<string, number> };
+        const failNote = (data.failed ?? 0) > 0 ? ` (${data.failed} IMAP error(s))` : "";
+        const acctLines = data.byAccount && Object.keys(data.byAccount).length > 0
+          ? `\n\n*By account:* ${Object.entries(data.byAccount).map(([k, v]) => `${k}: ${v}`).join(", ")}`
+          : "";
         return new Response(
-          `📰 Archived **${data.archived ?? 0}** newsletter email(s)${failNote}.`,
+          `📰 Archived **${data.archived ?? 0}** newsletter email(s)${failNote}.${acctLines}`,
           { headers: { "Content-Type": "text/plain; charset=utf-8" } }
         );
       } catch (err) {
@@ -882,10 +888,13 @@ export async function POST(request: Request) {
           console.error(`[/archive-notifications] bulk-archive returned ${res.status}: ${text.slice(0, 500)}`);
           return new Response(`❌ Archive failed (HTTP ${res.status}). Check server logs.`, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
         }
-        const data = (await res.json()) as { archived?: number; failed?: number };
-        const failNote = (data.failed ?? 0) > 0 ? ` (${data.failed} IMAP error(s) — DB still cleaned)` : "";
+        const data = (await res.json()) as { archived?: number; failed?: number; byAccount?: Record<string, number> };
+        const failNote = (data.failed ?? 0) > 0 ? ` (${data.failed} IMAP error(s))` : "";
+        const acctLines = data.byAccount && Object.keys(data.byAccount).length > 0
+          ? `\n\n*By account:* ${Object.entries(data.byAccount).map(([k, v]) => `${k}: ${v}`).join(", ")}`
+          : "";
         return new Response(
-          `🔔 Archived **${data.archived ?? 0}** notification email(s)${failNote}.`,
+          `🔔 Archived **${data.archived ?? 0}** notification email(s)${failNote}.${acctLines}`,
           { headers: { "Content-Type": "text/plain; charset=utf-8" } }
         );
       } catch (err) {

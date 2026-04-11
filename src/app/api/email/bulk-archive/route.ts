@@ -130,7 +130,9 @@ export async function POST(req: Request): Promise<NextResponse> {
         for (const row of accountRows) {
           try {
             if (isGmailAccount(account)) {
-              await client.messageMove(String(row.uid), "[Gmail]/All Mail", { uid: true });
+              // Spam → Trash (auto-purged by Gmail after 30 days); everything else → archive (remove Inbox label)
+              const gmailDest = category === "spam" ? "[Gmail]/Trash" : "[Gmail]/All Mail";
+              await client.messageMove(String(row.uid), gmailDest, { uid: true });
             } else {
               await client.messageDelete(String(row.uid), { uid: true });
             }
