@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { Upload, FileText, Loader2, CheckCircle, XCircle } from "lucide-react";
+import { getSupabaseBrowserClient } from "@/lib/supabase";
 
 interface UploadResult {
   documentId: string;
@@ -48,12 +49,27 @@ export function DocumentUploadZone({ onUploadComplete }: DocumentUploadZoneProps
 
       setUploading(true);
       try {
-        const formData = new FormData();
-        formData.append("file", file);
+        // Step 1: Upload directly to Supabase Storage from the browser.
+        // This bypasses Vercel's 4.5MB serverless body limit entirely.
+        const supabase = getSupabaseBrowserClient();
+        if (!supabase) throw new Error("Storage client not available");
 
+        const storagePath = `uploads/${Date.now()}-${file.name}`;
+        const { error: storageError } = await supabase.storage
+          .from("documents")
+          .upload(storagePath, file, { upsert: false });
+        if (storageError) throw new Error(`Storage upload failed: ${storageError.message}`);
+
+        // Step 2: Tell the API the storage path — tiny JSON body, no Vercel limit.
         const res = await fetch("/api/documents/upload", {
           method: "POST",
-          body: formData,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            storagePath,
+            fileName: file.name,
+            fileSize: file.size,
+            mimeType: file.type,
+          }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || res.statusText);

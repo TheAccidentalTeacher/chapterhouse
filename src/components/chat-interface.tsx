@@ -24,6 +24,7 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { log, mountConsoleHelpers, type SystemStatus } from "@/lib/debug-logger";
+import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { personas, type Persona } from "@/lib/personas";
 import { FocusBoardPanel } from "@/components/focus-board-panel";
 import { ScratchpadPanel } from "@/components/scratchpad-panel";
@@ -412,9 +413,22 @@ export function ChatInterface() {
   async function handleFileAttach(file: File) {
     setIsUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const res = await fetch("/api/documents/upload", { method: "POST", body: formData });
+      // Step 1: Upload directly to Supabase Storage — bypasses Vercel's 4.5MB limit
+      const supabase = getSupabaseBrowserClient();
+      if (!supabase) throw new Error("Storage client not available");
+
+      const storagePath = `uploads/${Date.now()}-${file.name}`;
+      const { error: storageError } = await supabase.storage
+        .from("documents")
+        .upload(storagePath, file, { upsert: false });
+      if (storageError) throw new Error(`Storage upload failed: ${storageError.message}`);
+
+      // Step 2: Tell the API the storage path — tiny JSON, no Vercel limit
+      const res = await fetch("/api/documents/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ storagePath, fileName: file.name, fileSize: file.size, mimeType: file.type }),
+      });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       setAttachedFiles((prev) => [

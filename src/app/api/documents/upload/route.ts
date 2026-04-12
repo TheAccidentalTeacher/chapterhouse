@@ -8,39 +8,60 @@ const ALLOWED_TYPES: Record<string, string> = {
   "text/markdown": "md",
 };
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
-
 /**
  * POST /api/documents/upload
  *
- * Accept file upload (multipart form data), extract text, store in DB.
- * Supports PDF, DOCX, ePub, TXT, MD.
+ * Accepts JSON { storagePath, fileName, fileSize, mimeType } — NOT multipart.
+ *
+ * The client uploads the binary directly to Supabase Storage (bypassing
+ * Vercel's 4.5MB serverless body limit), then calls this endpoint with
+ * just the storage path. This route downloads from Storage, extracts text,
+ * and saves the record to the documents table.
  */
 export async function POST(request: Request) {
   try {
-    const formData = await request.formData();
-    const file = formData.get("file");
+    const body = await request.json() as {
+      storagePath?: string;
+      fileName?: string;
+      fileSize?: number;
+      mimeType?: string;
+    };
 
-    if (!file || !(file instanceof File)) {
-      return Response.json({ error: "No file provided" }, { status: 400 });
+    const { storagePath, fileName, fileSize, mimeType } = body;
+
+    if (!storagePath || !fileName) {
+      return Response.json({ error: "storagePath and fileName are required" }, { status: 400 });
     }
 
-    if (file.size > MAX_FILE_SIZE) {
+    const supabase = getSupabaseServiceRoleClient();
+    if (!supabase) {
+      return Response.json({ error: "Database not available" }, { status: 503 });
+    }
+
+    // Download the file from Supabase Storage using the service role client
+    const { data: storageData, error: downloadError } = await supabase.storage
+      .from("documents")
+      .download(storagePath);
+
+    if (downloadError || !storageData) {
       return Response.json(
-        { error: `File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB` },
-        { status: 400 }
+        { error: `Failed to download from storage: ${downloadError?.message ?? "no data"}` },
+        { status: 500 }
       );
     }
 
-    const fileType = ALLOWED_TYPES[file.type] || inferTypeFromName(file.name);
+    const fileType =
+      (mimeType ? ALLOWED_TYPES[mimeType] : null) ?? inferTypeFromName(fileName);
     if (!fileType) {
+      // Clean up the orphaned storage object
+      await supabase.storage.from("documents").remove([storagePath]);
       return Response.json(
-        { error: `Unsupported file type: ${file.type || file.name}. Supported: PDF, DOCX, ePub, TXT, MD` },
+        { error: `Unsupported file type: ${mimeType || fileName}. Supported: PDF, DOCX, ePub, TXT, MD` },
         { status: 400 }
       );
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
+    const buffer = Buffer.from(await storageData.arrayBuffer());
 
     // Extract text based on file type
     let extractedText = "";
@@ -77,19 +98,14 @@ export async function POST(request: Request) {
     const wordCount = extractedText.split(/\s+/).filter(Boolean).length;
     const characterCount = extractedText.length;
 
-    // Save to database
-    const supabase = getSupabaseServiceRoleClient();
-    if (!supabase) {
-      return Response.json({ error: "Database not available" }, { status: 503 });
-    }
-
+    // Save to database (supabase is already initialized above)
     const { data: doc, error: insertError } = await supabase
       .from("documents")
       .insert({
-        file_name: file.name,
+        file_name: fileName,
         file_type: fileType,
-        file_size: file.size,
-        storage_path: `uploads/${Date.now()}-${file.name}`,
+        file_size: fileSize ?? buffer.length,
+        storage_path: storagePath,
         extracted_text: extractedText,
         character_count: characterCount,
         word_count: wordCount,
@@ -106,9 +122,9 @@ export async function POST(request: Request) {
 
     return Response.json({
       documentId: doc.id,
-      fileName: file.name,
+      fileName,
       fileType,
-      fileSize: file.size,
+      fileSize: fileSize ?? buffer.length,
       extractedText,
       extraction: {
         characterCount,
