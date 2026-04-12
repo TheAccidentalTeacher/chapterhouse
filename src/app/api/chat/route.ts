@@ -1015,7 +1015,8 @@ export async function POST(request: Request) {
     let openAiInput = messages as ResponseInput;
     if (imageAttachments && (imageAttachments as unknown[]).length > 0) {
       const lastMsg = openAiInput[openAiInput.length - 1];
-      if (lastMsg?.role === "user") {
+      if (lastMsg && "role" in lastMsg && lastMsg.role === "user") {
+        const lastMsgTyped = lastMsg as { role: string; content: unknown };
         const imgParts = (imageAttachments as Array<{ dataUrl: string }>).map((img) => ({
           type: "input_image" as const,
           image_url: img.dataUrl,
@@ -1024,7 +1025,7 @@ export async function POST(request: Request) {
           ...openAiInput.slice(0, -1),
           {
             role: "user",
-            content: [{ type: "input_text", text: lastMsg.content as string }, ...imgParts],
+            content: [{ type: "input_text", text: lastMsgTyped.content as string }, ...imgParts],
           },
         ] as ResponseInput;
       }
