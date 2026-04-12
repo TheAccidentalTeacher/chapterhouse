@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import Anthropic from "@anthropic-ai/sdk";
+import Anthropic, { type MessageParam } from "@anthropic-ai/sdk";
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
 import { getAuthenticatedUserId } from "@/lib/auth-context";
 import { getPersonaById } from "@/lib/personas";
@@ -949,7 +949,7 @@ export async function POST(request: Request) {
     const systemPrompt = basePrompt + liveContext + urlContext;
 
     // Build enriched messages for Anthropic if images present
-    let anthropicMessages = messages as Array<Record<string, unknown>>;
+    let anthropicMessages = messages as MessageParam[];
     if (imageAttachments && (imageAttachments as unknown[]).length > 0) {
       const lastMsg = anthropicMessages[anthropicMessages.length - 1];
       if (lastMsg?.role === "user") {
