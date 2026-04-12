@@ -14,6 +14,7 @@ const ANALYSIS_TYPES = [
   { id: "discussion-guide", label: "Discussion Guide", description: "Questions and activities" },
   { id: "critique", label: "Critique", description: "Academic critical analysis" },
   { id: "full-analysis", label: "Full Analysis", description: "Comprehensive multi-section report" },
+  { id: "custom", label: "Ask Anything", description: "Your own instruction" },
 ] as const;
 
 interface DocumentAnalysisPanelProps {
@@ -31,6 +32,7 @@ export function DocumentAnalysisPanel({
   const [gradeLevel, setGradeLevel] = useState<number | "">("");
   const [subject, setSubject] = useState("");
   const [maxLength, setMaxLength] = useState<"brief" | "standard" | "detailed">("standard");
+  const [customPrompt, setCustomPrompt] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -56,6 +58,7 @@ export function DocumentAnalysisPanel({
           gradeLevel: gradeLevel || undefined,
           subject: subject || undefined,
           maxLength,
+          customPrompt: analysisType === "custom" ? customPrompt : undefined,
         }),
       });
       const data = await res.json();
@@ -118,6 +121,17 @@ export function DocumentAnalysisPanel({
         ))}
       </div>
 
+      {/* Custom prompt textarea */}
+      {analysisType === "custom" && (
+        <textarea
+          value={customPrompt}
+          onChange={(e) => setCustomPrompt(e.target.value)}
+          placeholder="Type your instruction — e.g. 'Create a 2-page study guide on Revelation chapter 20 from a Reformed Baptist perspective, leaning toward historical premillennialism.'"
+          rows={4}
+          className="w-full rounded-xl border border-border/70 bg-muted-surface px-3 py-2.5 text-xs text-foreground placeholder:text-muted focus:border-accent/40 focus:outline-none resize-none"
+        />
+      )}
+
       {/* Options row */}
       <div className="flex flex-wrap items-center gap-3">
         <select
@@ -156,7 +170,7 @@ export function DocumentAnalysisPanel({
 
         <button
           onClick={handleAnalyze}
-          disabled={analyzing}
+          disabled={analyzing || (analysisType === "custom" && !customPrompt.trim())}
           className="flex items-center gap-2 rounded-xl bg-accent px-4 py-1.5 text-xs font-medium text-accent-foreground shadow shadow-accent/25 transition hover:opacity-90 disabled:opacity-40"
         >
           {analyzing ? (

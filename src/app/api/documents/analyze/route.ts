@@ -14,6 +14,7 @@ const VALID_ANALYSIS_TYPES = [
   "discussion-guide",
   "critique",
   "full-analysis",
+  "custom",
 ] as const;
 
 type AnalysisType = (typeof VALID_ANALYSIS_TYPES)[number];
@@ -35,6 +36,7 @@ export async function POST(request: Request) {
     const gradeLevel = typeof body.gradeLevel === "number" ? body.gradeLevel : undefined;
     const subject = typeof body.subject === "string" ? body.subject : undefined;
     const maxLength = body.maxLength || "standard";
+    const customPrompt = typeof body.customPrompt === "string" ? body.customPrompt.trim() : "";
 
     // Fetch text from DB if documentId provided
     if (documentId && !text) {
@@ -61,6 +63,13 @@ export async function POST(request: Request) {
       );
     }
 
+    if (analysisType === "custom" && !customPrompt) {
+      return Response.json(
+        { error: "A custom prompt is required when using 'Ask Anything' mode" },
+        { status: 400 }
+      );
+    }
+
     if (!process.env.ANTHROPIC_API_KEY) {
       return Response.json({ error: "ANTHROPIC_API_KEY not configured" }, { status: 503 });
     }
@@ -69,7 +78,8 @@ export async function POST(request: Request) {
       analysisType,
       gradeLevel,
       subject,
-      maxLength
+      maxLength,
+      customPrompt
     );
 
     const anthropic = getAnthropic();
@@ -80,7 +90,9 @@ export async function POST(request: Request) {
       messages: [
         {
           role: "user",
-          content: `Analyze the following document:\n\n${text.slice(0, 800_000)}`,
+          content: analysisType === "custom"
+            ? `${customPrompt}\n\nDocument:\n\n${text.slice(0, 800_000)}`
+            : `Analyze the following document:\n\n${text.slice(0, 800_000)}`,
         },
       ],
     });
@@ -111,7 +123,9 @@ function buildAnalysisPrompt(
   type: AnalysisType,
   gradeLevel?: number,
   subject?: string,
-  maxLength?: string
+  maxLength?: string,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _customPrompt?: string
 ): { prompt: string; model: string; maxTokens: number } {
   const gradeContext = gradeLevel
     ? ` The target audience is grade ${gradeLevel} students.`
@@ -222,6 +236,11 @@ How this content could be used in education.
 Next steps, related resources, follow-up research.
 
 Be thorough and detailed.`,
+      model: "claude-sonnet-4-6",
+      maxTokens: 8192,
+    },
+    custom: {
+      text: `You are an expert AI assistant with deep knowledge across theology, education, curriculum design, history, and academic research. The user has provided specific instructions about what to create from this document. Execute those instructions precisely and thoroughly. Use markdown formatting with clear headings and structure. Produce a complete, polished, publication-ready output.`,
       model: "claude-sonnet-4-6",
       maxTokens: 8192,
     },
