@@ -8,10 +8,12 @@ import {
   Check,
   ChevronDown,
   Edit3,
+  FileText,
   LinkIcon,
   Loader2,
   MessageSquarePlus,
   PanelLeft,
+  Paperclip,
   Pin,
   PinOff,
   Trash2,
@@ -152,6 +154,24 @@ export function ChatInterface() {
 
   // Thread sidebar open/closed state (hidden by default)
   const [threadsOpen, setThreadsOpen] = useState(false);
+
+  // File attachments
+  const [attachedFiles, setAttachedFiles] = useState<Array<{
+    id: string;
+    name: string;
+    text: string;
+    wordCount: number;
+    fileType: string;
+  }>>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Image attachments (clipboard paste)
+  const [attachedImages, setAttachedImages] = useState<Array<{
+    id: string;
+    dataUrl: string;
+    mimeType: string;
+  }>>([]);
 
   // ── Thread list operations ────────────────────────────────────────────────
 
@@ -387,6 +407,64 @@ export function ChatInterface() {
     el.style.height = Math.min(el.scrollHeight, 200) + "px";
   }
 
+  // ── File attachment handlers ──────────────────────────────────────────────
+
+  async function handleFileAttach(file: File) {
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/documents/upload", { method: "POST", body: formData });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      setAttachedFiles((prev) => [
+        ...prev,
+        {
+          id: data.documentId,
+          name: data.fileName,
+          text: data.extractedText ?? "",
+          wordCount: data.extraction?.wordCount ?? 0,
+          fileType: data.fileType ?? "file",
+        },
+      ]);
+    } catch (err) {
+      console.error("[attach]", err);
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
+  function removeAttachedFile(id: string) {
+    setAttachedFiles((prev) => prev.filter((f) => f.id !== id));
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) handleFileAttach(file);
+  }
+
+  function handlePaste(e: React.ClipboardEvent) {
+    const items = Array.from(e.clipboardData.items);
+    const imageItem = items.find((item) => item.type.startsWith("image/"));
+    if (!imageItem) return;
+    e.preventDefault();
+    const file = imageItem.getAsFile();
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setAttachedImages((prev) => [
+        ...prev,
+        { id: crypto.randomUUID(), dataUrl: reader.result as string, mimeType: file.type },
+      ]);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeAttachedImage(id: string) {
+    setAttachedImages((prev) => prev.filter((img) => img.id !== id));
+  }
+
   // ── Send message ──────────────────────────────────────────────────────────
 
   async function sendMessage(text: string) {
@@ -452,12 +530,33 @@ export function ChatInterface() {
       return;
     }
 
+    // ── Build document context (full text, no truncation) ─────────────────
+    const documentContext =
+      attachedFiles.length > 0
+        ? attachedFiles
+            .map(
+              (f) =>
+                `[Attached Document: "${f.name}" (${f.wordCount.toLocaleString()} words, ${f.fileType.toUpperCase()})]
+
+${f.text}`
+            )
+            .join("\n\n---\n\n")
+        : null;
+
+    const userContentForApi = documentContext
+      ? `${documentContext}\n\n---\n\nUser question: ${trimmed}`
+      : trimmed;
+
     const newMessages: DisplayMessage[] = [
       ...messages,
       { role: "user" as const, content: trimmed },
     ];
+    const imageAttachmentsForApi = attachedImages.map(({ dataUrl, mimeType }) => ({ dataUrl, mimeType }));
+
     setMessages(newMessages);
     setInput("");
+    setAttachedFiles([]);
+    setAttachedImages([]);
     if (textareaRef.current) textareaRef.current.style.height = "auto";
 
     // Detect URLs in the message and show fetching indicator
@@ -640,8 +739,12 @@ export function ChatInterface() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: newMessages.filter((m) => !isCouncilMessage(m)),
+          messages: [
+            ...newMessages.slice(0, -1).filter((m) => !isCouncilMessage(m)),
+            { role: "user" as const, content: userContentForApi },
+          ],
           model: selectedModel.id,
+          ...(imageAttachmentsForApi.length > 0 ? { imageAttachments: imageAttachmentsForApi } : {}),
           ...(selectedPersona ? { personaId: selectedPersona.id } : {}),
         }),
       });
@@ -1044,7 +1147,60 @@ export function ChatInterface() {
         {/* Input area */}
         <div className="border-t border-border/70 bg-background/80 px-4 py-4 backdrop-blur sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl">
-            <div className="flex items-end gap-3 rounded-3xl border border-border bg-card/80 px-4 py-3 focus-within:border-accent/40">
+            {attachedImages.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-2">
+                {attachedImages.map((img) => (
+                  <div key={img.id} className="relative shrink-0">
+                    <img
+                      src={img.dataUrl}
+                      alt="Pasted image"
+                      className="h-12 w-12 rounded-lg border border-border/50 object-cover"
+                    />
+                    <button
+                      onClick={() => removeAttachedImage(img.id)}
+                      className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full border border-border/50 bg-background text-muted hover:text-foreground"
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {(attachedFiles.length > 0 || isUploading) && (
+              <div className="mb-2 flex flex-wrap gap-2">
+                {attachedFiles.map((f) => (
+                  <div key={f.id} className="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs text-accent">
+                    <FileText className="h-3 w-3 shrink-0" />
+                    <span className="max-w-[160px] truncate">{f.name}</span>
+                    <span className="text-accent/60">{f.wordCount.toLocaleString()}w</span>
+                    <button onClick={() => removeAttachedFile(f.id)} className="ml-0.5 hover:text-foreground">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+                {isUploading && (
+                  <div className="inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-card/60 px-3 py-1 text-xs text-muted">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Uploading…
+                  </div>
+                )}
+              </div>
+            )}
+            <div
+              className="flex items-end gap-3 rounded-3xl border border-border bg-card/80 px-4 py-3 focus-within:border-accent/40"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleDrop}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                accept=".pdf,.docx,.epub,.txt,.md"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleFileAttach(f);
+                  e.target.value = "";
+                }}
+              />
               <button
                 onClick={() => {
                   setCouncilMode((c) => {
@@ -1071,6 +1227,7 @@ export function ChatInterface() {
                   autoResize();
                 }}
                 onKeyDown={handleKeyDown}
+                onPaste={handlePaste}
                 placeholder="Ask Chapterhouse anything..."
                 className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted focus:outline-none"
                 disabled={isStreaming}
@@ -1197,6 +1354,16 @@ export function ChatInterface() {
                     </div>
                   )}
                 </div>
+                {/* Attach document */}
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading || isStreaming}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-card/60 px-3 py-1 text-xs text-muted transition hover:border-accent/40 hover:text-foreground disabled:opacity-40"
+                  title="Attach a document (PDF, DOCX, ePub, TXT)"
+                >
+                  <Paperclip className="h-3 w-3" />
+                  Attach
+                </button>
               </div>
 
               {/* Brain indicator */}

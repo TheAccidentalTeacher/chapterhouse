@@ -100,7 +100,7 @@ const APP_ARCHITECTURE_BLOCK = `## Chapterhouse — App Self-Reference
 You ARE Chapterhouse. When asked about routes, features, or code location — use this map.
 
 ### Pages → Features
-/ — Home: Chat (Solo + Council Mode). SSE streaming. Thread persistence. Auto-learn (/remember). URL detection + fetch.
+/ — Home: Chat (Solo + Council Mode). SSE streaming. Thread persistence. Auto-learn (/remember). URL detection + fetch. File upload (PDF/DOCX/ePub/TXT → document context prefix). Clipboard image paste → vision AI (Anthropic image blocks / OpenAI input_image).
 /daily-brief — Daily Brief: RSS+GitHub+daily.dev → Claude Sonnet analysis → track impact scoring → collision detection. Vercel cron 3:00 UTC.
 /intel — Intel: URL analysis sessions. 4-step pipeline: fetch → Sonnet structured analysis → Haiku verification → Council synthesis. PW report paste path. Daily cron 04:00 UTC.
 /inbox — Email Inbox: IMAP persistence, Haiku categorization (10 categories), TSVECTOR full-text search, AI summary. Daily digest cron midnight UTC.
@@ -711,7 +711,7 @@ async function fetchUrlContent(url: string): Promise<string | null> {
 
 export async function POST(request: Request) {
   try {
-    const { messages, model = "gpt-5.4", personaId } = await request.json();
+    const { messages, model = "gpt-5.4", personaId, imageAttachments } = await request.json();
 
     const encoder = new TextEncoder();
 
@@ -948,13 +948,36 @@ export async function POST(request: Request) {
     }
     const systemPrompt = basePrompt + liveContext + urlContext;
 
+    // Build enriched messages for Anthropic if images present
+    let anthropicMessages = messages as Array<Record<string, unknown>>;
+    if (imageAttachments && (imageAttachments as unknown[]).length > 0) {
+      const lastMsg = anthropicMessages[anthropicMessages.length - 1];
+      if (lastMsg?.role === "user") {
+        const imgBlocks = (imageAttachments as Array<{ dataUrl: string; mimeType: string }>).map((img) => ({
+          type: "image" as const,
+          source: {
+            type: "base64" as const,
+            media_type: img.mimeType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+            data: (img.dataUrl as string).split(",")[1],
+          },
+        }));
+        anthropicMessages = [
+          ...anthropicMessages.slice(0, -1),
+          {
+            role: "user" as const,
+            content: [...imgBlocks, { type: "text" as const, text: lastMsg.content as string }],
+          },
+        ];
+      }
+    }
+
     // Route to Anthropic if claude model requested
     if (model.startsWith("claude")) {
       const stream = getAnthropic().messages.stream({
         model,
         max_tokens: 2048,
         system: systemPrompt,
-        messages,
+        messages: anthropicMessages,
       });
 
       const readable = new ReadableStream({
@@ -988,10 +1011,27 @@ export async function POST(request: Request) {
     }
 
     // OpenAI — use Responses API (required for gpt-5.x models)
+    let openAiInput = messages as Array<Record<string, unknown>>;
+    if (imageAttachments && (imageAttachments as unknown[]).length > 0) {
+      const lastMsg = openAiInput[openAiInput.length - 1];
+      if (lastMsg?.role === "user") {
+        const imgParts = (imageAttachments as Array<{ dataUrl: string }>).map((img) => ({
+          type: "input_image" as const,
+          image_url: img.dataUrl,
+        }));
+        openAiInput = [
+          ...openAiInput.slice(0, -1),
+          {
+            role: "user",
+            content: [{ type: "input_text", text: lastMsg.content as string }, ...imgParts],
+          },
+        ];
+      }
+    }
     const stream = await getOpenAI().responses.create({
       model,
       instructions: systemPrompt,
-      input: messages,
+      input: openAiInput,
       stream: true,
       max_output_tokens: 2048,
     });

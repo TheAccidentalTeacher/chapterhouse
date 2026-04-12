@@ -109,6 +109,7 @@ export async function POST(request: Request) {
       fileName: file.name,
       fileType,
       fileSize: file.size,
+      extractedText,
       extraction: {
         characterCount,
         wordCount,

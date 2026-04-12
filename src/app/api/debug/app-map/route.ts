@@ -24,7 +24,7 @@ const FEATURE_REGISTRY: Omit<FeatureEntry, "available" | "missingRequired" | "mi
   {
     id: "home-chat",
     name: "Home Chat",
-    description: "Chat interface with Solo and Council Mode. SSE streaming, thread persistence, auto-learn (/remember), URL detection + fetch, inline Council toggle.",
+    description: "Chat interface with Solo and Council Mode. SSE streaming, thread persistence, auto-learn (/remember), URL detection + fetch, inline Council toggle. File upload (PDF/DOCX/ePub/TXT → text extraction → document context prefix). Clipboard image paste → vision AI (Anthropic image blocks / OpenAI input_image).",
     page: "/",
     apiRoutes: ["/api/chat", "/api/chat/council", "/api/threads", "/api/extract-learnings"],
     components: ["src/components/chat-interface.tsx", "src/app/page.tsx"],
@@ -116,6 +116,18 @@ const FEATURE_REGISTRY: Omit<FeatureEntry, "available" | "missingRequired" | "mi
     page: "/product-intelligence",
     apiRoutes: ["/api/opportunities"],
     components: ["src/app/product-intelligence/page.tsx"],
+    envVars: [
+      { key: "ANTHROPIC_API_KEY", required: true },
+    ],
+    phase: "Core",
+  },
+  {
+    id: "knowledge-library",
+    name: "Knowledge Library",
+    description: "Folder-organized knowledge base built from newsletter email extraction and manual notes. Toggle nodes active → injected into every chat and Council session automatically via buildLiveContext(). Email extraction via /api/email/extract-to-knowledge.",
+    page: "/knowledge",
+    apiRoutes: ["/api/knowledge", "/api/email/extract-to-knowledge"],
+    components: ["src/app/knowledge/page.tsx"],
     envVars: [
       { key: "ANTHROPIC_API_KEY", required: true },
     ],
