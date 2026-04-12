@@ -1011,7 +1011,7 @@ export async function POST(request: Request) {
     }
 
     // OpenAI — use Responses API (required for gpt-5.x models)
-    let openAiInput = messages as Array<Record<string, unknown>>;
+    let openAiInput = messages as OpenAI.ResponseInput;
     if (imageAttachments && (imageAttachments as unknown[]).length > 0) {
       const lastMsg = openAiInput[openAiInput.length - 1];
       if (lastMsg?.role === "user") {
