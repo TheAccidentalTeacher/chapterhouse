@@ -1,4 +1,5 @@
-import OpenAI, { type ResponseInput } from "openai";
+import OpenAI from "openai";
+import type { ResponseInput } from "openai/resources/responses/responses";
 import Anthropic from "@anthropic-ai/sdk";
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
 import { getAuthenticatedUserId } from "@/lib/auth-context";
@@ -1025,7 +1026,7 @@ export async function POST(request: Request) {
             role: "user",
             content: [{ type: "input_text", text: lastMsg.content as string }, ...imgParts],
           },
-        ];
+        ] as ResponseInput;
       }
     }
     const stream = await getOpenAI().responses.create({
