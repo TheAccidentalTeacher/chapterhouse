@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import OpenAI, { type ResponseInput } from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
 import { getAuthenticatedUserId } from "@/lib/auth-context";
@@ -1011,7 +1011,7 @@ export async function POST(request: Request) {
     }
 
     // OpenAI — use Responses API (required for gpt-5.x models)
-    let openAiInput = messages as OpenAI.ResponseInput;
+    let openAiInput = messages as ResponseInput;
     if (imageAttachments && (imageAttachments as unknown[]).length > 0) {
       const lastMsg = openAiInput[openAiInput.length - 1];
       if (lastMsg?.role === "user") {
