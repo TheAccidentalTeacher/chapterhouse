@@ -63,7 +63,7 @@ export const navigationGroups: NavigationGroup[] = [
           summary: "Your primary chat interface and command surface. Talk to one AI model in Solo mode, or toggle Council mode to get multi-member Council of the Unserious responses with a rebuttal round. Every conversation is enriched with your daily brief, saved research, open opportunities, and founder memory.",
           features: [
             "Solo mode: single AI response (GPT-5.4, Claude Opus/Sonnet, GPT-5-mini)",
-            "Council mode: Gandalf, Data, Polgara (+ Earl, Beavis & Butthead on complex queries) respond via SSE streaming",
+            "Council mode: Gandalf, Data, Polgara, Earl, and Silk respond via SSE streaming",
             "Rebuttal round: members respond to each other after initial pass",
             "Persistent threads with pin, rename, and delete",
             "/remember command to save facts permanently to founder memory",
@@ -528,18 +528,18 @@ export const navigationGroups: NavigationGroup[] = [
         description: "5-pass Council of the Unserious critique loop. 70 scope & sequences overnight.",
         icon: Zap,
         tooltip: {
-          summary: "Generate complete curriculum scope & sequences using the 5-pass Council of the Unserious. Gandalf drafts, Data audits, Polgara finalizes, Earl assesses operations, Beavis & Butthead stress-test engagement. Supports single-course generation or batch mode for up to 70 courses overnight.",
+          summary: "Generate complete curriculum scope & sequences using the 6-pass Council of the Unserious. Gandalf drafts, Data audits, Polgara finalizes, Earl assesses operations, Silk stress-tests assumptions. Supports single-course generation or batch mode for up to 70 courses overnight.",
           features: [
-            "5-pass pipeline: Gandalf → Data → Polgara → Earl → Beavis & Butthead",
+            "6-pass pipeline: Gandalf → Data → Polgara → Earl → Silk → Extract JSON",
             "Single generation: pick subject, grade (5-12), duration, and optional standards",
             "Batch mode: select multiple subjects × grade ranges for mass generation",
             "Output viewer renders final scope & sequence as Markdown",
-            "Earl's operational assessment + Beavis & Butthead's engagement report",
+            "Earl's operational assessment + Silk's pattern-break analysis",
             "Download as .md or copy to clipboard",
           ],
           tips: [
             "Start with a single generation (e.g., 'US History, Grade 7, Full Year') to test the pipeline",
-            "Check Earl's ops assessment and Beavis & Butthead's engagement verdicts",
+            "Check Earl's ops assessment and Silk's pattern-break analysis",
             "In batch mode, verify parent/child job tracking on the Job Runner page",
           ],
         },
@@ -576,7 +576,7 @@ export const navigationGroups: NavigationGroup[] = [
         tooltip: {
           summary: "Purpose-built curriculum generator that runs all 5 Council of the Unserious members as a background job. Unlike Council Mode in Chat (which is real-time and general-purpose), the Council Chamber is specifically designed for producing complete scope & sequence documents and runs asynchronously.",
           features: [
-            "5 Council members: Gandalf, Data, Polgara, Earl, Beavis & Butthead",
+            "5 Council members: Gandalf, Data, Polgara, Earl, Silk",
             "Runs as a background job — submit and check results later",
             "Select subject, grade level, and duration",
             "Full scope & sequence output with all 5 perspectives",
@@ -623,13 +623,13 @@ export const navigationGroups: NavigationGroup[] = [
         description: "Generate, review, and schedule posts across all three brands.",
         icon: Send,
         tooltip: {
-          summary: "AI-powered social media automation. Claude generates posts for NCHO, SomersSchool, and Alana Terry across Facebook, Instagram, and LinkedIn. Posts land in a review queue — nothing publishes without your approval. Approved posts push directly to Buffer for scheduling.",
+          summary: "AI-powered social media automation. Claude generates posts for NCHO and SomersSchool across Facebook, Instagram, and Pinterest. Posts land in a review queue — nothing publishes without your approval. Approved posts push directly to Buffer for scheduling.",
           features: [
             "Generate a week of posts for all brands in one click",
             "Review queue: approve, edit, or reject each post individually",
             "One-click push to Buffer → scheduled on your connected channels",
             "Shopify webhook: new NCHO product triggers automatic post generation",
-            "Weekly cron auto-generates a fresh batch every Monday at 5am UTC",
+            "Weekly cron auto-generates a fresh batch every Monday at 6am Alaska time (2pm UTC)",
             "Analytics sync: pull Buffer engagement stats back into Chapterhouse",
           ],
           tips: [

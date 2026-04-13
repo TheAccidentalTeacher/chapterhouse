@@ -3,7 +3,7 @@ import { Client } from "@upstash/qstash";
 
 export async function GET(req: Request) {
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && req.headers.get("authorization") !== `Bearer ${cronSecret}`) {
+  if (!cronSecret || req.headers.get("authorization") !== `Bearer ${cronSecret}`) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -18,7 +18,7 @@ export async function GET(req: Request) {
       input_payload: {
         trigger: "weekly_cron",
         brands: ["ncho", "somersschool"],
-        platforms: ["facebook", "instagram", "linkedin", "pinterest"],
+        platforms: ["facebook", "instagram", "pinterest"],
         count_per_combo: 2,
       },
       status: "queued",
