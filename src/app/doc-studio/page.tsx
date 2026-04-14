@@ -21,7 +21,9 @@ import {
   Sparkles,
   RotateCcw,
   Download,
+  FileDown,
 } from "lucide-react";
+import { downloadAsDocx, exportAsPdf } from "@/lib/export-document";
 
 // ── Category grouping ─────────────────────────────────────────────────────────
 
@@ -239,16 +241,30 @@ export default function DocStudioPage() {
     setTimeout(() => setIsCopied(false), 2000);
   }, [output]);
 
-  const handleDownload = useCallback(() => {
-    if (!output) return;
-    const blob = new Blob([output], { type: "text/markdown;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${selectedType?.label ?? "document"}.md`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, [output, selectedType]);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+
+  const handleExport = useCallback(
+    (format: "md" | "docx" | "pdf") => {
+      if (!output) return;
+      setShowExportMenu(false);
+      const title = selectedType?.label ?? "document";
+
+      if (format === "md") {
+        const blob = new Blob([output], { type: "text/markdown;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${title}.md`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } else if (format === "docx") {
+        downloadAsDocx(`${title}.docx`, output, title);
+      } else if (format === "pdf") {
+        exportAsPdf(output, title);
+      }
+    },
+    [output, selectedType]
+  );
 
   // ── Save existing output ────────────────────────────────────────────────────
 
@@ -577,13 +593,38 @@ export default function DocStudioPage() {
                           Save
                         </button>
                       )}
-                      <button
-                        onClick={handleDownload}
-                        className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-amber-300 transition-colors"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        Download .md
-                      </button>
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowExportMenu((v) => !v)}
+                          className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-amber-300 transition-colors"
+                        >
+                          <FileDown className="w-3.5 h-3.5" />
+                          Export
+                          <ChevronDown className="w-3 h-3" />
+                        </button>
+                        {showExportMenu && (
+                          <div className="absolute right-0 top-full mt-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl z-20 min-w-[140px] py-1">
+                            <button
+                              onClick={() => handleExport("md")}
+                              className="w-full text-left px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-700 hover:text-amber-300"
+                            >
+                              Markdown (.md)
+                            </button>
+                            <button
+                              onClick={() => handleExport("docx")}
+                              className="w-full text-left px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-700 hover:text-amber-300"
+                            >
+                              Word (.docx)
+                            </button>
+                            <button
+                              onClick={() => handleExport("pdf")}
+                              className="w-full text-left px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-700 hover:text-amber-300"
+                            >
+                              PDF (Print)
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </>
                   )}
                 </div>
