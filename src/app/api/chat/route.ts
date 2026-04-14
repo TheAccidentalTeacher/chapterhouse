@@ -758,7 +758,7 @@ async function fetchUrlContent(url: string): Promise<string | null> {
 
 export async function POST(request: Request) {
   try {
-    const { messages, model = "gpt-5.4", personaId, imageAttachments } = await request.json();
+    const { messages, model = "gpt-5.4", personaId, imageAttachments, grounded = false } = await request.json();
 
     const encoder = new TextEncoder();
 
@@ -994,7 +994,11 @@ export async function POST(request: Request) {
       const userId = await getAuthenticatedUserId().catch(() => null);
       basePrompt = userId ? await getSystemPrompt(userId) : FALLBACK_SYSTEM_PROMPT;
     }
-    const systemPrompt = basePrompt + liveContext + urlContext;
+    // Phase 25C: Grounded Mode — restrict AI to context only
+    const groundedPrefix = grounded
+      ? `GROUNDED MODE ACTIVE: Only reference information that exists in the context provided below. If you don't have enough context to answer, say "I don't have that information in my current context." Do NOT generate facts, statistics, URLs, or claims from your training data. This is a prompt-level instruction and does not guarantee factual accuracy.\n\n`
+      : "";
+    const systemPrompt = groundedPrefix + basePrompt + liveContext + urlContext;
 
     // Build enriched messages for Anthropic if images present
     let anthropicMessages = messages as Anthropic.MessageParam[];
