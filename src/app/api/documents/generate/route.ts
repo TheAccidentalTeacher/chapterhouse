@@ -193,12 +193,20 @@ function getAnthropic() {
   return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 }
 
+const outlineSectionSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  guidance: z.string(),
+  sort_order: z.number(),
+});
+
 const bodySchema = z.object({
   doc_type: z.string().min(1),
   inputs: z.record(z.string(), z.string()),
   title: z.string().optional(),
   save: z.boolean().optional().default(false),
   brand_voice_id: z.string().uuid().optional(),
+  outline: z.object({ sections: z.array(outlineSectionSchema) }).optional(),
 });
 
 export const maxDuration = 60;
@@ -220,7 +228,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { doc_type, inputs, title, save, brand_voice_id } = parsed.data;
+    const { doc_type, inputs, title, save, brand_voice_id, outline } = parsed.data;
 
     // Look up the doc type definition
     const docDef = DOC_TYPE_MAP[doc_type];
@@ -246,6 +254,15 @@ export async function POST(request: Request) {
     let userPrompt = docDef.buildPrompt(inputs);
     let modelToUse: string = "claude-sonnet-4-5";
     let maxTokensToUse: number = 4096;
+
+    // Phase 21A: Inject outline structure into prompt if provided
+    if (outline?.sections?.length) {
+      const outlineText = outline.sections
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map((s, i) => `${i + 1}. **${s.title}** — ${s.guidance}`)
+        .join("\n");
+      userPrompt += `\n\n---\n\nFollow this outline structure exactly:\n\n${outlineText}`;
+    }
 
     // Academic Paper: fetch source documents from Supabase + real peer-reviewed
     // citations from Semantic Scholar, then override prompt and model params.
@@ -330,6 +347,7 @@ export async function POST(request: Request) {
                 content: fullContent.trim(),
                 input_params: inputs,
                 word_count: wordCount,
+                ...(outline ? { outline } : {}),
               });
             }
           }

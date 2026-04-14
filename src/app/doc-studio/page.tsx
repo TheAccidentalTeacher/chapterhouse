@@ -13,6 +13,7 @@ import remarkGfm from "remark-gfm";
 import {
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   Copy,
   Check,
   Save,
@@ -22,6 +23,12 @@ import {
   RotateCcw,
   Download,
   FileDown,
+  ListOrdered,
+  Pencil,
+  History,
+  ArrowUp,
+  ArrowDown,
+  X,
 } from "lucide-react";
 import { downloadAsDocx, exportAsPdf } from "@/lib/export-document";
 
@@ -139,6 +146,17 @@ export default function DocStudioPage() {
   >([]);
   const [brandVoiceId, setBrandVoiceId] = useState<string>("");
   const [brandVoices, setBrandVoices] = useState<{ id: string; brand: string }[]>([]);
+  // Phase 21A: Outline-first generation
+  const [outlineFirst, setOutlineFirst] = useState(false);
+  const [outline, setOutline] = useState<{ id: string; title: string; guidance: string; sort_order: number }[] | null>(null);
+  const [isOutlining, setIsOutlining] = useState(false);
+  // Phase 21B: Agentic editing
+  const [editInstruction, setEditInstruction] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [docVersion, setDocVersion] = useState(1);
+  const [editHistory, setEditHistory] = useState<{ version: number; instruction: string; changed_at: string; previous_content: string }[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [currentDocId, setCurrentDocId] = useState<string | null>(null);
   const outputRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -165,6 +183,12 @@ export default function DocStudioPage() {
     setError(null);
     setIsSaved(false);
     setSavedId(null);
+    setOutline(null);
+    setEditInstruction("");
+    setDocVersion(1);
+    setEditHistory([]);
+    setShowHistory(false);
+    setCurrentDocId(null);
   }, []);
 
   // ── Generate ────────────────────────────────────────────────────────────────
@@ -199,6 +223,7 @@ export default function DocStudioPage() {
             inputs,
             save: saveAfter,
             ...(brandVoiceId ? { brand_voice_id: brandVoiceId } : {}),
+            ...(outline ? { outline: { sections: outline } } : {}),
           }),
           signal: abortRef.current.signal,
         });
@@ -250,6 +275,83 @@ export default function DocStudioPage() {
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
   }, [output]);
+
+  // Phase 21A: Generate outline
+  const handleGenerateOutline = useCallback(async () => {
+    if (!selectedType) return;
+    setIsOutlining(true);
+    setError(null);
+    try {
+      const title = inputs.feature_name || inputs.product || inputs.topic || inputs.thesis || selectedType.label;
+      const res = await fetch("/api/documents/outline", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          doc_type: selectedType.id,
+          title,
+          fields: inputs,
+          ...(brandVoiceId ? { brand_voice_id: brandVoiceId } : {}),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Outline failed");
+      setOutline(data.outline.sections);
+    } catch (err: unknown) {
+      setError((err as Error).message || "Outline generation failed");
+    } finally {
+      setIsOutlining(false);
+    }
+  }, [selectedType, inputs, brandVoiceId]);
+
+  // Phase 21A: Move outline section
+  const moveOutlineSection = useCallback((index: number, direction: "up" | "down") => {
+    if (!outline) return;
+    const newOutline = [...outline];
+    const target = direction === "up" ? index - 1 : index + 1;
+    if (target < 0 || target >= newOutline.length) return;
+    [newOutline[index], newOutline[target]] = [newOutline[target], newOutline[index]];
+    setOutline(newOutline.map((s, i) => ({ ...s, sort_order: i + 1 })));
+  }, [outline]);
+
+  // Phase 21B: Agentic edit
+  const handleEdit = useCallback(async () => {
+    if (!currentDocId || !editInstruction.trim()) return;
+    setIsEditing(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/documents/edit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          document_id: currentDocId,
+          instruction: editInstruction,
+          expected_version: docVersion,
+        }),
+      });
+      const data = await res.json();
+      if (res.status === 409) {
+        setError(`Version conflict: ${data.error}`);
+        return;
+      }
+      if (!res.ok) throw new Error(data.error || "Edit failed");
+      // Save previous version to local history
+      setEditHistory((prev) => [...prev, { version: docVersion, instruction: editInstruction, changed_at: new Date().toISOString(), previous_content: output }]);
+      setOutput(data.content);
+      setDocVersion(data.version);
+      setEditInstruction("");
+    } catch (err: unknown) {
+      setError((err as Error).message || "Edit failed");
+    } finally {
+      setIsEditing(false);
+    }
+  }, [currentDocId, editInstruction, docVersion, output]);
+
+  // Phase 21B: Revert to previous version
+  const handleRevert = useCallback((entry: { previous_content: string; version: number }) => {
+    setOutput(entry.previous_content);
+    setDocVersion(entry.version);
+    setShowHistory(false);
+  }, []);
 
   const [showExportMenu, setShowExportMenu] = useState(false);
 
@@ -523,34 +625,142 @@ export default function DocStudioPage() {
                 </div>
               )}
 
+              {/* Phase 21A: Outline toggle */}
+              <div className="mt-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={outlineFirst}
+                    onChange={(e) => {
+                      setOutlineFirst(e.target.checked);
+                      if (!e.target.checked) setOutline(null);
+                    }}
+                    className="rounded border-zinc-600 bg-zinc-800 text-amber-500 focus:ring-amber-500/50"
+                  />
+                  <span className="text-xs text-zinc-400 flex items-center gap-1">
+                    <ListOrdered className="w-3 h-3" />
+                    Generate outline first
+                  </span>
+                </label>
+              </div>
+
+              {/* Phase 21A: Outline cards */}
+              {outline && outline.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <p className="text-xs font-medium text-amber-400 uppercase tracking-wide">
+                    Outline — reorder or edit below
+                  </p>
+                  {outline.map((section, idx) => (
+                    <div
+                      key={section.id}
+                      className="flex items-start gap-2 bg-zinc-800/60 border border-zinc-700/50 rounded-lg p-2.5"
+                    >
+                      <div className="flex flex-col gap-0.5 pt-0.5">
+                        <button
+                          onClick={() => moveOutlineSection(idx, "up")}
+                          disabled={idx === 0}
+                          className="text-zinc-500 hover:text-amber-300 disabled:opacity-20"
+                        >
+                          <ArrowUp className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => moveOutlineSection(idx, "down")}
+                          disabled={idx === outline.length - 1}
+                          className="text-zinc-500 hover:text-amber-300 disabled:opacity-20"
+                        >
+                          <ArrowDown className="w-3 h-3" />
+                        </button>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <input
+                          className="w-full bg-transparent text-xs font-medium text-zinc-200 focus:outline-none focus:text-amber-200"
+                          value={section.title}
+                          onChange={(e) => {
+                            const updated = [...outline];
+                            updated[idx] = { ...updated[idx], title: e.target.value };
+                            setOutline(updated);
+                          }}
+                        />
+                        <input
+                          className="w-full bg-transparent text-xs text-zinc-500 focus:outline-none focus:text-zinc-300 mt-0.5"
+                          value={section.guidance}
+                          onChange={(e) => {
+                            const updated = [...outline];
+                            updated[idx] = { ...updated[idx], guidance: e.target.value };
+                            setOutline(updated);
+                          }}
+                        />
+                      </div>
+                      <button
+                        onClick={() => setOutline(outline.filter((_, i) => i !== idx))}
+                        className="text-zinc-600 hover:text-red-400 mt-0.5"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Actions */}
               <div className="mt-5 flex flex-col gap-2">
-                <button
-                  onClick={() => handleGenerate(false)}
-                  disabled={isGenerating}
-                  className="w-full flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium bg-amber-500 hover:bg-amber-400 text-zinc-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Generating…
-                    </>
-                  ) : (
-                    <>
-                      <FileText className="w-4 h-4" />
-                      Generate
-                    </>
-                  )}
-                </button>
+                {outlineFirst && !outline ? (
+                  <button
+                    onClick={handleGenerateOutline}
+                    disabled={isOutlining}
+                    className="w-full flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium bg-amber-500 hover:bg-amber-400 text-zinc-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isOutlining ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Generating outline…
+                      </>
+                    ) : (
+                      <>
+                        <ListOrdered className="w-4 h-4" />
+                        Generate Outline
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => handleGenerate(false)}
+                      disabled={isGenerating}
+                      className="w-full flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium bg-amber-500 hover:bg-amber-400 text-zinc-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {isGenerating ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Generating…
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="w-4 h-4" />
+                          {outline ? "Generate from Outline" : "Generate"}
+                        </>
+                      )}
+                    </button>
 
-                <button
-                  onClick={() => handleGenerate(true)}
-                  disabled={isGenerating}
-                  className="w-full flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium border border-zinc-700 text-zinc-300 hover:border-amber-500/40 hover:text-amber-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  Generate &amp; Save
-                </button>
+                    <button
+                      onClick={() => handleGenerate(true)}
+                      disabled={isGenerating}
+                      className="w-full flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium border border-zinc-700 text-zinc-300 hover:border-amber-500/40 hover:text-amber-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <Save className="w-3.5 h-3.5" />
+                      Generate &amp; Save
+                    </button>
+                  </>
+                )}
+
+                {outline && (
+                  <button
+                    onClick={() => setOutline(null)}
+                    className="w-full text-xs text-zinc-600 hover:text-zinc-400 transition-colors"
+                  >
+                    Skip outline — generate directly
+                  </button>
+                )}
 
                 {isGenerating && (
                   <button
@@ -568,6 +778,10 @@ export default function DocStudioPage() {
                     setError(null);
                     setIsSaved(false);
                     setSavedId(null);
+                    setOutline(null);
+                    setDocVersion(1);
+                    setEditHistory([]);
+                    setCurrentDocId(null);
                   }}
                   className="w-full flex items-center justify-center gap-1.5 text-xs text-zinc-600 hover:text-zinc-400 transition-colors mt-1"
                 >
@@ -593,6 +807,11 @@ export default function DocStudioPage() {
                   {isSaved && (
                     <span className="text-xs text-emerald-400 flex items-center gap-1">
                       <Check className="w-3 h-3" /> Saved
+                    </span>
+                  )}
+                  {docVersion > 1 && (
+                    <span className="text-xs text-zinc-500">
+                      v{docVersion} · {editHistory.length} edit{editHistory.length !== 1 ? "s" : ""}
                     </span>
                   )}
                 </div>
@@ -687,6 +906,59 @@ export default function DocStudioPage() {
                   </div>
                 )}
               </div>
+
+              {/* Phase 21B: Edit bar */}
+              {output && !isGenerating && currentDocId && (
+                <div className="border-t border-zinc-800 px-5 py-3 flex items-center gap-2">
+                  <Pencil className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                  <input
+                    type="text"
+                    value={editInstruction}
+                    onChange={(e) => setEditInstruction(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter" && editInstruction.trim()) handleEdit(); }}
+                    placeholder="Edit this document... (e.g. 'Make the introduction shorter')"
+                    className="flex-1 bg-transparent text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none"
+                  />
+                  <button
+                    onClick={handleEdit}
+                    disabled={isEditing || !editInstruction.trim()}
+                    className="flex items-center gap-1.5 rounded-lg bg-amber-500/20 px-3 py-1.5 text-xs font-medium text-amber-300 hover:bg-amber-500/30 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {isEditing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Pencil className="w-3 h-3" />}
+                    Apply
+                  </button>
+                  {editHistory.length > 0 && (
+                    <button
+                      onClick={() => setShowHistory(!showHistory)}
+                      className="flex items-center gap-1 text-xs text-zinc-500 hover:text-amber-300"
+                    >
+                      <History className="w-3 h-3" />
+                      Revert
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Phase 21B: Edit history panel */}
+              {showHistory && editHistory.length > 0 && (
+                <div className="border-t border-zinc-800 px-5 py-3 bg-zinc-900/50 max-h-40 overflow-y-auto">
+                  <p className="text-xs font-medium text-zinc-500 mb-2 uppercase tracking-wide">Edit History</p>
+                  {[...editHistory].reverse().map((entry, idx) => (
+                    <div key={idx} className="flex items-center justify-between py-1.5 border-b border-zinc-800/50 last:border-0">
+                      <div className="min-w-0">
+                        <p className="text-xs text-zinc-300 truncate">{entry.instruction}</p>
+                        <p className="text-xs text-zinc-600">v{entry.version} · {new Date(entry.changed_at).toLocaleTimeString()}</p>
+                      </div>
+                      <button
+                        onClick={() => handleRevert(entry)}
+                        className="text-xs text-amber-400 hover:text-amber-300 shrink-0 ml-2"
+                      >
+                        Restore
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}

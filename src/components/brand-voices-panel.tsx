@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Megaphone, ChevronDown, ChevronUp, Loader2, Check, AlertCircle } from "lucide-react";
+import { Megaphone, ChevronDown, ChevronUp, Loader2, Check, AlertCircle, Search, X } from "lucide-react";
 
 type BrandVoice = {
   id: string;
@@ -140,10 +140,108 @@ function BrandVoiceCard({ voice, onSave }: { voice: BrandVoice; onSave: (v: Bran
   );
 }
 
+function VoiceAnalyzerModal({
+  onApply,
+  onClose,
+}: {
+  onApply: (voiceText: string) => void;
+  onClose: () => void;
+}) {
+  const [samples, setSamples] = useState("");
+  const [brandName, setBrandName] = useState("");
+  const [analyzing, setAnalyzing] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleAnalyze() {
+    const sampleArr = samples
+      .split("---")
+      .map((s) => s.trim())
+      .filter((s) => s.length >= 50);
+    if (sampleArr.length < 1) {
+      setError("Need at least 1 sample with 50+ characters. Separate samples with ---");
+      return;
+    }
+    setAnalyzing(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/brand-voices/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ samples: sampleArr.slice(0, 5), brand_name: brandName || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || res.statusText);
+      setResult(data.voice_text);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="relative w-full max-w-xl rounded-2xl border border-zinc-700 bg-zinc-900 p-6 shadow-2xl max-h-[80vh] overflow-y-auto">
+        <button onClick={onClose} className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-200">
+          <X size={18} />
+        </button>
+        <h3 className="text-base font-semibold text-amber-300 mb-3">Analyze Voice from Samples</h3>
+        <p className="text-xs text-zinc-400 mb-4">
+          Paste 1–5 writing samples separated by <code className="text-amber-200">---</code>. AI extracts the voice/tone/style.
+        </p>
+        <input
+          type="text"
+          placeholder="Brand name (optional)"
+          value={brandName}
+          onChange={(e) => setBrandName(e.target.value)}
+          className="w-full mb-3 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+        />
+        <textarea
+          value={samples}
+          onChange={(e) => setSamples(e.target.value)}
+          rows={8}
+          placeholder="Paste writing sample 1 here...\n---\nPaste writing sample 2 here...\n---\nPaste writing sample 3 here..."
+          className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-amber-500/50 resize-y font-mono"
+        />
+        {error && (
+          <div className="mt-2 text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+            {error}
+          </div>
+        )}
+        <button
+          onClick={handleAnalyze}
+          disabled={analyzing || !samples.trim()}
+          className="mt-3 flex items-center gap-2 rounded-lg bg-amber-500/20 px-4 py-2 text-sm font-medium text-amber-300 hover:bg-amber-500/30 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {analyzing ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
+          {analyzing ? "Analyzing…" : "Analyze Voice"}
+        </button>
+        {result && (
+          <div className="mt-4 space-y-3">
+            <h4 className="text-xs font-semibold text-zinc-300 uppercase tracking-wide">Extracted Voice</h4>
+            <div className="rounded-lg bg-zinc-800/80 border border-zinc-700 p-4 text-sm text-zinc-200 leading-relaxed whitespace-pre-wrap">
+              {result}
+            </div>
+            <button
+              onClick={() => onApply(result)}
+              className="flex items-center gap-2 rounded-lg bg-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-300 hover:bg-emerald-500/30"
+            >
+              <Check size={14} />
+              Apply to Brand Voice
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function BrandVoicesPanel() {
   const [voices, setVoices] = useState<BrandVoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [analyzeTarget, setAnalyzeTarget] = useState<BrandVoice | null>(null);
 
   useEffect(() => {
     fetch("/api/brand-voices")
@@ -155,6 +253,20 @@ export function BrandVoicesPanel() {
 
   function handleSave(updated: BrandVoice) {
     setVoices((prev) => prev.map((v) => (v.id === updated.id ? updated : v)));
+  }
+
+  async function handleApplyAnalysis(voiceText: string) {
+    if (!analyzeTarget) return;
+    try {
+      const res = await fetch(`/api/brand-voices/${analyzeTarget.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ full_voice_prompt: voiceText }),
+      });
+      const data = await res.json();
+      if (res.ok) handleSave(data);
+    } catch { /* ignore */ }
+    setAnalyzeTarget(null);
   }
 
   return (
@@ -192,9 +304,26 @@ export function BrandVoicesPanel() {
 
       <div className="space-y-3">
         {voices.map((v) => (
-          <BrandVoiceCard key={v.id} voice={v} onSave={handleSave} />
+          <div key={v.id} className="relative">
+            <BrandVoiceCard voice={v} onSave={handleSave} />
+            <button
+              onClick={() => setAnalyzeTarget(v)}
+              className="absolute top-4 right-14 flex items-center gap-1.5 rounded-lg bg-zinc-800/80 px-2.5 py-1 text-xs text-zinc-400 hover:text-amber-300 hover:bg-zinc-700 transition-colors"
+              title="Analyze voice from writing samples"
+            >
+              <Search size={12} />
+              Analyze
+            </button>
+          </div>
         ))}
       </div>
+
+      {analyzeTarget && (
+        <VoiceAnalyzerModal
+          onApply={handleApplyAnalysis}
+          onClose={() => setAnalyzeTarget(null)}
+        />
+      )}
     </div>
   );
 }
