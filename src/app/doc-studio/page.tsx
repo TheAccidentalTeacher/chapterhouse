@@ -31,6 +31,7 @@ import {
   X,
 } from "lucide-react";
 import { downloadAsDocx, exportAsPdf } from "@/lib/export-document";
+import { ListenButton } from "@/components/listen-button";
 
 // ── Category grouping ─────────────────────────────────────────────────────────
 
@@ -818,6 +819,7 @@ export default function DocStudioPage() {
                 <div className="flex items-center gap-2">
                   {output && !isGenerating && (
                     <>
+                      <ListenButton text={output} />
                       <button
                         onClick={handleCopy}
                         className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-amber-300 transition-colors"
