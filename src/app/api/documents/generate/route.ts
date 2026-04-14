@@ -207,7 +207,77 @@ const bodySchema = z.object({
   save: z.boolean().optional().default(false),
   brand_voice_id: z.string().uuid().optional(),
   outline: z.object({ sections: z.array(outlineSectionSchema) }).optional(),
+  audience_id: z.string().uuid().optional(),
+  output_surfaces: z.array(z.enum(["docx", "email_summary", "social_set"])).optional().default([]),
 });
+
+// Phase 28C: Multi-Surface Output — generate additional formats from document content
+async function processSurfaces(
+  surfaces: string[],
+  content: string,
+  docType: string,
+  userId: string
+): Promise<void> {
+  const anthropic = getAnthropic();
+
+  for (const surface of surfaces) {
+    try {
+      if (surface === "email_summary") {
+        // Generate a 3-paragraph stakeholder email summary
+        const emailRes = await anthropic.messages.create({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 512,
+          system: "Generate a concise stakeholder email. Return ONLY valid JSON.",
+          messages: [{
+            role: "user",
+            content: `Summarize this document as a stakeholder email (3 paragraphs max, with subject line).
+
+Document type: ${docType}
+Content: ${content.slice(0, 4000)}
+
+Return JSON: {"subject": "<email subject>", "body": "<3 paragraph email body>"}`,
+          }],
+        });
+        const text = emailRes.content[0].type === "text" ? emailRes.content[0].text : "";
+        let emailData;
+        try { emailData = JSON.parse(text); } catch { emailData = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] ?? "{}"); }
+
+        // Save as a linked document
+        const supabase = getSupabaseServiceRoleClient();
+        if (supabase && emailData?.subject) {
+          await supabase.from("documents").insert({
+            user_id: userId,
+            doc_type: "report",
+            title: `Email: ${emailData.subject}`,
+            content: `**Subject:** ${emailData.subject}\n\n${emailData.body}`,
+            word_count: (emailData.body || "").split(/\s+/).length,
+          });
+        }
+      }
+
+      if (surface === "social_set") {
+        // Generate 2 social posts from document content
+        if (!process.env.BUFFER_ACCESS_TOKEN) continue; // Skip without Buffer
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        await fetch(`${baseUrl}/api/social/generate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            brands: ["ncho"],
+            platforms: ["facebook"],
+            count_per_combo: 2,
+            topic_seed: content.slice(0, 500),
+          }),
+        }).catch(() => {});
+      }
+
+      // docx surface: no async processing needed — the export route already exists
+      // Users can click "Export DOCX" on the saved document
+    } catch {
+      // Non-fatal — surfaces are best-effort
+    }
+  }
+}
 
 export const maxDuration = 60;
 
@@ -228,7 +298,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { doc_type, inputs, title, save, brand_voice_id, outline } = parsed.data;
+    const { doc_type, inputs, title, save, brand_voice_id, outline, audience_id, output_surfaces } = parsed.data;
 
     // Look up the doc type definition
     const docDef = DOC_TYPE_MAP[doc_type];
@@ -363,10 +433,32 @@ export async function POST(request: Request) {
       }
     }
 
-    // System prompt = base Scott context + brand voice + live context + doc-type-specific guidance
+    // Phase 28E: Audience injection (after brand voice, before doc type instructions)
+    let audienceBlock = "";
+    if (audience_id) {
+      const supabase = getSupabaseServiceRoleClient();
+      if (supabase) {
+        const { data: audience } = await supabase
+          .from("target_audiences")
+          .select("name, description, demographics, pain_points, motivations, preferred_tone")
+          .eq("id", audience_id)
+          .single();
+        if (audience) {
+          audienceBlock = `\n\nTARGET AUDIENCE: ${audience.name}
+Description: ${audience.description || "N/A"}
+Demographics: ${JSON.stringify(audience.demographics || {})}
+Pain Points: ${JSON.stringify(audience.pain_points || [])}
+Motivations: ${JSON.stringify(audience.motivations || [])}
+Preferred Tone: ${audience.preferred_tone || "N/A"}\n`;
+        }
+      }
+    }
+
+    // System prompt = base Scott context + brand voice + audience + live context + doc-type-specific guidance
     const systemPrompt =
       BASE_SYSTEM_PROMPT +
       brandVoiceBlock +
+      audienceBlock +
       liveContext +
       "\n\n---\n\n## Document Type: " + docDef.label + "\n\n" +
       docDef.systemPromptSuffix;
@@ -382,9 +474,10 @@ export async function POST(request: Request) {
       messages: [{ role: "user", content: userPrompt }],
     });
 
-    // If save=true, accumulate all chunks and persist after stream ends
+    // If save=true or surfaces requested, accumulate all chunks
     let fullContent = "";
     const shouldSave = save === true;
+    const hasSurfaces = output_surfaces && output_surfaces.length > 0;
 
     const readable = new ReadableStream({
       async start(controller) {
@@ -396,7 +489,7 @@ export async function POST(request: Request) {
             ) {
               const text = chunk.delta.text;
               controller.enqueue(encoder.encode(text));
-              if (shouldSave) fullContent += text;
+              if (shouldSave || hasSurfaces) fullContent += text;
             }
           }
           controller.close();
@@ -417,6 +510,11 @@ export async function POST(request: Request) {
                 ...(outline ? { outline } : {}),
               });
             }
+          }
+
+          // Phase 28C: Multi-Surface Output (fire-and-forget after stream)
+          if (hasSurfaces && fullContent.trim()) {
+            processSurfaces(output_surfaces, fullContent.trim(), doc_type, userId).catch(() => {});
           }
         } catch (err) {
           controller.error(err);

@@ -695,6 +695,28 @@ export const navigationGroups: NavigationGroup[] = [
         status: "partial",
       },
       {
+        label: "Audiences",
+        href: "/audiences",
+        description: "Target audience profiles for content generation.",
+        icon: Users,
+        tooltip: {
+          summary: "Create and manage target audience profiles. When generating documents in Doc Studio, select an audience to inject their demographics, pain points, motivations, and preferred tone into the generation prompt. Content is automatically calibrated to the audience you're writing for.",
+          features: [
+            "CRUD: create, edit, delete audience profiles",
+            "Demographics, pain points, motivations, preferred tone per audience",
+            "Injected into Doc Studio generation alongside brand voice",
+            "Seed audience: Conviction-Stage Homeschool Parent pre-loaded",
+            "Optional brand voice association per audience",
+          ],
+          tips: [
+            "Create an audience before generating a campaign plan — the output will reference their specific pain points",
+            "Use the 'Writing for:' dropdown in Doc Studio to select an audience",
+            "Start with the seed audience and clone it for different customer segments",
+          ],
+        },
+        status: "live",
+      },
+      {
         label: "Context Brain",
         href: "/settings/context",
         description: "The brain behind every chat. Multiple named docs assembled into every system prompt.",
