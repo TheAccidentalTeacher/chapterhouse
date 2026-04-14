@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ChapterhouseShell } from "@/components/chapterhouse-shell";
+import { CouncilPopover } from "@/components/council-popover";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -40,6 +41,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} bg-background text-foreground antialiased`}
       >
         <ChapterhouseShell>{children}</ChapterhouseShell>
+        <CouncilPopover />
       </body>
     </html>
   );

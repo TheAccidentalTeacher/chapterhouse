@@ -2,7 +2,7 @@ import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
 
 interface SearchResult {
   id: string;
-  type: "task" | "research" | "opportunity" | "thread" | "brief";
+  type: "task" | "research" | "opportunity" | "thread" | "brief" | "document";
   title: string;
   snippet: string;
   status?: string;
@@ -134,5 +134,29 @@ export async function GET(request: Request) {
     }
   } catch { /* table may not exist */ }
 
-  return Response.json({ query: q, results, count: results.length });
+  // Search documents (Phase 22B)
+  try {
+    const { data } = await supabase
+      .from("documents")
+      .select("id, title, doc_type, content, created_at")
+      .or(`title.ilike.${pattern},content.ilike.${pattern}`)
+      .order("created_at", { ascending: false })
+      .limit(5);
+    if (data) {
+      for (const d of data) {
+        results.push({
+          id: d.id,
+          type: "document",
+          title: d.title ?? `${d.doc_type} document`,
+          snippet: d.content?.slice(0, 120) ?? "",
+          date: d.created_at,
+        });
+      }
+    }
+  } catch { /* table may not exist */ }
+
+  // Sort all results by date descending
+  results.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  return Response.json({ query: q, results: results.slice(0, 30), count: results.length });
 }
