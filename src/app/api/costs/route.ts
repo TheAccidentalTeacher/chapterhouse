@@ -16,7 +16,7 @@ export async function GET(req: Request) {
     const secretKey = process.env.LANGFUSE_SECRET_KEY;
     const publicKey = process.env.LANGFUSE_PUBLIC_KEY;
     const baseUrl =
-      process.env.LANGFUSE_HOST || "https://us.cloud.langfuse.com";
+      process.env.LANGFUSE_BASE_URL || "https://us.cloud.langfuse.com";
 
     if (!secretKey || !publicKey) {
       return Response.json(

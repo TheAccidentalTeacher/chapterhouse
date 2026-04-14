@@ -224,7 +224,7 @@ This document is your complete technical brief. Read all of it before touching a
 **Supabase tables:**
 - `briefs`, `research_items`, `opportunities`, `tasks`, `chat_threads`, `knowledge_summaries`, `founder_notes`, `jobs`, `social_accounts`, `social_posts`, `emails`, `context_files`, `dreams`, `dream_log`, `intel_sessions`, `intel_categories`, `generated_images`, `brand_voices`, `characters`, `documents`, `folio_entries`, `focus_items`, `scratch_notes`, `blog_posts`, `watch_urls`, `workflows`, `target_audiences`
 
-**Key env vars:** `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `TAVILY_API_KEY`, `NEWSAPI_API_KEY`, `N8N_BASE_URL`, `N8N_API_KEY`, `RAILWAY_WORKER_URL`, `GITHUB_TOKEN`, `CRON_SECRET`, `NEXT_PUBLIC_APP_URL`, `ALLOWED_EMAILS`, `BUFFER_ACCESS_TOKEN`, `SHOPIFY_WEBHOOK_SECRET`, `YOUTUBE_API_KEY`, `GEMINI_API_KEY`, `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION`, `DAILYDEV_TOKEN`, `GITHUB_BRAIN_TOKEN`, `BRAIN_SYNC_KEY`, `COURSE_SUPABASE_URL`, `COURSE_SUPABASE_SERVICE_ROLE_KEY`, `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_HOST`, `ELEVENLABS_API_KEY`, `ELEVENLABS_DEFAULT_VOICE_ID`, `GROQ_API_KEY` (optional, GEO dual-provider)
+**Key env vars:** `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `TAVILY_API_KEY`, `NEWSAPI_API_KEY`, `N8N_BASE_URL`, `N8N_API_KEY`, `RAILWAY_WORKER_URL`, `GITHUB_TOKEN`, `CRON_SECRET`, `NEXT_PUBLIC_APP_URL`, `ALLOWED_EMAILS`, `BUFFER_ACCESS_TOKEN`, `SHOPIFY_WEBHOOK_SECRET`, `YOUTUBE_API_KEY`, `GEMINI_API_KEY`, `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION`, `DAILYDEV_TOKEN`, `GITHUB_BRAIN_TOKEN`, `BRAIN_SYNC_KEY`, `COURSE_SUPABASE_URL`, `COURSE_SUPABASE_SERVICE_ROLE_KEY`, `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_BASE_URL`, `ELEVENLABS_API_KEY`, `ELEVENLABS_DEFAULT_VOICE_ID`, `GROQ_API_KEY` (optional, GEO dual-provider)
 
 **Installed and active:** `@upstash/qstash`, `@upstash/redis`, `@anthropic-ai/sdk`, `openai`, `@supabase/supabase-js`, `@supabase/ssr`, `zod`, `react-markdown`, `remark-gfm`, `resend`, `rss-parser`, `date-fns`, `html-to-docx`, `marked`, `lucide-react`, `youtube-transcript` (v1.3.0 — captions extraction, blocked from cloud IPs)
 
@@ -488,7 +488,7 @@ COWORK UPGRADE SPEC — Phases 20A–28E         ✅ COMPLETE (migrations 100–
 
   Phase 20B — Langfuse Cost Visibility (commit 6897293)
     /api/costs/summary route queries Langfuse API for spend tracking.
-    Requires LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, LANGFUSE_HOST env vars.
+    Requires LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, LANGFUSE_BASE_URL env vars.
 
   Phase 20C — Brand Voice in Doc Studio (commit baacc0c)
     Doc generate route accepts brand_voice_id → fetches from brand_voices table →
@@ -1430,7 +1430,7 @@ All build steps completed across March 13 – April 13 sessions. Deployed on Ver
 
 49. Commit `85bc9f0`: Shared foundations — `src/lib/route-helpers.ts` (handleRouteError), `src/lib/auth-context.ts` (getAuthenticatedUserId), types and utilities for all phases.
 50. Commit `68098a0`: Phase 20A — Document Export Pipeline. Migration 100: export_format, export_url, exported_at on documents. `/api/documents/export/[id]` route (DOCX/Markdown/PDF).
-51. Commit `6897293`: Phase 20B — Langfuse Cost Visibility. `/api/costs/summary` route queries Langfuse API. New env vars: LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, LANGFUSE_HOST.
+51. Commit `6897293`: Phase 20B — Langfuse Cost Visibility. `/api/costs/summary` route queries Langfuse API. New env vars: LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, LANGFUSE_BASE_URL.
 52. Commit `baacc0c`: Phase 20C — Brand Voice in Doc Studio. Doc generate route accepts `brand_voice_id` → fetches from DB → injects as system prompt suffix.
 53. Commit `b1db1d0`: Phases 21A/21B/21C — Outline-First Authoring (migration 101: outline JSONB, version tracking), Agentic Editing (`/api/documents/edit`), Voice Analysis (`/api/documents/voice-analysis` via Haiku 4.5).
 54. Commit `149e968`: Phases 22A/22B — Council Quick-Consult (`/api/council/quick`, all 5 members, synchronous), Unified Search upgrade (9 tables: +documents, knowledge_nodes, folio_entries, intel_sessions).
