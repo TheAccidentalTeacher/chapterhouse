@@ -594,6 +594,222 @@ Rules you must follow without exception:
     `Academic Paper: ${(i.thesis ?? "Comparison Study").slice(0, 60)}`,
 };
 
+// ── 16. Campaign Plan Generator (Phase 26A) ─────────────────────────────────
+
+const campaignPlan: DocTypeDefinition = {
+  id: "campaign_plan",
+  label: "Campaign Plan",
+  description: "Full campaign plan with timeline, channels, budget allocation, and success metrics — uses live NCHO/SomersSchool context.",
+  category: "writing",
+  icon: "📅",
+  useCouncilDefault: true,
+  fields: [
+    { key: "product_or_launch", label: "What product or launch is this campaign for?", type: "text", placeholder: "e.g. SomersSchool public beta, NCHO Spring Collection", required: true },
+    { key: "target_audience", label: "Who is this campaign targeting?", type: "text", placeholder: "e.g. Alaska homeschool moms, secular, allotment-eligible", required: true },
+    { key: "budget", label: "Budget range (if applicable)", type: "text", placeholder: "e.g. $500/month, $10/day test" },
+    { key: "timeline", label: "Campaign timeline", type: "text", placeholder: "e.g. 2 weeks, 1 month, 6-week launch window", required: true },
+  ],
+  systemPromptSuffix: "You are writing a campaign plan. Convicted-not-curious: NCHO speaks to parents who've already decided to homeschool — not those still considering it. SomersSchool speaks to parents convicted about homeschooling but curious about this specific platform. Use real product data, pricing, and audience info from the live context. Be specific about channels and budget allocation. No generic marketing fluff.",
+  buildPrompt: (i) => `Write a full campaign plan for: **${i.product_or_launch}**
+
+Target audience: ${i.target_audience}
+Budget: ${i.budget || "To be determined"}
+Timeline: ${i.timeline}
+
+Structure:
+1. **Campaign objective** — one sentence, measurable
+2. **Audience definition** — demographics, psychographics, where they spend time online
+3. **Channel strategy** — which channels (Facebook, Instagram, email, Shopify blog, etc.) and WHY
+4. **Content calendar** — week-by-week breakdown of what gets posted/sent where
+5. **Budget allocation** — how the budget splits across channels (% or $)
+6. **Key messaging** — 3 core messages that appear across all channels
+7. **Success metrics** — specific numbers that define win/lose (CTR, CPA, enrollment count, etc.)
+8. **Kill criteria** — when to stop spending and pivot
+9. **Timeline** — ${i.timeline} mapped to milestones
+
+Use NCHO/SomersSchool product data, pricing, and competitor intel from context. "Your child" — never "your student."`,
+  defaultTitle: (i) => `Campaign Plan: ${i.product_or_launch || "New Campaign"}`,
+};
+
+// ── 17. Email Sequence Generator (Phase 26B) ────────────────────────────────
+
+const emailSequence: DocTypeDefinition = {
+  id: "email_sequence",
+  label: "Email Sequence",
+  description: "Generate a multi-email sequence (welcome, nurture, launch, re-engagement) with subject lines and send timing.",
+  category: "writing",
+  icon: "📧",
+  useCouncilDefault: false,
+  fields: [
+    { key: "sequence_type", label: "Sequence type", type: "select", options: ["welcome", "nurture", "launch", "re-engagement", "custom"], required: true },
+    { key: "num_emails", label: "Number of emails", type: "select", options: ["3", "5", "7", "10"], required: true },
+    { key: "product_or_topic", label: "What product or topic?", type: "text", placeholder: "e.g. SomersSchool onboarding, NCHO new subscriber", required: true },
+    { key: "cta_goal", label: "What action should the reader take?", type: "text", placeholder: "e.g. Start free trial, Browse curriculum, Complete profile", required: true },
+  ],
+  systemPromptSuffix: "You are writing an email sequence. Each email must have a specific subject line, send timing (Day 0, Day 3, etc.), and clear CTA. Convicted-not-curious: write to parents who've decided, not those exploring. 'Your child.' No generic marketing language. Each email should build on the previous — not repeat.",
+  buildPrompt: (i) => `Write a **${i.num_emails}-email ${i.sequence_type} sequence** for: **${i.product_or_topic}**
+
+CTA goal: ${i.cta_goal}
+
+For each email provide:
+1. **Subject line** — compelling, specific, under 60 characters
+2. **Preview text** — the snippet that appears after the subject (under 100 chars)
+3. **Send timing** — Day 0, Day 1, Day 3, etc. with rationale
+4. **Email body** — full copy, 150-300 words per email
+5. **CTA button text** — what the button says
+6. **Why this email works** — one sentence on the psychology
+
+Rules:
+- Each email must advance the narrative — no repetition
+- Subject lines should create curiosity or urgency without clickbait
+- "Your child" — never "your student"
+- If ${i.sequence_type} is "welcome": first email sends immediately, warmth + value first, ask later
+- If ${i.sequence_type} is "launch": build anticipation → reveal → urgency → last chance
+- Use real product details, pricing, and brand voice from context`,
+  defaultTitle: (i) => `Email Sequence: ${i.sequence_type || ""} — ${i.product_or_topic || ""}`,
+};
+
+// ── 18. SEO Audit Generator (Phase 26C) ─────────────────────────────────────
+
+const seoAudit: DocTypeDefinition = {
+  id: "seo_audit",
+  label: "SEO Audit",
+  description: "Generate an SEO audit with keyword analysis, technical recommendations, and content gap opportunities.",
+  category: "research",
+  icon: "🔎",
+  useCouncilDefault: false,
+  fields: [
+    { key: "url_or_brand", label: "URL or brand to audit", type: "text", placeholder: "e.g. nextchapterhomeschool.com, SomersSchool", required: true },
+    { key: "target_keywords", label: "Target keywords (comma-separated)", type: "text", placeholder: "e.g. homeschool curriculum Alaska, secular homeschool, middle school curriculum", required: true },
+    { key: "competitors", label: "Competitor URLs (optional)", type: "text", placeholder: "e.g. ixl.com, khanacademy.org" },
+  ],
+  systemPromptSuffix: "You are writing an SEO audit. Be specific about keyword opportunities. Use real competitor intel from context when available. Flag anything that requires manual verification with ⚠️. Do NOT fabricate search volume numbers — estimate ranges or say 'verify with Ahrefs/Semrush.'",
+  buildPrompt: (i) => `Write an SEO audit for: **${i.url_or_brand}**
+
+Target keywords: ${i.target_keywords}
+Competitors: ${i.competitors || "Not specified — use known competitors from context"}
+
+Structure:
+1. **Current state assessment** — what's working, what's not (based on available context)
+2. **Keyword analysis** — target keywords grouped by intent (informational, commercial, transactional)
+3. **Content gap opportunities** — topics the competitors rank for that we don't cover
+4. **Technical recommendations** — meta titles, descriptions, heading structure, internal linking
+5. **Content strategy** — 10 blog post / page ideas ranked by estimated impact
+6. **Quick wins** — 3 things that can be done this week
+7. **Long-term plays** — 3 things that compound over 3-6 months
+
+⚠️ Do NOT fabricate specific search volume numbers. Use ranges (low/medium/high) or say "verify with Ahrefs/Semrush."
+Use competitor intel and research data from context when available.`,
+  defaultTitle: (i) => `SEO Audit: ${i.url_or_brand || "New Audit"}`,
+};
+
+// ── 19. Competitive Brief Generator (Phase 26D) ────────────────────────────
+
+const competitiveBrief: DocTypeDefinition = {
+  id: "competitive_brief",
+  label: "Competitive Brief",
+  description: "Structured competitive analysis using real Intel data — competitor strengths, weaknesses, and strategic positioning.",
+  category: "strategy",
+  icon: "⚔️",
+  useCouncilDefault: true,
+  fields: [
+    { key: "market_or_product", label: "Market or product area", type: "text", placeholder: "e.g. K-8 homeschool curriculum market, Alaska homeschool supplies", required: true },
+    { key: "known_competitors", label: "Competitors you know about", type: "text", placeholder: "e.g. Khan Academy, IXL, Teachers Pay Teachers" },
+    { key: "focus_areas", label: "Focus areas", type: "text", placeholder: "e.g. pricing, features, positioning, content quality" },
+  ],
+  systemPromptSuffix: "You are writing a competitive intelligence brief. Use real Intel data and research from context — do NOT fabricate competitor features or pricing. If you don't have data on a competitor, say so explicitly. Be honest about competitor strengths — dismissing them makes the brief useless.",
+  buildPrompt: (i) => `Write a competitive intelligence brief for: **${i.market_or_product}**
+
+Known competitors: ${i.known_competitors || "Use competitors from Intel and research context"}
+Focus areas: ${i.focus_areas || "Pricing, features, positioning, content quality, market presence"}
+
+Structure:
+1. **Market overview** — size, growth trajectory, key trends (use research data from context)
+2. **Competitor profiles** — for each competitor:
+   - What they do well (be honest)
+   - Their structural weakness
+   - Their pricing model
+   - Their target audience overlap with ours
+3. **Competitive matrix** — feature comparison table (markdown)
+4. **Our positioning** — where SomersSchool/NCHO fits in the competitive landscape
+5. **Opportunity gaps** — what no competitor does well that we could own
+6. **Threats** — specific competitors or trends that could hurt us
+7. **Strategic recommendations** — 3 concrete actions
+
+Use Intel sessions, research items, and any competitive data available in context. Flag unverifiable claims with ⚠️.`,
+  defaultTitle: (i) => `Competitive Brief: ${i.market_or_product || "Market Analysis"}`,
+};
+
+// ── 20. Status Report Generator (Phase 26E) ─────────────────────────────────
+
+const statusReport: DocTypeDefinition = {
+  id: "status_report",
+  label: "Status Report",
+  description: "Auto-generated status report from Folio, Dreams, Tasks, and Social — what got done, what's next, what's blocked.",
+  category: "planning",
+  icon: "📊",
+  useCouncilDefault: false,
+  fields: [
+    { key: "period", label: "Report period", type: "select", options: ["today", "this_week", "this_month"], required: true },
+    { key: "audience", label: "Who is this report for?", type: "select", options: ["self", "partner", "investor"], required: true },
+  ],
+  systemPromptSuffix: "You are writing a status report. Dense, factual, outcome-focused. No filler. Lead with what shipped, then what's in progress, then what's blocked. For 'self' audience: terse bullets. For 'partner' audience: warm but efficient, highlight what Anna needs to know. For 'investor' audience: metrics, milestones, runway context.",
+  buildPrompt: (i) => `Write a **${i.period}** status report for audience: **${i.audience}**.
+
+Use the live context data provided (Folio entries, active Dreams, completed Tasks, published Social posts) to build this report.
+
+Structure:
+1. **TL;DR** — 2-3 sentences, the headline version
+2. **Shipped / Completed** — what actually got done this ${i.period === "today" ? "day" : i.period === "this_week" ? "week" : "month"}
+3. **In Progress** — active work with current status
+4. **Blocked / Needs Attention** — what's stuck and why
+5. **Key Metrics** — any relevant numbers (posts published, tasks closed, dreams advanced)
+6. **Next Period Focus** — top 3 priorities for the next ${i.period === "today" ? "day" : i.period === "this_week" ? "week" : "month"}
+${i.audience === "investor" ? "\n7. **Runway & Revenue** — revenue progress toward August 2026 target, key milestones hit/missed" : ""}
+${i.audience === "partner" ? "\n7. **Anna's Attention** — specific items that need Anna's input or action" : ""}
+
+Be specific. Reference actual items from the data, not generic summaries.`,
+  defaultTitle: (i) => `Status Report: ${i.period || "Period"} — ${new Date().toLocaleDateString()}`,
+};
+
+// ── 21. Feature Spec / PRD Generator (Phase 26F) ────────────────────────────
+
+const featureSpec: DocTypeDefinition = {
+  id: "feature_spec",
+  label: "Feature Spec",
+  description: "Code-bot-ready feature spec with locked-decision format, SQL migrations, and verification steps.",
+  category: "strategy",
+  icon: "⚙️",
+  useCouncilDefault: true,
+  fields: [
+    { key: "feature_name", label: "Feature or product name", type: "text", placeholder: "e.g. Parent Progress Dashboard, Gimli Video Pipeline", required: true },
+    { key: "problem_statement", label: "What problem does this solve?", type: "textarea", placeholder: "What's broken, missing, or too slow today?", required: true },
+    { key: "target_user", label: "Who is this for?", type: "text", placeholder: "e.g. Scott (admin), Parent user, Student (child profile)" },
+  ],
+  systemPromptSuffix: "You are writing a feature spec that goes directly to a code bot. Use locked-decision format: **Decision:** / **Why:** / **Not:**. Include SQL migration patterns, API route signatures, and verification steps. Every ambiguity is a bug in the code bot's output. Flag open questions as ⚠️ SCOTT DECIDES.",
+  buildPrompt: (i) => `Write a feature spec for: **${i.feature_name}**
+
+Problem: ${i.problem_statement}
+Target user: ${i.target_user || "Not specified — infer from context"}
+
+This spec goes directly to a code bot (Claude Code / Cursor). It must be precise enough that the bot can build the feature without asking questions.
+
+Structure:
+1. **One-paragraph vision** — what this feature does and why it matters
+2. **Locked decisions** — each in format:
+   - **Decision:** [what was decided]
+   - **Why:** [the actual reason]
+   - **Not:** [what was rejected and why]
+3. **Database changes** — SQL migration(s) with exact column types, constraints, RLS policies
+4. **API routes** — method, path, request/response shape, auth requirements
+5. **UI components** — what the user sees, where it lives in nav, key interactions
+6. **Verification steps** — how to confirm each piece works (smoke test checklist)
+7. **⚠️ SCOTT DECIDES** — any open questions that need human input before building
+
+Use Chapterhouse patterns from context: Supabase + RLS, Zod validation, handleRouteError, Next.js App Router, Tailwind gold/amber palette.`,
+  defaultTitle: (i) => `Feature Spec: ${i.feature_name || "New Feature"}`,
+};
+
 // ── Registry ──────────────────────────────────────────────────────────────────
 
 export const DOC_TYPES: DocTypeDefinition[] = [
@@ -612,6 +828,12 @@ export const DOC_TYPES: DocTypeDefinition[] = [
   reportWriter,
   brainstorm,
   academicPaper,
+  campaignPlan,
+  emailSequence,
+  seoAudit,
+  competitiveBrief,
+  statusReport,
+  featureSpec,
 ];
 
 export const DOC_TYPE_MAP: Record<string, DocTypeDefinition> = Object.fromEntries(

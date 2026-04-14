@@ -273,6 +273,73 @@ export async function POST(request: Request) {
       maxTokensToUse = academicCtx.maxTokens;
     }
 
+    // Phase 26E: Status report fetches additional structured data
+    if (doc_type === "status_report") {
+      const supabase = getSupabaseServiceRoleClient();
+      if (supabase) {
+        const statusBlocks: string[] = [];
+        try {
+          const { data: folioEntries } = await supabase
+            .from("folio_entries")
+            .select("entry_date, top_action, summary, track_signals")
+            .order("entry_date", { ascending: false })
+            .limit(7);
+          if (folioEntries?.length) {
+            statusBlocks.push(
+              "## Recent Folio Entries (last 7 days)\n\n" +
+              folioEntries.map((f) =>
+                `**${f.entry_date}**: ${f.top_action || ""}\n${f.summary || ""}`
+              ).join("\n\n")
+            );
+          }
+        } catch { /* non-fatal */ }
+        try {
+          const { data: activeDreams } = await supabase
+            .from("dreams")
+            .select("title, status, priority, description")
+            .eq("status", "active")
+            .limit(20);
+          if (activeDreams?.length) {
+            statusBlocks.push(
+              "## Active Dreams\n\n" +
+              activeDreams.map((d) => `- **${d.title}** (${d.priority || "no priority"}) — ${d.description || ""}`).join("\n")
+            );
+          }
+        } catch { /* non-fatal */ }
+        try {
+          const { data: doneTasks } = await supabase
+            .from("tasks")
+            .select("title, status, updated_at")
+            .eq("status", "done")
+            .order("updated_at", { ascending: false })
+            .limit(20);
+          if (doneTasks?.length) {
+            statusBlocks.push(
+              "## Recently Completed Tasks\n\n" +
+              doneTasks.map((t) => `- ✅ ${t.title} (${t.updated_at})`).join("\n")
+            );
+          }
+        } catch { /* non-fatal */ }
+        try {
+          const { data: publishedPosts } = await supabase
+            .from("social_posts")
+            .select("brand, platform, post_text, status, published_at")
+            .eq("status", "published")
+            .order("published_at", { ascending: false })
+            .limit(20);
+          if (publishedPosts?.length) {
+            statusBlocks.push(
+              "## Recently Published Social Posts\n\n" +
+              publishedPosts.map((p) => `- [${p.brand}/${p.platform}] ${(p.post_text || "").slice(0, 100)}...`).join("\n")
+            );
+          }
+        } catch { /* non-fatal */ }
+        if (statusBlocks.length > 0) {
+          userPrompt += "\n\n---\n\n## LIVE STATUS DATA\n\n" + statusBlocks.join("\n\n---\n\n");
+        }
+      }
+    }
+
     // Build live context (founder notes, research, brief)
     const liveContext = await buildDocumentContext();
 
