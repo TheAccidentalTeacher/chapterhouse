@@ -198,6 +198,7 @@ const bodySchema = z.object({
   inputs: z.record(z.string(), z.string()),
   title: z.string().optional(),
   save: z.boolean().optional().default(false),
+  brand_voice_id: z.string().uuid().optional(),
 });
 
 export const maxDuration = 60;
@@ -219,7 +220,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { doc_type, inputs, title, save } = parsed.data;
+    const { doc_type, inputs, title, save, brand_voice_id } = parsed.data;
 
     // Look up the doc type definition
     const docDef = DOC_TYPE_MAP[doc_type];
@@ -258,9 +259,30 @@ export async function POST(request: Request) {
     // Build live context (founder notes, research, brief)
     const liveContext = await buildDocumentContext();
 
-    // System prompt = base Scott context + live context + doc-type-specific guidance
+    // Phase 20C: Brand voice injection
+    let brandVoiceBlock = "";
+    if (brand_voice_id) {
+      const supabase = getSupabaseServiceRoleClient();
+      if (supabase) {
+        const { data: voice } = await supabase
+          .from("brand_voices")
+          .select("brand, voice_text")
+          .eq("id", brand_voice_id)
+          .single();
+        if (voice?.voice_text) {
+          brandVoiceBlock = `\n\nBRAND VOICE — Write in this voice:\n${voice.voice_text}\n`;
+          // NCHO safety net: "your child" not "your student" — A/B tested, locked
+          if (voice.brand === "ncho") {
+            brandVoiceBlock += `\nIMPORTANT: Always say "your child" — never "your student" or "the learner."\n`;
+          }
+        }
+      }
+    }
+
+    // System prompt = base Scott context + brand voice + live context + doc-type-specific guidance
     const systemPrompt =
       BASE_SYSTEM_PROMPT +
+      brandVoiceBlock +
       liveContext +
       "\n\n---\n\n## Document Type: " + docDef.label + "\n\n" +
       docDef.systemPromptSuffix;

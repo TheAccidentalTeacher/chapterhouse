@@ -137,8 +137,17 @@ export default function DocStudioPage() {
   const [availableDocs, setAvailableDocs] = useState<
     { id: string; title: string; doc_type: string }[]
   >([]);
+  const [brandVoiceId, setBrandVoiceId] = useState<string>("");
+  const [brandVoices, setBrandVoices] = useState<{ id: string; brand: string }[]>([]);
   const outputRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    fetch("/api/brand-voices")
+      .then((r) => (r.ok ? r.json() : { voices: [] }))
+      .then((data) => setBrandVoices(Array.isArray(data) ? data : data.voices ?? []))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch("/api/documents/list?limit=50")
@@ -189,6 +198,7 @@ export default function DocStudioPage() {
             doc_type: selectedType.id,
             inputs,
             save: saveAfter,
+            ...(brandVoiceId ? { brand_voice_id: brandVoiceId } : {}),
           }),
           signal: abortRef.current.signal,
         });
@@ -489,6 +499,27 @@ export default function DocStudioPage() {
               {error && (
                 <div className="mt-3 rounded-lg bg-red-950/40 border border-red-800/40 px-3 py-2 text-xs text-red-300">
                   {error}
+                </div>
+              )}
+
+              {/* Brand Voice Selector */}
+              {brandVoices.length > 0 && (
+                <div className="mt-4">
+                  <label className="block text-xs text-zinc-500 mb-1.5">
+                    Brand Voice (optional)
+                  </label>
+                  <select
+                    value={brandVoiceId}
+                    onChange={(e) => setBrandVoiceId(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50"
+                  >
+                    <option value="">None (default voice)</option>
+                    {brandVoices.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.brand.toUpperCase()}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               )}
 
