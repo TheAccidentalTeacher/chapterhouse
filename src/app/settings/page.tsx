@@ -36,6 +36,37 @@ export default function SettingsPage() {
 
         <CharacterLibraryPanel />
 
+        {/* Deferred Feature Placeholders */}
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="rounded-2xl border border-zinc-700/50 bg-zinc-800/30 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-blue-400 text-xs font-semibold px-2 py-0.5 bg-blue-400/10 rounded-full">Planned</span>
+              <span className="text-sm font-medium text-zinc-300">MCP Server (27C)</span>
+            </div>
+            <p className="text-xs text-zinc-500">
+              Expose Council, Intel, Dreams, and Folio as MCP tools for Claude Code. Waiting for stateless MCP spec (Q2/Q3 2026).
+            </p>
+          </div>
+          <div className="rounded-2xl border border-zinc-700/50 bg-zinc-800/30 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-blue-400 text-xs font-semibold px-2 py-0.5 bg-blue-400/10 rounded-full">Planned</span>
+              <span className="text-sm font-medium text-zinc-300">Meta-Agent / EVE (27D)</span>
+            </div>
+            <p className="text-xs text-zinc-500">
+              Agent that creates specialized sub-agents from Council knowledge. Requires Composable Workflows (28B).
+            </p>
+          </div>
+          <div className="rounded-2xl border border-zinc-700/50 bg-zinc-800/30 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-amber-400 text-xs font-semibold px-2 py-0.5 bg-amber-400/10 rounded-full">Foundation Built</span>
+              <span className="text-sm font-medium text-zinc-300">Workflow Triggers (28B)</span>
+            </div>
+            <p className="text-xs text-zinc-500">
+              Cron and webhook triggers for workflows. Manual trigger available now at /api/workflows/run.
+            </p>
+          </div>
+        </div>
+
         <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <section className="glass-panel rounded-3xl p-6">
           <div className="flex items-center justify-between gap-3">
