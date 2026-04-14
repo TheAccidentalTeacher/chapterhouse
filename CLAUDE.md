@@ -67,7 +67,7 @@ This document is your complete technical brief. Read all of it before touching a
 - `/course-assets` — **Course Asset Dashboard** (Production Pipeline hub). Connects to CoursePlatform Supabase via `COURSE_SUPABASE_URL` + `COURSE_SUPABASE_SERVICE_ROLE_KEY`. Shows all bundles for a course/grade combo as a lesson grid with 5 status dots per lesson: Bundle (slides_count), Images (slides_generated), Audio (audio_generated), Video (videos_generated), Worksheet (worksheet_present). "Generate Slides" button per bundle → creates `course_slide_images` job → QStash → Railway worker → Replicate/Leonardo per slide. Optional character selector injects Gimli (or any character) into slide generation via `characterId`. Supabase Realtime progress polling on active job. `GET /api/course-assets/status?course=&grade=` lists bundles. `POST /api/course-assets/generate-slides` kicks off async slide generation job. `GET /api/course-assets/bundle/[id]` fetches full bundle JSON.
 - `/tasks` — Task board with full status machine: open → in-progress → blocked → done → canceled. Source linking (from brief, opportunity, or manual). Full CRUD.
 - `/documents` — Workspace markdown files + uploaded documents. Upload PDFs, DOCX, ePub, TXT → Azure AI Document Intelligence extracts content (layout-aware, tables). 8 analysis types via Claude: summary, key findings, curriculum map, chapter outline, vocabulary, discussion guide, critique, full analysis.
-- `/doc-studio` — **Doc Studio** (migration 030). 14 one-click document generators with full Scott context pre-loaded: PRD, ADR, blog post, landing copy, spec, Session Close, campaign brief, positioning, launch checklist, market sizing, feedback synthesis, study guide, report, brainstorm. SSE streaming. All generated docs saved to `documents` table. API surface: `documents/generate/`, `documents/list/`, `documents/[id]/`, `documents/analyze/`, `documents/upload/`.
+- `/doc-studio` — **Doc Studio** (migration 030). 21 one-click document generators with full Scott context pre-loaded: PRD, ADR, blog post, landing copy, spec, Session Close, campaign brief, positioning, launch checklist, market sizing, feedback synthesis, study guide, report, brainstorm, academic paper, campaign plan, email sequence, SEO audit, competitive brief, status report, feature spec. SSE streaming. Outline-first authoring (generate → accept → section expand). Brand voice injection. Audience targeting. Multi-surface output (docx, email summary, social set). All generated docs saved to `documents` table. API surface: `documents/generate/`, `documents/list/`, `documents/[id]/`, `documents/analyze/`, `documents/upload/`, `documents/export/[id]/`, `documents/edit/`, `documents/voice-analysis/`, `documents/[id]/speak/`, `documents/outline/`.
 
 ### AI & Automation
 - `/jobs` — Real-time job dashboard. QStash → Railway workers. Supabase Realtime progress. Visual 6-step PassStepper on curriculum jobs. Accumulating session log. Job detail drawer with output viewer.
@@ -78,6 +78,7 @@ This document is your complete technical brief. Read all of it before touching a
 - `/social` — Social media automation (replaces Sintra, $49/mo). 3-tab UI: **Review Queue** (Supabase Realtime live updates, inline text edit, datetime picker, Buffer channel selector, approve/reject, full edit history tracking in JSONB), **Generate** (Claude Sonnet 4.6, 3 brands × 3 platforms, topic seed, brand voice enforced per brand), **Accounts** (Buffer GraphQL sync via GetOrganizations + GetChannels, manual brand→channel mapping). Weekly cron: Monday 05:00 UTC. Shopify webhook: new product → NCHO launch posts auto-generated (HMAC-verified).
 
 ### System
+- `/audiences` — Target Audience personas. Full CRUD: create, edit, delete. Demographics, pain points, motivations, preferred tone, linked brand voice. Injected into Doc Studio generation when audience_id is provided.
 - `/settings` — Environment status, provider configuration, founder memory panel (add/edit/delete notes).
 - `/help` — Help guide rendered from `chapterhouse-help-guide.md`.
 - `/login` — Supabase email/password auth.
@@ -135,6 +136,25 @@ This document is your complete technical brief. Read all of it before touching a
 - `email/test/` — Test IMAP connection health
 - `lessons/pipeline/` — Trigger SomersSchool lesson asset generation pipeline job
 - `research/deep/` — Deep Research: multi-source parallel (Tavily + SerpAPI + Reddit + NewsAPI + Internet Archive)
+- `costs/summary/` — Langfuse cost tracking summary (requires LANGFUSE_* env vars)
+- `documents/export/[id]/` — Export document as DOCX/Markdown/PDF
+- `documents/edit/` — Agentic editing: Claude Sonnet targeted section rewrites
+- `documents/voice-analysis/` — Haiku 4.5 brand voice scoring + suggestions
+- `documents/[id]/speak/` — ElevenLabs TTS for document content
+- `documents/outline/generate/` + `documents/outline/accept/` + `documents/outline/expand/` — Outline-first authoring
+- `council/quick/` — Synchronous single-question Council Quick-Consult (all 5 members)
+- `knowledge/ingest/` — URL → Tavily fetch → Haiku extraction → knowledge_nodes
+- `watch-urls/` + `watch-urls/[id]/` — Watch URL CRUD
+- `cron/check-watch-urls/` — Periodic URL change detection → auto-ingest
+- `intel/[id]/create-tasks/` — Intel findings → task creation bridge
+- `intel/discover/` — Deep Research topic discovery → Intel pipeline
+- `social/predict/` — Haiku 4.5 engagement prediction scoring
+- `social/boost/` — Claude Sonnet engagement-optimized rewrite
+- `enrich/[table]/` — Haiku 4.5 row-level enrichment (dreams, intel_sessions, social_posts)
+- `workflows/` + `workflows/[id]/` — Composable workflow CRUD
+- `workflows/run/` — Sequential workflow step executor
+- `cron/geo-visibility/` — Weekly AI search visibility tracking
+- `audiences/` + `audiences/[id]/` — Target audience CRUD
 
 **API routes under `/api/`:**
 - `auth/signout` — Sign out
@@ -202,9 +222,9 @@ This document is your complete technical brief. Read all of it before touching a
 - `email/test/` — Test IMAP connection health for configured accounts (POST)
 
 **Supabase tables:**
-- `briefs`, `research_items`, `opportunities`, `tasks`, `chat_threads`, `knowledge_summaries`, `founder_notes`, `jobs`, `social_accounts`, `social_posts`, `emails`, `context_files`, `dreams`, `dream_log`, `intel_sessions`, `intel_categories`, `generated_images`, `brand_voices`, `characters`, `documents`, `folio_entries`, `focus_items`, `scratch_notes`, `blog_posts`
+- `briefs`, `research_items`, `opportunities`, `tasks`, `chat_threads`, `knowledge_summaries`, `founder_notes`, `jobs`, `social_accounts`, `social_posts`, `emails`, `context_files`, `dreams`, `dream_log`, `intel_sessions`, `intel_categories`, `generated_images`, `brand_voices`, `characters`, `documents`, `folio_entries`, `focus_items`, `scratch_notes`, `blog_posts`, `watch_urls`, `workflows`, `target_audiences`
 
-**Key env vars:** `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `TAVILY_API_KEY`, `NEWSAPI_API_KEY`, `N8N_BASE_URL`, `N8N_API_KEY`, `RAILWAY_WORKER_URL`, `GITHUB_TOKEN`, `CRON_SECRET`, `NEXT_PUBLIC_APP_URL`, `ALLOWED_EMAILS`, `BUFFER_ACCESS_TOKEN`, `SHOPIFY_WEBHOOK_SECRET`, `YOUTUBE_API_KEY`, `GEMINI_API_KEY`, `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION`, `DAILYDEV_TOKEN`, `GITHUB_BRAIN_TOKEN`, `BRAIN_SYNC_KEY`, `COURSE_SUPABASE_URL`, `COURSE_SUPABASE_SERVICE_ROLE_KEY`
+**Key env vars:** `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `TAVILY_API_KEY`, `NEWSAPI_API_KEY`, `N8N_BASE_URL`, `N8N_API_KEY`, `RAILWAY_WORKER_URL`, `GITHUB_TOKEN`, `CRON_SECRET`, `NEXT_PUBLIC_APP_URL`, `ALLOWED_EMAILS`, `BUFFER_ACCESS_TOKEN`, `SHOPIFY_WEBHOOK_SECRET`, `YOUTUBE_API_KEY`, `GEMINI_API_KEY`, `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION`, `DAILYDEV_TOKEN`, `GITHUB_BRAIN_TOKEN`, `BRAIN_SYNC_KEY`, `COURSE_SUPABASE_URL`, `COURSE_SUPABASE_SERVICE_ROLE_KEY`, `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_HOST`, `ELEVENLABS_API_KEY`, `ELEVENLABS_DEFAULT_VOICE_ID`, `GROQ_API_KEY` (optional, GEO dual-provider)
 
 **Installed and active:** `@upstash/qstash`, `@upstash/redis`, `@anthropic-ai/sdk`, `openai`, `@supabase/supabase-js`, `@supabase/ssr`, `zod`, `react-markdown`, `remark-gfm`, `resend`, `rss-parser`, `date-fns`, `html-to-docx`, `marked`, `lucide-react`, `youtube-transcript` (v1.3.0 — captions extraction, blocked from cloud IPs)
 
@@ -457,6 +477,120 @@ PHASE 18 — Task Subtasks + Schema            ✅ COMPLETE (migrations 042–04
   (migration 043): description, source_type, source_id, source_title columns added;
   status vocab migrated (todo→open, in_progress→in-progress, archived→canceled);
   status CHECK updated to (open, in-progress, blocked, done, canceled).
+
+COWORK UPGRADE SPEC — Phases 20A–28E         ✅ COMPLETE (migrations 100–107, April 13 2026)
+  Replaces Cowork subscription ($X/mo). Full overnight build — 13 commits, 8 migrations.
+  Doc Studio with buildLiveContext() generates better content than Cowork's generic prompts.
+
+  Phase 20A — Document Export Pipeline (commit 68098a0, migration 100)
+    docx/markdown/pdf export from Doc Studio. /api/documents/export/[id] route.
+    Adds export_format, export_url, exported_at columns to documents table.
+
+  Phase 20B — Langfuse Cost Visibility (commit 6897293)
+    /api/costs/summary route queries Langfuse API for spend tracking.
+    Requires LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, LANGFUSE_HOST env vars.
+
+  Phase 20C — Brand Voice in Doc Studio (commit baacc0c)
+    Doc generate route accepts brand_voice_id → fetches from brand_voices table →
+    injects voice as system prompt suffix before streaming. No migration needed.
+
+  Phase 21A — Outline-First Authoring (commit b1db1d0, migration 101)
+    documents table gets outline JSONB, outline_status, version, parent_version_id columns.
+    Outline generate + accept + section expand endpoints. Version history tracking.
+
+  Phase 21B — Agentic Editing (commit b1db1d0)
+    /api/documents/edit route: Claude Sonnet reads full doc → applies targeted edits →
+    streams back. Diff-aware: instruction → identify section → rewrite section only.
+
+  Phase 21C — Voice Analysis (commit b1db1d0)
+    /api/documents/voice-analysis route: Haiku 4.5 analyzes doc against brand voice →
+    returns scores (tone, formality, conviction, clarity, brand_alignment) + suggestions.
+
+  Phase 22A — Council Quick-Consult (commit 149e968)
+    /api/council/quick route: single-question → all 5 members respond in sequence →
+    returns JSON with per-member responses. No job system — synchronous, maxDuration 120.
+
+  Phase 22B — Unified Search Upgrade (commit 149e968)
+    /api/search route extended: now searches documents + knowledge_nodes + folio_entries +
+    intel_sessions in addition to existing 5 tables. 9 tables total.
+
+  Phase 23A — Knowledge Base (commit 9640ac1)
+    /api/knowledge/ingest route: URL → Tavily fetch → Haiku extraction → knowledge_nodes.
+    Auto-tags, auto-folders based on content analysis. is_active=false by default.
+
+  Phase 23B — Watch URLs (commit 9640ac1, migration 102)
+    watch_urls table: url, check_interval_hours, last_checked_at, last_content_hash,
+    notify_on_change, is_active. /api/watch-urls CRUD routes.
+    /api/cron/check-watch-urls: fetches URLs, SHA-256 content hash comparison,
+    auto-ingests changes to knowledge_nodes.
+
+  Phase 23C — Intel Task Bridge (commit 9640ac1)
+    /api/intel/[id]/create-tasks route: takes Intel session findings, creates tasks
+    with source_type='intel', source_id=session_id. One task per actionable finding.
+
+  Phase 24A — ElevenLabs TTS in Doc Studio (commit ddc6bfa)
+    /api/documents/[id]/speak route: fetches doc content → ElevenLabs TTS API →
+    returns audio stream. Uses ELEVENLABS_API_KEY + ELEVENLABS_DEFAULT_VOICE_ID.
+
+  Phase 24B — Listen Button (commit ddc6bfa)
+    Document viewer gets inline "Listen" button → calls speak endpoint →
+    HTML5 audio player with playback controls.
+
+  Phase 25A — Prediction Scoring (commit 4690955, migration 103)
+    social_posts table gets predicted_engagement JSONB, prediction_confidence columns.
+    /api/social/predict route: Haiku 4.5 scores posts before approval (reach, clicks,
+    engagement on 0-100 scale) based on brand, platform, content analysis.
+
+  Phase 25B — Social Boost (commit 4690955)
+    /api/social/boost route: takes a post → Claude Sonnet rewrites for higher engagement →
+    returns boosted variant. Original preserved in edit_history.
+
+  Phase 25C — Grounded Mode (commit 4690955)
+    /api/social/generate route gets grounded_mode flag. When true, generation prompt
+    requires citations from research_items/knowledge_nodes. No ungrounded claims.
+
+  Phase 26A-F — Cowork Feature Bridge (commit ad37a89, migration 104)
+    6 new doc types added to Doc Studio: campaign_plan, email_sequence, seo_audit,
+    competitive_brief, status_report, feature_spec. doc_type CHECK constraint extended.
+    status_report auto-fetches live Folio/Dreams/Tasks/Social data before generating.
+    Doc Studio now has 21 document types total.
+
+  Phase 27E — Deep Research in Intel (commit 1ca154b)
+    /api/intel/discover route: topic → Tavily search → discovered URLs → processIntelUrls
+    pipeline. Creates Intel session with "Deep Research — {topic}" label.
+
+  Phase 28A — Row-Level Enrichment (commit 1ca154b, migration 105)
+    enrichment_data JSONB column on dreams, intel_sessions, social_posts.
+    /api/enrich/[table] route: Haiku 4.5 batch enrichment (max 10 IDs).
+    Dreams: priority_score + effort_tag. Intel: business_track. Social: tone_tag + alt_text.
+
+  Phase 28B — Composable Workflows (commit 1ca154b, migration 106)
+    workflows table: name, steps JSONB, trigger_type (manual/cron/webhook), run tracking.
+    /api/workflows CRUD + /api/workflows/run sequential step executor.
+    Step types: council_query, doc_generate, social_generate, intel_fetch, enrich,
+    schedule_buffer. {{output_key}} interpolation between steps.
+    Cron/webhook triggers: DB column exists, executor not built yet (deferred to 28B Advanced).
+
+  Phase 28C — Multi-Surface Output (commit 1ca154b)
+    Doc generate route accepts output_surfaces array: docx, email_summary, social_set.
+    Fire-and-forget post-stream processing. email_summary via Haiku, social_set via
+    social generate API.
+
+  Phase 28D — GEO / AI Search Visibility (commit 1ca154b)
+    /api/cron/geo-visibility weekly cron: 5 brand queries × OpenAI + optional Groq →
+    checks for BRAND_KEYWORDS mentions → visibility_score stored in intel_sessions.
+    CRON_SECRET protected. Optional GROQ_API_KEY for dual-provider coverage.
+
+  Phase 28E — Target Audiences (commit 1ca154b, migration 107)
+    target_audiences table: name, demographics JSONB, pain_points JSONB, motivations JSONB,
+    preferred_tone, brand_voice_id FK. /api/audiences CRUD routes.
+    /audiences page with full CRUD UI. Seed audience: "Conviction-Stage Homeschool Parent".
+    Doc generate route accepts audience_id → injects audience context into generation.
+
+  Deferred (not built — placeholders added to /settings):
+    Phase 27C — MCP Server Exposure (Q2/Q3 2026, waiting for stateless MCP spec)
+    Phase 27D — Meta-Agent / EVE Pattern (requires 28B Advanced)
+    Phase 28B Advanced — Workflow Cron/Webhook Triggers (foundation manual trigger built)
 ```
 
 ---
@@ -1212,7 +1346,7 @@ Sidebar component in `src/components/chapterhouse-shell.tsx` renders accordion g
 
 ## Build History (ALL COMPLETE ✅)
 
-All build steps completed across March 13-16 sessions. Deployed on Vercel.
+All build steps completed across March 13 – April 13 sessions. Deployed on Vercel.
 
 **Phases 1-4 + Bonus (Sessions 6-7, March 13-14):**
 
@@ -1291,6 +1425,22 @@ All build steps completed across March 13-16 sessions. Deployed on Vercel.
 **Session 40: Jobs RLS Fix (March 30, 2026):**
 
 48. Commit `91d141a`: Migration 032 — added anon `SELECT` policy on `jobs` table: `USING (true)`. Fixes Supabase Realtime subscriptions via browser anon-key — YouTube transcript completion updates were not reaching the UI because the browser uses the anon key, which RLS was blocking. Last migration: **032**.
+
+**Cowork Upgrade Spec — Full Overnight Build (April 13, 2026):**
+
+49. Commit `85bc9f0`: Shared foundations — `src/lib/route-helpers.ts` (handleRouteError), `src/lib/auth-context.ts` (getAuthenticatedUserId), types and utilities for all phases.
+50. Commit `68098a0`: Phase 20A — Document Export Pipeline. Migration 100: export_format, export_url, exported_at on documents. `/api/documents/export/[id]` route (DOCX/Markdown/PDF).
+51. Commit `6897293`: Phase 20B — Langfuse Cost Visibility. `/api/costs/summary` route queries Langfuse API. New env vars: LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, LANGFUSE_HOST.
+52. Commit `baacc0c`: Phase 20C — Brand Voice in Doc Studio. Doc generate route accepts `brand_voice_id` → fetches from DB → injects as system prompt suffix.
+53. Commit `b1db1d0`: Phases 21A/21B/21C — Outline-First Authoring (migration 101: outline JSONB, version tracking), Agentic Editing (`/api/documents/edit`), Voice Analysis (`/api/documents/voice-analysis` via Haiku 4.5).
+54. Commit `149e968`: Phases 22A/22B — Council Quick-Consult (`/api/council/quick`, all 5 members, synchronous), Unified Search upgrade (9 tables: +documents, knowledge_nodes, folio_entries, intel_sessions).
+55. Commit `9640ac1`: Phases 23A/23B/23C — Knowledge Ingest (`/api/knowledge/ingest` via Tavily+Haiku), Watch URLs (migration 102, CRUD + cron change detection), Intel Task Bridge (`/api/intel/[id]/create-tasks`).
+56. Commit `ddc6bfa`: Phases 24A/24B — ElevenLabs TTS (`/api/documents/[id]/speak`), Listen Button in doc viewer. New env vars: ELEVENLABS_API_KEY, ELEVENLABS_DEFAULT_VOICE_ID.
+57. Commit `4690955`: Phases 25A/25B/25C — Prediction Scoring (migration 103: predicted_engagement + prediction_confidence on social_posts, `/api/social/predict` via Haiku), Social Boost (`/api/social/boost` via Sonnet), Grounded Mode flag on `/api/social/generate`.
+58. Commit `ad37a89`: Phase 26A-F — Cowork Feature Bridge. Migration 104: 6 new doc types (campaign_plan, email_sequence, seo_audit, competitive_brief, status_report, feature_spec). Doc Studio now 21 types. status_report auto-fetches live Folio/Dreams/Tasks/Social data.
+59. Commit `1ca154b`: Phases 27E + 28A-E — Deep Research in Intel (`/api/intel/discover`), Row-Level Enrichment (migration 105: enrichment_data JSONB on 3 tables, `/api/enrich/[table]`), Composable Workflows (migration 106, CRUD + sequential step executor), Multi-Surface Output (fire-and-forget docx/email/social post-stream), GEO Visibility (`/api/cron/geo-visibility`, weekly, OpenAI+Groq), Target Audiences (migration 107, `/api/audiences` CRUD, `/audiences` page, seed audience, doc generate audience injection).
+60. Commit `fa712b6`: UI placeholders for deferred phases 27C (MCP Server), 27D (Meta-Agent/EVE), 28B Advanced (Workflow Triggers) added to `/settings` page.
+61. All 13 commits pushed to origin/main. Last migration: **107**.
 
 **QStash signature verification is non-negotiable.** Every POST to `/process-job` on the Railway worker must verify the `upstash-signature` header before processing. Without this, anyone who knows the worker URL can inject arbitrary jobs.
 
@@ -1413,13 +1563,16 @@ Effort: 2–3 days.
 | `focus_items` | 039 | Focus Board working list — content, completed, sort_order, source enum (manual/folio/brief/dream), user_id. Capped at 10 in app layer. |
 | `scratch_notes` | 039 | Scratchpad — one row per user (UNIQUE user_id). Tiptap HTML content, updated_at. Upsert-only pattern. |
 | `blog_posts` | 041 | Blog calendar + publishing pipeline — target_date, post_type (sales/authority/holiday/seasonal), title, slug, body, excerpt, tags[], SEO fields, status (planned→drafting→draft→review→published\|rejected), shopify_article_id/url, calendar_month. Realtime enabled. |
+| `watch_urls` | 102 | URL change monitoring — url, check_interval_hours, last_checked_at, last_content_hash (SHA-256), notify_on_change, is_active. Cron checks for changes → auto-ingest to knowledge_nodes. |
+| `workflows` | 106 | Composable workflows — name, steps JSONB, trigger_type (manual/cron/webhook), trigger_config, run_count, last_run_at, last_run_status, is_active. Sequential step executor at /api/workflows/run. |
+| `target_audiences` | 107 | Audience personas — name, demographics JSONB, pain_points JSONB, motivations JSONB, preferred_tone, brand_voice_id FK. Injected into doc generation. Seed: "Conviction-Stage Homeschool Parent". |
 
 **CoursePlatform Supabase (separate DB — `COURSE_SUPABASE_URL`):**
 | Table | Purpose |
 |---|---|
 | `bundles` | Lesson content bundles — slides_count, slides_generated, audio_generated, audio_url, videos_count, videos_generated, worksheet_present, content JSONB |
 
-**Migration numbering note:** Migrations 009, 013, 014, 016 also exist for intermediate steps. Check `supabase/migrations/` for canonical list. Last migration: `20260413_044_create_knowledge_nodes.sql`. **Cowork upgrade spec (Phases 20–27) uses 101+ numbering** — intentional gap from the 001–044 legacy range; do not use 045–100.
+**Migration numbering note:** Migrations 009, 013, 014, 016 also exist for intermediate steps. Check `supabase/migrations/` for canonical list. Last migration: `20260413_107_create_target_audiences.sql`. Legacy range: 001–044. **Cowork upgrade spec (Phases 20–28) uses 100–107 numbering** — intentional gap; do not use 045–100.
 
 **The Build Bible:** `chapterhouse-implementation-spec.md` is the original phase-by-phase Chapterhouse feature build plan. **`production-pipeline-build-bible.md`** is the Production Pipeline plan (Phases 0–7, SomersSchool course asset generation). CLAUDE.md is the living technical reference. Spec = where to go. CLAUDE.md = where you are. Always read both build bibles before starting work.
 
@@ -1445,6 +1598,8 @@ Effort: 2–3 days.
 - Phase 7 (Voice Studio Narration): 🔴 NOT YET STARTED — gates on Phase 5. ElevenLabs batch narration for bundle audio_url fields.
 
 ---
+
+*Document version: April 13, 2026 (Cowork Upgrade Spec — Overnight Build) — **All 21 phases (20A–28E) of the Chapterhouse Cowork Upgrade Spec built in a single session.** 13 commits (85bc9f0 through fa712b6) pushed to origin/main. 8 new migrations (100–107): document export fields, document outline+versioning, watch_urls, social engagement prediction, cowork doc types (6 new, 21 total), enrichment_data columns, workflows, target_audiences. New routes: costs/summary, documents/export+edit+voice-analysis+speak+outline, council/quick, knowledge/ingest, watch-urls CRUD, intel/discover+create-tasks, social/predict+boost (grounded mode), enrich/[table], workflows CRUD+run, cron/geo-visibility, audiences CRUD. New pages: /audiences. New tables: watch_urls, workflows, target_audiences. Deferred: 27C (MCP Server), 27D (Meta-Agent), 28B Advanced (workflow triggers) — placeholders added to /settings. New env vars: LANGFUSE_PUBLIC_KEY/SECRET_KEY/HOST, ELEVENLABS_API_KEY/DEFAULT_VOICE_ID, GROQ_API_KEY (optional). **ACTION REQUIRED: Run migrations 100–107 in Supabase Dashboard SQL Editor in sequence. Set LANGFUSE + ELEVENLABS env vars in Vercel.** Last migration: 107.*
 
 *Document version: April 14, 2026 (Documentation Audit) — **All doc counts corrected to 15 (academic comparison paper added post-March 30). knowledge_nodes table (migration 044) + Knowledge Library (Phase 17) added. Focus Board/Scratchpad (Phase 15), Blog Pipeline (Phase 16), Task Subtasks (Phase 18) added to build log. Missing API routes added: knowledge/, email/extract-to-knowledge/. See docs/chapterhouse-feature-guide.md for full feature reference.**
 
