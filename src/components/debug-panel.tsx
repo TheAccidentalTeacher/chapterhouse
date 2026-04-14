@@ -468,9 +468,111 @@ function AppMapTab() {
   );
 }
 
+// ── Costs Tab ─────────────────────────────────────────────────────────────────
+
+function CostsTab() {
+  const [costData, setCostData] = useState<{
+    total_cost_usd: number;
+    by_model: Record<string, number>;
+    by_route: Record<string, number>;
+    generation_count: number;
+    error?: string;
+  } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [period, setPeriod] = useState<"today" | "week" | "month">("today");
+
+  const loadCosts = useCallback(async (p: string) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/costs?period=${p}`);
+      const data = await res.json();
+      setCostData(data);
+    } catch {
+      setCostData({ total_cost_usd: 0, by_model: {}, by_route: {}, generation_count: 0, error: "Failed to fetch" });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadCosts(period); }, [period, loadCosts]);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        {(["today", "week", "month"] as const).map((p) => (
+          <button
+            key={p}
+            onClick={() => setPeriod(p)}
+            className={`px-2.5 py-1 text-xs rounded-md transition ${
+              period === p
+                ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                : "text-muted hover:text-foreground border border-transparent"
+            }`}
+          >
+            {p === "today" ? "Today" : p === "week" ? "This Week" : "This Month"}
+          </button>
+        ))}
+      </div>
+
+      {loading && <p className="text-xs text-muted animate-pulse">Loading cost data...</p>}
+
+      {costData && !loading && (
+        <>
+          {costData.error && (
+            <p className="text-xs text-amber-400">{costData.error}</p>
+          )}
+
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-lg border border-border/40 p-3">
+              <div className="text-[10px] text-muted uppercase tracking-wider">Total Spend</div>
+              <div className="text-lg font-bold text-amber-300">${costData.total_cost_usd.toFixed(4)}</div>
+            </div>
+            <div className="rounded-lg border border-border/40 p-3">
+              <div className="text-[10px] text-muted uppercase tracking-wider">Generations</div>
+              <div className="text-lg font-bold text-foreground">{costData.generation_count}</div>
+            </div>
+          </div>
+
+          {Object.keys(costData.by_model).length > 0 && (
+            <div>
+              <div className="text-[10px] text-muted uppercase tracking-wider mb-1.5">By Model</div>
+              <div className="space-y-1">
+                {Object.entries(costData.by_model)
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([model, cost]) => (
+                    <div key={model} className="flex items-center justify-between text-xs">
+                      <span className="text-zinc-300 font-mono truncate max-w-[200px]">{model}</span>
+                      <span className="text-amber-300 font-mono">${cost.toFixed(4)}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {Object.keys(costData.by_route).length > 0 && (
+            <div>
+              <div className="text-[10px] text-muted uppercase tracking-wider mb-1.5">By Route</div>
+              <div className="space-y-1">
+                {Object.entries(costData.by_route)
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([route, cost]) => (
+                    <div key={route} className="flex items-center justify-between text-xs">
+                      <span className="text-zinc-300 font-mono truncate max-w-[200px]">{route}</span>
+                      <span className="text-amber-300 font-mono">${cost.toFixed(4)}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 // ── Main Panel ─────────────────────────────────────────────────────────────────
 
-type Tab = "log" | "perf" | "brain" | "appmap";
+type Tab = "log" | "perf" | "brain" | "appmap" | "costs";
 
 export function DebugPanel() {
   const [open, setOpen] = useState(false);
@@ -551,6 +653,7 @@ export function DebugPanel() {
               { key: "perf" as Tab, label: "Performance" },
               { key: "brain" as Tab, label: "Brain Context" },
               { key: "appmap" as Tab, label: "App Map" },
+              { key: "costs" as Tab, label: "Costs" },
             ]).map((t) => (
               <button
                 key={t.key}
@@ -656,6 +759,8 @@ export function DebugPanel() {
             {tab === "brain" && <BrainTab />}
 
             {tab === "appmap" && <AppMapTab />}
+
+            {tab === "costs" && <CostsTab />}
           </div>
         </>
       )}
