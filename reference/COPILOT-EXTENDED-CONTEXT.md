@@ -126,7 +126,7 @@ Use these when generating copy, landing pages, ad campaigns, email sequences, or
 | Element | Definition |
 |---|---|
 | **Business** | Shopify + Ingram Spark dropship homeschool curriculum store. No inventory, no warehouse. |
-| **Persona** | Homeschool moms (30–45), faith-adjacent but not exclusively Christian, overwhelmed by curriculum choices, many in Alaska (allotment-eligible). Value curation over catalog size. Full avatar in `customer-avatar.md` ("Alaskan Annie"). |
+| **Persona** | Homeschool moms (30–45), faith-adjacent but not exclusively Christian, overwhelmed by curriculum choices, many in Alaska (allotment-eligible). Value curation over catalog size. Full avatar in `reference/customer-avatar.md` ("Alaskan Annie"). |
 | **USP** | Curated by a real classroom teacher (not a wholesaler). Alaska allotment eligible. Carries faith resources without being a "Christian store." Companion guides + public domain texts = affordable, legal, original. "Your one-stop homeschool shop" — proven in click test. |
 | **Challenges** | Crowded market (Rainbow Resource, CBD, Christianbook). No existing audience — cold start. Competing against massive catalogs with a curated boutique. Launch must happen before teaching contract ends May 2026. |
 | **Brand Message** | "For the child who doesn't fit in a box." — Lead with the unique child (emotional). Convert with "your one-stop homeschool shop" (practical). Two-layer strategy validated by A/B click tests. |
@@ -167,7 +167,7 @@ Use these when generating copy, landing pages, ad campaigns, email sequences, or
 - BibleSaaS Phase 27 = LLC + real Stripe keys + production env keys. That is the ONLY blocker to launch.
 - NCHO two-layer messaging: Brand = emotional ("for the child who doesn't fit in a box"), Offer = practical ("your one-stop homeschool shop"). Validated by Facebook click tests.
 - NCHO visual identity: earthy/warm palette (olive, rose, teal). No corporate or aggressive colors. Data-backed.
-- Full customer avatar documented in `customer-avatar.md` — "Alaskan Annie."
+- Full customer avatar documented in `reference/customer-avatar.md` — "Alaskan Annie."
 - Email domain: **buttercup.cfd** on Porkbun → Cloudflare catch-all → `alaskanguy555@yahoo.com`. Verified and active.
 
 ---
@@ -179,17 +179,17 @@ Use these when generating copy, landing pages, ad campaigns, email sequences, or
 | dreamer.md | Living dream queue — repo-connected ideas, collision maps, seed ideas, moonshots |
 | master-notes.md | Full session summary — email setup, domain tricks, repo inventory, 50 opportunities |
 | dreamer.py | TUI app — KILLED. No longer used. |
-| customer-avatar.md | Full customer avatar for NCHO — "Annie." Demographics, psychographics, A/B test results (names, colors, slogans, offers, pain points), visual identity, brand voice, positioning pillars. 4 rounds of Facebook click test data. |
+| reference/customer-avatar.md | Full customer avatar for NCHO — "Annie." Demographics, psychographics, A/B test results (names, colors, slogans, offers, pain points), visual identity, brand voice, positioning pillars. 4 rounds of Facebook click test data. |
 | email-setup-options.md | Cloudflare catch-all email forwarding + Mailcow self-hosted guide |
 | copilot-instructions.md | **This file.** Scott's permanent identity context — injected into every Copilot session. |
-| operating-system.md | Master operating document for NCHO brand + Chapterhouse build |
-| chapterhouse-mvp-build-checklist.md | Build sequence + completed steps + current gaps |
-| chapterhouse-product-spec.md | Product definition for Chapterhouse |
-| chapterhouse-data-model-spec.md | Core schema and memory structure |
-| chapterhouse-workflow-spec.md | Operational loops for briefs, research, opportunities, review, content, tasks |
-| chapterhouse-ui-spec.md | Screen-by-screen UI structure |
-| chapterhouse-technical-architecture-spec.md | Hosting stack, service boundaries, flows, deployment logic |
-| chapterhouse-intelligence-engine-spec.md | Prompting, retrieval, scoring, ingestion behavior |
+| docs/strategy/operating-system.md | Master operating document for NCHO brand + Chapterhouse build |
+| docs/specs/chapterhouse-mvp-build-checklist.md | Build sequence + completed steps + current gaps |
+| docs/specs/chapterhouse-product-spec.md | Product definition for Chapterhouse |
+| docs/specs/chapterhouse-data-model-spec.md | Core schema and memory structure |
+| docs/specs/chapterhouse-workflow-spec.md | Operational loops for briefs, research, opportunities, review, content, tasks |
+| docs/specs/chapterhouse-ui-spec.md | Screen-by-screen UI structure |
+| docs/specs/chapterhouse-technical-architecture-spec.md | Hosting stack, service boundaries, flows, deployment logic |
+| docs/specs/chapterhouse-intelligence-engine-spec.md | Prompting, retrieval, scoring, ingestion behavior |
 | .env | API keys (not committed to git) |
 | .env.local | Local overrides (not committed to git) |
 | .vscode/settings.json | Gold VS Code theme |
@@ -197,8 +197,8 @@ Use these when generating copy, landing pages, ad campaigns, email sequences, or
 | scope-sequence-handoff.md | SomersSchool pipeline JSON contract spec — canonical field names and structure for `scope-sequence/*.json` files. |
 | somersschool-curriculum-factory-handoff.md | Curriculum Factory port contract for CoursePlatform — 6-pass pipeline, DB schema SQL, API routes, 11-step build order. Paste into any CoursePlatform session. |
 | chapterhouse-evolution-handoff.md | Future phases roadmap (Phases A–G) + probe test framework. |
-| jobs-test-prompts.md | Curriculum factory test prompts — ready-to-paste for all grade levels and subjects. |
-| social-media-automation-brain.md | Social Media Automation reference — Buffer GraphQL, 3-brand voice rules, post lifecycle. |
+| docs/workbench/jobs-test-prompts.md | Curriculum factory test prompts — ready-to-paste for all grade levels and subjects. |
+| intel/social-media-automation-brain.md | Social Media Automation reference — Buffer GraphQL, 3-brand voice rules, post lifecycle. |
 | vercel.json | Vercel Cron config — daily brief at 03:00 UTC (7am AKST) |
 | src/lib/sources/rss.ts | RSS feed fetcher — 9 feeds (MIT Tech Review AI, OpenAI, GitHub, Vercel, Hacker News, Homeschool Mom, Shopify News, Gospel Coalition, Hechinger Report) |
 | src/lib/sources/github.ts | GitHub API — Dependabot alerts + failed builds + open issues across 11 repos |

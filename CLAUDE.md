@@ -32,18 +32,18 @@ This document is your complete technical brief. Read all of it before touching a
 > **This capability is PARTIALLY BUILT and needs to be wired as a first-class feature.**
 >
 > - `documents` table (migration 030) already exists with `id, title, content, document_type, created_at`
-> - Doc Studio (`/doc-studio`) already generates 14 document types via SSE → saves to `documents` table
+> - Doc Studio (`/doc-studio`) already generates 15 document types via SSE → saves to `documents` table
 > - `html-to-docx` npm package is installed — `.docx` export is wired in Doc Studio
 > - **What's NOT built yet:** ability to trigger document generation FROM CHAT and get a downloadable artifact back
 > - **Target flow:** Scott types "generate a session close doc" or "export this as a markdown file" in chat → AI creates the doc → response includes a download link OR saves to `documents` table with a link back
 > - **Routes needed:** `/api/documents/generate` already exists (SSE streaming) — chat route needs to call it and return a doc ID / download URL inline
 > - **Key use cases:** Session Close from chat, generate a spec .md, export a Council output as .docx, save a brainstorm thread as a named document
 > - **Priority:** Build this before charging customers — it turns chat from a conversation into a workspace
-> - **See also:** Doc Studio spec at `chapterhouse-documents-studio-spec.md`
+> - **See also:** Doc Studio spec at `docs/specs/chapterhouse-documents-studio-spec.md`
 
 ---
 
-## What Chapterhouse Already Is (Current State — Updated March 30, 2026, Sessions 34–40)
+## What Chapterhouse Already Is (Current State — Updated April 14, 2026 — Documentation Audit)
 
 **Stack:** Next.js 16.1.6 (App Router), React 19, TypeScript, Tailwind 4, Supabase (auth + DB + realtime), Anthropic SDK, OpenAI SDK, Zod
 
@@ -106,6 +106,7 @@ This document is your complete technical brief. Read all of it before touching a
 - `email/auto-ingest/` — Auto-ingest email to research_items or opportunities
 - `email/draft-reply/` — Claude Sonnet draft reply generation
 - `email/action-items/` — Extract action items from email thread
+- `email/extract-to-knowledge/` — POST: Extract knowledge facts from email newsletters → insert into knowledge_nodes with is_active=false (Scott manually promotes active nodes)
 - `email/send/` — SMTP send via configured account
 - `email/accounts/` — List configured email accounts
 - `intel/` — Intel session list + create+process inline
@@ -113,6 +114,7 @@ This document is your complete technical brief. Read all of it before touching a
 - `intel/process/` + `intel/run-fetch/` — Intel cron re-trigger endpoints
 - `intel/publishers-weekly/` — PW .txt paste path
 - `dreams/` + `dreams/[id]/` + `dreams/ai-review/` + `dreams/bulk/` + `dreams/reorder/` — Dreamer board
+- `knowledge/` — Knowledge Library CRUD: GET list (filter by folder/is_active), POST create, PATCH update, DELETE. Powers /knowledge page + chat/council injection via try/catch query (migration guard).
 - `dream-log/` — Daily dream journal
 - `folio/` + `folio/[id]/` + `folio/trigger/` — The Folio CRUD + manual rebuild trigger (CRON_SECRET-protected)
 - `documents/generate/` + `documents/list/` + `documents/[id]/` + `documents/analyze/` + `documents/upload/` — Doc Studio pipeline
@@ -175,7 +177,7 @@ This document is your complete technical brief. Read all of it before touching a
 - `folio/[id]/` — Full Folio entry including narrative (GET)
 - `folio/trigger/` — Manual rebuild trigger (POST, CRON_SECRET-protected, maxDuration 300)
 - `cron/folio-build/` — Daily 05:00 UTC cron → Railway worker folio_daily_build job
-- `documents/generate/` — SSE streaming doc generation, 14 doc types, full Scott context injected (POST)
+- `documents/generate/` — SSE streaming doc generation, 15 doc types, full Scott context injected (POST)
 - `documents/list/` — List all documents (GET)
 - `documents/[id]/` — Get/delete single document
 - `documents/analyze/` — AI analysis on uploaded document content (POST)
@@ -403,10 +405,10 @@ PHASE 12 — Chat Metaknowledge Upgrade        ✅ COMPLETE (commit 2a9ec31)
   APP_ARCHITECTURE_BLOCK injected into every session — answers "where does X live?" questions.
 
 PHASE 13 — Doc Studio                        ✅ COMPLETE (commit 2f7db55)
-  14 document types across 5 categories: strategy (PRD, ADR, spec), marketing (blog,
+  15 document types across 5 categories: strategy (PRD, ADR, spec), marketing (blog,
   landing copy, campaign brief, positioning, launch checklist, market sizing), ops
-  (Session Close, feedback synthesis), curriculum (study guide), analytics (report),
-  brainstorm. /doc-studio page with SSE streaming. documents table (migration 030,
+  (Session Close, feedback synthesis), curriculum (study guide), analytics (report,
+  academic comparison paper), brainstorm. /doc-studio page with SSE streaming. documents table (migration 030,
   RLS + Realtime). 5 API routes. Full Scott context injected. Session Close = Step 5
   of dev process one click away.
 
@@ -423,6 +425,38 @@ JOBS RLS FIX — migration 032                 ✅ COMPLETE (commit 91d141a)
   Added anon SELECT policy on jobs table: USING (true). Fixes Supabase Realtime
   subscriptions via browser anon-key — YouTube transcript completion updates were not
   reaching the UI because the browser uses the anon key, which RLS was blocking.
+
+PHASE 15 — Focus Board + Scratchpad          ✅ COMPLETE (migrations 039–040)
+  focus_items table (migration 039): content, completed, sort_order, source enum
+  (manual/folio/brief/dream), user_id. Capped at 10 in app layer. scratch_notes table
+  (migration 039): one row per user, Tiptap HTML, upsert-only. Both panels render in
+  right column of chat interface. /focus-board page. 3 API routes: focus-items/ (GET/POST),
+  focus-items/[id]/ (PATCH/DELETE), focus-items/populate/ (AI-fill from Folio + Brief).
+  social_accounts/posts platform constraints extended to include youtube (migration 040).
+
+PHASE 16 — Blog Pipeline                     ✅ COMPLETE (migration 041)
+  blog_posts table: target_date, post_type (sales/authority/holiday/seasonal), title,
+  slug, body, excerpt, tags[], SEO fields, status lifecycle (planned→drafting→draft→
+  review→published|rejected), shopify_article_id/url, calendar_month. Realtime enabled.
+  /blog page with calendar view grouped by calendar_month. Full pipeline: plan → Claude
+  Sonnet draft → review → Shopify Admin API publish (sets shopify_article_id + published_at).
+  HMAC-verified shopify-blog-post webhook. cron/social-publish-check/ verifies scheduled
+  Buffer posts. 5 API routes: blog/posts/, blog/posts/[id]/, blog/calendar/,
+  blog/draft/[id]/, blog/publish/[id]/.
+
+PHASE 17 — Knowledge Library                 ✅ COMPLETE (migration 044)
+  knowledge_nodes table (migration 044): content, folder, tags[], source_url, is_active,
+  user_id, created_at. AI-curated knowledge library injected into chat + Council sessions
+  via try/catch query (migration guard so cold deploys don't fail). /knowledge page with
+  folder navigation + search. knowledge/ API: GET list (filter by folder/is_active),
+  POST create, PATCH update, DELETE. Email → knowledge pipeline:
+  email/extract-to-knowledge/ inserts nodes with is_active=false; Scott manually promotes.
+
+PHASE 18 — Task Subtasks + Schema            ✅ COMPLETE (migrations 042–043)
+  Subtasks via parent_id self-reference on tasks table (migration 042). Tasks schema fix
+  (migration 043): description, source_type, source_id, source_title columns added;
+  status vocab migrated (todo→open, in_progress→in-progress, archived→canceled);
+  status CHECK updated to (open, in-progress, blocked, done, canceled).
 ```
 
 ---
@@ -1248,7 +1282,7 @@ All build steps completed across March 13-16 sessions. Deployed on Vercel.
 
 **Session 37: Doc Studio (March 29, 2026):**
 
-46. Commit `2f7db55`: 14 one-click document generators at `/doc-studio` — 5 categories: strategy (PRD, ADR, spec), marketing (blog, landing copy, campaign brief, positioning, launch checklist, market sizing), ops (Session Close, feedback synthesis), curriculum (study guide), analytics (report). SSE streaming. `documents` table (migration 030, RLS + Realtime). 5 API routes under `/api/documents/`. Full Scott context pre-loaded. Session Close doc type = Step 5 of dev process one click away. Also: migration 029 — `emails.uid` INTEGER → BIGINT fix (eliminates overflow risk on large mailboxes).
+46. Commit `2f7db55`: 15 one-click document generators at `/doc-studio` — 5 categories: strategy (PRD, ADR, spec), marketing (blog, landing copy, campaign brief, positioning, launch checklist, market sizing), ops (Session Close, feedback synthesis), curriculum (study guide), analytics (report, academic comparison paper). SSE streaming. `documents` table (migration 030, RLS + Realtime). 5 API routes under `/api/documents/`. Full Scott context pre-loaded. Session Close doc type = Step 5 of dev process one click away. Also: migration 029 — `emails.uid` INTEGER → BIGINT fix (eliminates overflow risk on large mailboxes).
 
 **Sessions 38–39: The Folio (March 30, 2026):**
 
@@ -1363,6 +1397,7 @@ Effort: 2–3 days.
 | `tasks` | 005 | Task board — status: open/in-progress/blocked/done/canceled. Subtasks via parent_id (migration 042). Added columns: description, source_type, source_id, source_title (migration 043). |
 | `chat_threads` | 006 | Persistent chat threads |
 | `knowledge_summaries` | 007 | Condensed topic summaries |
+| `knowledge_nodes` | 044 | AI-curated knowledge library — content, folder, tags[], is_active. Injected into chat + Council via try/catch migration guard. |
 | `jobs` | 008 | Background AI job queue |
 | `social_accounts` | 010 | Buffer channel mappings per brand |
 | `social_posts` | 011 | AI-generated social posts + lifecycle |
@@ -1384,7 +1419,7 @@ Effort: 2–3 days.
 |---|---|
 | `bundles` | Lesson content bundles — slides_count, slides_generated, audio_generated, audio_url, videos_count, videos_generated, worksheet_present, content JSONB |
 
-**Migration numbering note:** Migrations 009, 013, 014, 016 also exist for intermediate steps. Check `supabase/migrations/` for canonical list. Last migration: `20260412_043_fix_tasks_schema.sql`.
+**Migration numbering note:** Migrations 009, 013, 014, 016 also exist for intermediate steps. Check `supabase/migrations/` for canonical list. Last migration: `20260413_044_create_knowledge_nodes.sql`. **Cowork upgrade spec (Phases 20–27) uses 101+ numbering** — intentional gap from the 001–044 legacy range; do not use 045–100.
 
 **The Build Bible:** `chapterhouse-implementation-spec.md` is the original phase-by-phase Chapterhouse feature build plan. **`production-pipeline-build-bible.md`** is the Production Pipeline plan (Phases 0–7, SomersSchool course asset generation). CLAUDE.md is the living technical reference. Spec = where to go. CLAUDE.md = where you are. Always read both build bibles before starting work.
 
@@ -1411,13 +1446,15 @@ Effort: 2–3 days.
 
 ---
 
+*Document version: April 14, 2026 (Documentation Audit) — **All doc counts corrected to 15 (academic comparison paper added post-March 30). knowledge_nodes table (migration 044) + Knowledge Library (Phase 17) added. Focus Board/Scratchpad (Phase 15), Blog Pipeline (Phase 16), Task Subtasks (Phase 18) added to build log. Missing API routes added: knowledge/, email/extract-to-knowledge/. See docs/chapterhouse-feature-guide.md for full feature reference.**
+
 *Document version: April 10–12, 2026 (Focus Board + Blog Pipeline + Task Schema) — **New: Focus Board, Scratchpad, Blog Calendar + 5 new migrations (039–043).** (1) `focus_items` + `scratch_notes` tables (migration 039): Focus Board panel renders at `/` — working list capped at 10 items, source-colored (folio=gold, brief=blue, dream=green, manual=gray), drag-to-reorder. Scratchpad panel with Tiptap editor, auto-save, Bold/Italic/List toolbar. Both persist in righthand column of chat interface. (2) YouTube platform added to social constraints (migration 040): `social_accounts_platform_check` and `social_posts_platform_check` now include `youtube`. (3) `blog_posts` table (migration 041): full blog calendar + publishing pipeline — `target_date`, `post_type` (sales/authority/holiday/seasonal), full body + SEO fields, status lifecycle (planned→drafting→draft→review→published|rejected), Shopify article fields, `calendar_month` grouping, Realtime enabled. Routes: `blog/posts/`, `blog/posts/[id]/`, `blog/calendar/`, `blog/draft/[id]/`, `blog/publish/[id]/`. Webhook: `webhooks/shopify-blog-post/`. (4) Subtasks via `parent_id` on tasks (migration 042). (5) Tasks schema fix (migration 043): added description/source columns, migrated status vocab (todo→open, in_progress→in-progress, archived→canceled), status CHECK updated to `(open, in-progress, blocked, done, canceled)`. (6) UI: hero/logo/pills removed from chat header (`2412b7f`). Task POST 500 error fixed via migration 043 (`050be6e`). Panels remain visible during chat (`0ed457d`). Tasks rendered above Today's Focus in FocusBoardPanel (`2509712`). Last migration: 043. Next migration: 044.*
 
 *Document version: April 6, 2026 (Security Audit) — **npm audit fix: 7 of 9 vulnerabilities patched.** Triggered by North Korea npm hijack (TechCrunch April 6, 2026). `npm audit fix` (safe-only, no --force) changed 11 packages. **Fixed (7):** @xmldom/xmldom XML injection via unsafe CDATA serialization (HIGH), lodash code injection via _.template + prototype pollution (HIGH), flatted prototype pollution via parse() (HIGH), picomatch method injection + ReDoS (HIGH), brace-expansion zero-step sequence DoS (MODERATE), plus 2 additional transitive dependency patches. **Remaining (2, require --force / manual verification before applying):** (1) `next` 16.0–16.1.6 → 16.2.2 — 5 moderate vulns (CSRF bypass via null origin, DoS via postponed resume buffering, HTTP request smuggling in rewrites, unbounded image cache growth, dev HMR websocket CSRF). Breaking semver — test locally first. (2) `nodemailer` ≤8.0.3 → 8.0.4 — 3 HIGH vulns (email domain interpretation conflict, DoS via recursive addressparser, SMTP command injection). Breaking change — chains through imapflow + mailparser. **Also confirmed clean:** No `litellm` anywhere in repo (Pending Action #29 ✅). No `axios` dependency (Pending Action #37 ✅). Last migration: 038. Next migration: 039. Next decision: D133.*
 
 *Document version: April 4, 2026 (Social Expansion — D132) — **Pinterest as third platform (D132). Buffer Essentials plan active (6 channels).** (1) `supabase/migrations/20260404_038_add_pinterest_platform.sql` — NEW. Extends both `social_accounts_platform_check` and `social_posts_platform_check` to include `pinterest`. LinkedIn kept in DB constraints for backward compat. (2) `src/app/api/social/accounts/route.ts` — Zod platform enum updated to include `pinterest`. (3) `src/app/api/social/generate/route.ts` — `platforms` Zod enum updated; Pinterest format rules added to both `PLATFORM_RULES` constant and `BRAND_VOICE_FALLBACK` (keyword-rich 100-300 chars, save-worthy, 2-5 hashtags, vertical 2:3 image brief). (4) `src/app/api/social/posts/[id]/approve/route.ts` — Pinterest uses `null` metadata (same as LinkedIn; schema not yet introspected — safe fallback). Channel structure locked: NCHO (facebook, instagram, pinterest) + SomersSchool (facebook, instagram, pinterest) = 6 channels total. LinkedIn dropped from active channel roster. Buffer plan upgraded from free (3 slots) to Essentials (6 slots). Last migration: 038. Next migration: 039. Next decision: D133.*
 
-*Document version: March 30, 2026 (Sessions 34–40) — **Silk migration, Brain Sync, Doc Studio, The Folio, Jobs RLS fix + full documentation sync.** Sessions 34–35: Pass 5 replaced — Beavis & Butthead → Silk (Prince Kheldar, gpt-5-mini, Pattern Breaker / Devoted Cynic). Commit `6bdfda8`. Brain sync added (`/api/brain/sync/` + `/api/cron/brain-sync/`, `GITHUB_BRAIN_TOKEN` + `BRAIN_SYNC_KEY`). Session 36: Chat metaknowledge upgrade — both chat routes gain full context awareness, keyword-triggered live queries, APP_ARCHITECTURE_BLOCK, Council gains knowledge_summaries + opportunities. Commit `2a9ec31`. Session 37: Doc Studio — 14 document generators, SSE streaming, `documents` table (migration 030), emails.uid BIGINT fix (migration 029). Commit `2f7db55`. Sessions 38–39: The Folio — `folio_entries` table (migration 031), `folio-builder.ts`, `/folio` page (first in Intelligence group), `getFolioContext()` injected into all chat sessions, Cron 05:00 UTC, Railway worker `folio_daily_build`. Commit `a357cc2`. Session 40: Jobs RLS fix — migration 032 adds anon SELECT policy so browser YouTube Realtime actually works. Commit `91d141a`. **Last migration: 032.** All B&B references replaced by Silk throughout documentation. All routes, tables, and env vars updated.*
+*Document version: March 30, 2026 (Sessions 34–40) — **Silk migration, Brain Sync, Doc Studio, The Folio, Jobs RLS fix + full documentation sync.** Sessions 34–35: Pass 5 replaced — Beavis & Butthead → Silk (Prince Kheldar, gpt-5-mini, Pattern Breaker / Devoted Cynic). Commit `6bdfda8`. Brain sync added (`/api/brain/sync/` + `/api/cron/brain-sync/`, `GITHUB_BRAIN_TOKEN` + `BRAIN_SYNC_KEY`). Session 36: Chat metaknowledge upgrade — both chat routes gain full context awareness, keyword-triggered live queries, APP_ARCHITECTURE_BLOCK, Council gains knowledge_summaries + opportunities. Commit `2a9ec31`. Session 37: Doc Studio — 15 document generators (added academic comparison paper post-March 30), SSE streaming, `documents` table (migration 030), emails.uid BIGINT fix (migration 029). Commit `2f7db55`. Sessions 38–39: The Folio — `folio_entries` table (migration 031), `folio-builder.ts`, `/folio` page (first in Intelligence group), `getFolioContext()` injected into all chat sessions, Cron 05:00 UTC, Railway worker `folio_daily_build`. Commit `a357cc2`. Session 40: Jobs RLS fix — migration 032 adds anon SELECT policy so browser YouTube Realtime actually works. Commit `91d141a`. **Last migration: 032.** All B&B references replaced by Silk throughout documentation. All routes, tables, and env vars updated.*
 
 *Document version: March 28, 2026 (Sessions 31-33) — **Anchor image system complete + documentation sync.** Bundle anchor images (1 per bundle, grade-themed Alaska animals) fully operational across all G1 science bundles (~20 jobs completed). Three bugs fixed this session block: (1) `generate_bundle_anchor` missing from `jobs_type_check` CHECK constraint — migration 028 applied (`20260327_028_add_bundle_anchor_job_type.sql`), also run directly in Supabase dashboard. (2) `status/route.ts` not returning `anchor_image_url` — added `content->>anchor_image_url` PostgREST JSON extraction to `BUNDLE_COLUMNS` (extracts top-level JSONB key without fetching full content blob). (3) Anchor image 48×48 table thumbnail too small to recognize — moved to expanded bundle dropdown as 160×160px with title/grade/bundle metadata above `BundleSlideGrid`. Commits: `3036bae` (constraint + status route), `c2dfca5` (dropdown display). Documentation sync: email workspace confirmed as master (~107.5KB), Brand guide + chapterhouse synced to match. `workspace-injection-system.md` updated with current file sizes. Last migration: 028.*
 

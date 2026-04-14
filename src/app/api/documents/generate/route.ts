@@ -91,6 +91,104 @@ async function buildDocumentContext(): Promise<string> {
   return blocks.length > 0 ? "\n\n---\n\n" + blocks.join("\n\n---\n\n") : "";
 }
 
+interface CitationResult {
+  title: string;
+  authors: string;
+  year: number | null;
+  abstract: string;
+  doi: string | null;
+}
+
+async function searchSemanticScholar(query: string): Promise<CitationResult[]> {
+  try {
+    const url = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(query)}&fields=title,authors,year,abstract,externalIds&limit=12`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Chapterhouse/1.0 (scholarly research tool)" },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return [];
+    const json = (await res.json()) as {
+      data?: Array<{
+        title?: string;
+        authors?: Array<{ name: string }>;
+        year?: number;
+        abstract?: string;
+        externalIds?: { DOI?: string };
+      }>;
+    };
+    return (json.data ?? []).map((p) => ({
+      title: p.title ?? "Untitled",
+      authors: (p.authors ?? []).map((a) => a.name).join(", ") || "Unknown",
+      year: p.year ?? null,
+      abstract: (p.abstract ?? "").slice(0, 400),
+      doi: p.externalIds?.DOI ?? null,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+async function buildAcademicPaperContext(
+  userId: string,
+  inputs: Record<string, string>
+): Promise<{ enrichedPrompt: string; model: string; maxTokens: number }> {
+  const supabase = getSupabaseServiceRoleClient();
+  const docBlocks: string[] = [];
+
+  if (inputs.doc1_id && supabase) {
+    const { data: doc1 } = await supabase
+      .from("documents")
+      .select("title, content")
+      .eq("id", inputs.doc1_id)
+      .eq("user_id", userId)
+      .single();
+    if (doc1) {
+      docBlocks.push(
+        `## SOURCE DOCUMENT 1: ${doc1.title}\n\n${(doc1.content ?? "").slice(0, 8000)}`
+      );
+    }
+  }
+
+  if (inputs.doc2_id && supabase) {
+    const { data: doc2 } = await supabase
+      .from("documents")
+      .select("title, content")
+      .eq("id", inputs.doc2_id)
+      .eq("user_id", userId)
+      .single();
+    if (doc2) {
+      docBlocks.push(
+        `## SOURCE DOCUMENT 2: ${doc2.title}\n\n${(doc2.content ?? "").slice(0, 8000)}`
+      );
+    }
+  }
+
+  const citations = await searchSemanticScholar(
+    inputs.thesis ?? "comparative biblical theology eschatology"
+  );
+
+  const citationBlock =
+    citations.length > 0
+      ? `## PEER-REVIEWED SOURCES FROM SEMANTIC SCHOLAR\n\nYou MUST only cite papers from this list. Do NOT invent or fabricate any source not listed here.\n\n${citations
+          .map(
+            (c, i) =>
+              `[${i + 1}] ${c.authors} (${c.year ?? "n.d."}). "${c.title}".${c.doi ? ` https://doi.org/${c.doi}` : ""}\n   Abstract: ${c.abstract}`
+          )
+          .join("\n\n")}`
+      : `## PEER-REVIEWED SOURCES\n\nSemantic Scholar search returned no results for this query. Do NOT invent citations. Acknowledge the limitation in the paper.`;
+
+  const enrichedPrompt = [
+    docBlocks.length > 0
+      ? docBlocks.join("\n\n---\n\n")
+      : "## SOURCE DOCUMENTS\n\nNo source documents were found. Generate based on the thesis alone.",
+    citationBlock,
+    `## PAPER PARAMETERS\n\nThesis / Research Question: ${inputs.thesis || "(not specified)"}\nTarget Length: ${inputs.page_length || "12 pages"}\nCitation Style: ${inputs.citation_style || "APA"}${inputs.additional_guidance ? `\nAdditional Guidance: ${inputs.additional_guidance}` : ""}`,
+    `Write a complete, properly structured academic comparison paper using the two source documents and ONLY the provided peer-reviewed citations. Include all standard sections: Abstract, Introduction, Literature Review, Comparative Analysis, Discussion, Conclusion, and References. Format entirely as Markdown (## headings). Use ${inputs.citation_style || "APA"} style for all inline citations and the References section.`,
+  ].join("\n\n---\n\n");
+
+  return { enrichedPrompt, model: "claude-opus-4-5", maxTokens: 8192 };
+}
+
 function getAnthropic() {
   return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 }
@@ -144,7 +242,18 @@ export async function POST(request: Request) {
     }
 
     // Build the user prompt from the doc type definition
-    const userPrompt = docDef.buildPrompt(inputs);
+    let userPrompt = docDef.buildPrompt(inputs);
+    let modelToUse: string = "claude-sonnet-4-5";
+    let maxTokensToUse: number = 4096;
+
+    // Academic Paper: fetch source documents from Supabase + real peer-reviewed
+    // citations from Semantic Scholar, then override prompt and model params.
+    if (doc_type === "academic_paper") {
+      const academicCtx = await buildAcademicPaperContext(userId, inputs);
+      userPrompt = academicCtx.enrichedPrompt;
+      modelToUse = academicCtx.model;
+      maxTokensToUse = academicCtx.maxTokens;
+    }
 
     // Build live context (founder notes, research, brief)
     const liveContext = await buildDocumentContext();
@@ -161,8 +270,8 @@ export async function POST(request: Request) {
     const anthropic = getAnthropic();
 
     const anthropicStream = anthropic.messages.stream({
-      model: "claude-sonnet-4-5",
-      max_tokens: 4096,
+      model: modelToUse,
+      max_tokens: maxTokensToUse,
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
     });

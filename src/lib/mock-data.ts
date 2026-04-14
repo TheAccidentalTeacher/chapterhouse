@@ -32,9 +32,9 @@ export const recentWork = [
 
 export const pinnedDocs = [
   "README.md",
-  "chapterhouse-product-spec.md",
-  "chapterhouse-workflow-spec.md",
-  "chapterhouse-ui-spec.md",
+  "docs/specs/chapterhouse-product-spec.md",
+  "docs/specs/chapterhouse-workflow-spec.md",
+  "docs/specs/chapterhouse-ui-spec.md",
 ];
 
 export const todayTasks = [
@@ -96,27 +96,27 @@ export const documentLibrary = [
     status: "Core",
   },
   {
-    name: "chapterhouse-product-spec.md",
+    name: "docs/specs/chapterhouse-product-spec.md",
     role: "Product definition",
     status: "Core",
   },
   {
-    name: "chapterhouse-data-model-spec.md",
+    name: "docs/specs/chapterhouse-data-model-spec.md",
     role: "Schema direction",
     status: "Core",
   },
   {
-    name: "chapterhouse-workflow-spec.md",
+    name: "docs/specs/chapterhouse-workflow-spec.md",
     role: "Operational loops",
     status: "Core",
   },
   {
-    name: "chapterhouse-ui-spec.md",
+    name: "docs/specs/chapterhouse-ui-spec.md",
     role: "Screen structure",
     status: "Core",
   },
   {
-    name: "chapterhouse-technical-architecture-spec.md",
+    name: "docs/specs/chapterhouse-technical-architecture-spec.md",
     role: "Infrastructure direction",
     status: "Core",
   },

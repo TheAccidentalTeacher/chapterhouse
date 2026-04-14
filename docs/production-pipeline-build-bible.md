@@ -2,7 +2,7 @@
 ### The Guiding Beacon for the Whole Build
 
 > **Generated:** March 2026 from brainstorm rounds 1–9.
-> **Source doc:** `production-pipeline-brainstorm.md` — decisions locked, not re-litigatable.
+> **Source doc:** `docs/production-pipeline-brainstorm.md` — decisions locked, not re-litigatable.
 > **Two codebases in play:**
 > - **Chapterhouse** → `c:\Users\Valued Customer\OneDrive\Desktop\WEBSITES\Brand guide` (operations hub, Scott-only)
 > - **CoursePlatform** → `C:\Users\Valued Customer\OneDrive\Desktop\1st-Grade-Science-TEMPLATE` (student-facing SaaS)
@@ -2035,7 +2035,7 @@ export async function GET(request: Request) {
 
 > **Added:** March 27, 2026 — Pipeline Visualizer Gap Analysis (Round 9)
 > **Gates:** Phase 6 (Course Video Pipeline). Build all of Phase 8 before Phase 6 starts.
-> **Source of truth:** `production-pipeline-brainstorm.md` Round 9
+> **Source of truth:** `docs/production-pipeline-brainstorm.md` Round 9
 
 ---
 

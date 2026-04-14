@@ -91,19 +91,21 @@ That means this folder is now both:
 
 *Every working document in this project. Click to navigate. Updated as documents are added.*
 
+Layout note: active build bibles and code-facing docs stay at the repo root; grouped planning and reference material now lives under `docs/strategy`, `docs/specs`, `docs/handoffs`, `docs/social-media-expansion`, `docs/workbench`, `docs/source-material`, and `reference`.
+
 ---
 
 ### PEOPLE & BRAND
 
-#### [persona.md](persona.md)
+#### [docs/strategy/persona.md](docs/strategy/persona.md)
 **The Brand Whisperer — Full Persona Document**
 The master reference for who Scott and Anna are, what they're building, why, for whom, and how the Brand Whisperer works with them. Covers Scott's humor (deeply sarcastic, fluent in Gen Z, champion of dad jokes), Anna's soul (Samwise Gamgee, Avengers: Endgame, musicals), the faith posture of the brand, the vision in four layers, the business reality including runway and timeline, the target customer, and the competitive landscape. **Start here if you're onboarding any AI tool or collaborator.**
 
-#### [biography.md](biography.md)
+#### [docs/strategy/biography.md](docs/strategy/biography.md)
 **Scott Somers — The Accidental Teacher: Full Biography**
 The foundational document that everything else is built on. Covers Scott's weight loss journey (363→254 lbs, A1c 14.7→5.1, diabetes reversed without medication), the story of how he accidentally became a teacher in Glennallen, Alaska (pop. 439, Title 1, -50°F, 65% Alaska Native), the MAPS Project, the near-exploitation by a curriculum company that created the mission, the AI self-education journey (zero to full-stack in 6 months), the relationship with Tic, Scott's leadership roles (deacon, two board presidencies), and Anna's identity as USA Today bestselling author Alana Terry with her podcast platforms. **Read this before writing anything about or for this brand.** Also clarifies: Anna is her given name. Alana Terry is her nom de plume.
 
-#### [brand-personality-handoff.md](brand-personality-handoff.md)
+#### [docs/strategy/brand-personality-handoff.md](docs/strategy/brand-personality-handoff.md)
 **Brand Voice & Personality — AI System Prompt Reference**
 The one-page brand guide designed to be used as a system prompt when working with any AI tool. Covers the five voice rules, tone spectrum by content type, words to use / never use, customer description, and a ready-to-paste AI session starter. Also includes the "Humans Behind the Brand" section capturing Scott's sarcasm and Anna's pop culture soul — because any AI writing for this brand needs to understand who it's writing for.
 
@@ -111,17 +113,17 @@ The one-page brand guide designed to be used as a system prompt when working wit
 
 ### NAMING & IDENTITY
 
-#### [business-name-research.md](business-name-research.md)
+#### [docs/strategy/business-name-research.md](docs/strategy/business-name-research.md)
 **Business Name Research Report — Round 1**
 *Date: February 28, 2026*
 Domain availability and brand conflict analysis for 11 potential business names. Includes domain status, existing businesses using each name, trademark risk assessment, and recommendation for each candidate. Denali Homeschool emerged as the strongest pick in this round.
 
-#### [business-name-availability-report.md](business-name-availability-report.md)
+#### [docs/strategy/business-name-availability-report.md](docs/strategy/business-name-availability-report.md)
 **Business Name Availability Report — Round 2**
 *Date: March 1, 2026*
 Deeper availability research on 5 names carried forward from Round 1. Includes USPTO trademark search results, web presence analysis, and final risk ratings.
 
-#### [edgy-names.md](edgy-names.md)
+#### [docs/strategy/edgy-names.md](docs/strategy/edgy-names.md)
 **Edgy Name Explorations**
 Alternative name candidates with more personality and edge — exploring directions beyond the safe/geographic options. These push on the brand's "fun with an edge" personality.
 
@@ -129,16 +131,16 @@ Alternative name candidates with more personality and edge — exploring directi
 
 ### STRATEGY & PLANNING
 
-#### [brainstorm.md](brainstorm.md)
+#### [docs/strategy/brainstorm.md](docs/strategy/brainstorm.md)
 **Homeschool Hub — Dinner Discussion Brainstorm Guide**
 *Persona: Dr. Maren Cole (earlier brand strategist voice)*
 A structured set of discussion questions designed to be worked through at dinner — covering customer definition, the problem being solved, the competitive landscape, the product catalog, and the business model. This was the first strategic working session. Contains raw question prompts with space for Scott and Anna's answers.
 
-#### [dinner-questions.md](dinner-questions.md)
+#### [docs/strategy/dinner-questions.md](docs/strategy/dinner-questions.md)
 **Dinner Questions — February 28, 2026**
 Five sharp, decision-forcing questions designed to surface the decisions that actually move the needle. Covers opening-day product list, the brand's one differentiator, the Alaska opportunity, the digital product play, and the "what are you actually afraid of" question. More pointed than the brainstorm doc — these are designed for a 90-minute dinner conversation, not an afternoon of notes.
 
-#### [shopify-strategy.md](shopify-strategy.md)
+#### [docs/strategy/shopify-strategy.md](docs/strategy/shopify-strategy.md)
 **Shopify Strategy — Tools, Architecture & Build Plan**
 *Date: March 2, 2026*
 The full technical and strategic plan for the Shopify store. Covers the API layer (what Shopify exposes and what we use it for), the legal and ethical framework for building curriculum guides around published books, the business model those guides create (~95% margin digital products), and a complete master list of 13 tools to build — organized by category (external scripts via Admin API, theme tools in Liquid, and AI-powered workshop tools). Includes the build order mapped to the May–August timeline and the full tech stack. **Primary reference for Scott's build roadmap.**
@@ -147,62 +149,67 @@ The full technical and strategic plan for the Shopify store. Covers the API laye
 
 ### CHAPTERHOUSE / INTERNAL AI SYSTEM
 
-#### [ai-operating-principles.md](ai-operating-principles.md)
+#### [docs/strategy/ai-operating-principles.md](docs/strategy/ai-operating-principles.md)
 **AI Operating Principles — How This Brand Uses AI Without Becoming Polished Nonsense**
 *Date: March 6, 2026*
 The rulebook for using AI inside the business. Separates what AI is genuinely good for from what it should never be trusted to do alone. Defines sourcing standards, verification rules, output quality tests, research intake logic, and the non-negotiable requirement that AI accelerates judgment rather than replacing it.
 
-#### [operating-system.md](operating-system.md)
+#### [docs/specs/chapterhouse-ai-api-audit.md](docs/specs/chapterhouse-ai-api-audit.md)
+**Chapterhouse — Complete AI API Call Audit**
+*Date: March 2026*
+Single-place audit of every major AI call across the Vercel app, Railway worker, and Python council-worker. Useful when checking model usage, token posture, or hidden high-frequency calls.
+
+#### [docs/strategy/operating-system.md](docs/strategy/operating-system.md)
 **Next Chapter Homeschool Outpost — Brand Operating System**
 *Date: March 6, 2026*
 The master operating guide that turns the current document stack into a usable decision-making system. Defines the operating lanes (brand, commerce, curriculum, content, research), the workflow for evaluating new ideas, the external intelligence intake process, the weekly/monthly review rhythm, the filters for deciding what belongs in the brand system, and the core priorities from launch through platform phase.
 
-#### [external-intelligence-log.md](external-intelligence-log.md)
+#### [docs/strategy/external-intelligence-log.md](docs/strategy/external-intelligence-log.md)
 **External Intelligence Log — Platforms, Tactics, and Internet Wisdom Worth Stealing Carefully**
 *Date: March 6, 2026*
 The living intake log for outside research from sources like HubSpot, Substack, Shopify, Kit, Beehiiv, Pinterest, and operator case studies. Provides an evidence scale, research buckets, a decision framework, and a reusable entry template so outside advice gets translated into strategy instead of clutter.
 
-#### [chapterhouse-knowledge-base-blueprint.md](chapterhouse-knowledge-base-blueprint.md)
+#### [docs/specs/chapterhouse-knowledge-base-blueprint.md](docs/specs/chapterhouse-knowledge-base-blueprint.md)
 **Living Knowledge Base Blueprint — Chapterhouse + Daily Intelligence System**
 *Date: March 6, 2026*
 The architectural blueprint for building Chapterhouse around the brand guide documents. Covers core memory, working memory, fresh intelligence ingestion, daily brief generation, recommended stack, source quality rules, and the build sequence for turning the current document set into a real operating brain.
 
-#### [chapterhouse-product-spec.md](chapterhouse-product-spec.md)
+#### [docs/specs/chapterhouse-product-spec.md](docs/specs/chapterhouse-product-spec.md)
 **Product Spec — Chapterhouse**
 *Date: March 6, 2026*
 The product specification for Chapterhouse itself. Captures the workspace model, persona structure, governance rules, morning brief design, competitive intelligence model, scoring system, opportunity engine, channel approval philosophy, manual overrides, and the permanent founder truths the system must always keep loaded.
 
-#### [chapterhouse-data-model-spec.md](chapterhouse-data-model-spec.md)
+#### [docs/specs/chapterhouse-data-model-spec.md](docs/specs/chapterhouse-data-model-spec.md)
 **Data Model Spec — First-Pass Schema for Chapterhouse**
 *Date: March 6, 2026*
 The first substantial schema design for Chapterhouse. Defines the core entities, required fields, relationships, history strategy, brief storage model, task linking model, settings layer, and recommended implementation order so the app can be built on structured memory instead of loose text blobs.
 
-#### [chapterhouse-workflow-spec.md](chapterhouse-workflow-spec.md)
+#### [docs/specs/chapterhouse-workflow-spec.md](docs/specs/chapterhouse-workflow-spec.md)
 **Workflow Spec — The Core Operating Loops of Chapterhouse**
 *Date: March 6, 2026*
 Defines the six major system loops inside Chapterhouse: daily brief, research, product opportunity, content, document update, and task execution. Specifies cadence, inputs, steps, outputs, escalation logic, review touchpoints, persistence rules, and recommended workflow build order.
 
-#### [chapterhouse-ui-spec.md](chapterhouse-ui-spec.md)
+#### [docs/specs/chapterhouse-ui-spec.md](docs/specs/chapterhouse-ui-spec.md)
 **UI Spec — Screen-by-Screen Structure for Chapterhouse**
 *Date: March 6, 2026*
 Defines the first detailed interface plan for Chapterhouse, including navigation, theme posture, adaptive density, global UI elements, and the layouts, modules, actions, filters, and empty-state behavior for Home, Daily Brief, Research, Product Intelligence, Content Studio, Review Queue, Tasks, Documents, and Settings.
 
-#### [chapterhouse-technical-architecture-spec.md](chapterhouse-technical-architecture-spec.md)
+#### [docs/specs/chapterhouse-technical-architecture-spec.md](docs/specs/chapterhouse-technical-architecture-spec.md)
 **Technical Architecture Spec — Chapterhouse Hosting, Services, Flows, and Build Order**
 *Date: March 6, 2026*
 Defines the recommended infrastructure stack for Chapterhouse: Vercel, Supabase, Qdrant, Upstash, and Trigger.dev. Explains what each service is for, what data belongs where, how interactive and scheduled flows should work, how background jobs and ingestion are separated from the UI, and the phased implementation path from foundation to controlled automation.
 
-#### [chapterhouse-intelligence-engine-spec.md](chapterhouse-intelligence-engine-spec.md)
+#### [docs/specs/chapterhouse-intelligence-engine-spec.md](docs/specs/chapterhouse-intelligence-engine-spec.md)
 **Intelligence Engine Spec — Chapterhouse Prompting, Retrieval, Scoring, and Ingestion Rules**
 *Date: March 6, 2026*
 Defines the cognitive layer of Chapterhouse: layered prompt architecture, persona roles, model routing, hybrid retrieval strategy, source hierarchy, ingestion discipline, embedding rules, opportunity scoring logic, output contracts, and hallucination-risk controls.
 
-#### [chapterhouse-coding-plan.md](chapterhouse-coding-plan.md)
+#### [docs/specs/chapterhouse-coding-plan.md](docs/specs/chapterhouse-coding-plan.md)
 **Coding Plan — Phase-by-Phase Chapterhouse Build, Testing, and Debugging Roadmap**
 *Date: March 6, 2026*
 Defines the execution sequence for building Chapterhouse. Covers phase-by-phase implementation, deliverables, testing strategy, browser-console debugging workflow, recommended developer tooling, model-evaluation guidance for which AI should do the actual coding work, and the immediate next steps before scaffolding begins.
 
-#### [chapterhouse-mvp-build-checklist.md](chapterhouse-mvp-build-checklist.md)
+#### [docs/specs/chapterhouse-mvp-build-checklist.md](docs/specs/chapterhouse-mvp-build-checklist.md)
 **Chapterhouse MVP Build Checklist**
 *Date: March 6, 2026*
 Locks the first practical implementation decisions for Chapterhouse: app location, package manager, component strategy, auth posture, env rules, migration strategy, day-one model providers, MVP scope, and the first vertical slice to build.

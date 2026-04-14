@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import {
   DOC_TYPES,
   DOC_CATEGORIES,
@@ -20,6 +20,7 @@ import {
   FileText,
   Sparkles,
   RotateCcw,
+  Download,
 } from "lucide-react";
 
 // ── Category grouping ─────────────────────────────────────────────────────────
@@ -40,10 +41,12 @@ function FieldInput({
   field,
   value,
   onChange,
+  availableDocs = [],
 }: {
   field: DocField;
   value: string;
   onChange: (val: string) => void;
+  availableDocs?: { id: string; title: string }[];
 }) {
   const base =
     "w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50";
@@ -72,6 +75,24 @@ function FieldInput({
         {field.options?.map((opt) => (
           <option key={opt} value={opt}>
             {opt}
+          </option>
+        ))}
+      </select>
+    );
+  }
+
+  if (field.type === "document_picker") {
+    return (
+      <select
+        className={base}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        required={field.required}
+      >
+        <option value="">— select a document —</option>
+        {availableDocs.map((doc) => (
+          <option key={doc.id} value={doc.id}>
+            {doc.title}
           </option>
         ))}
       </select>
@@ -111,8 +132,18 @@ export default function DocStudioPage() {
   const [recentDocs, setRecentDocs] = useState<
     { id: string; doc_type: string; title: string; created_at: string }[]
   >([]);
+  const [availableDocs, setAvailableDocs] = useState<
+    { id: string; title: string; doc_type: string }[]
+  >([]);
   const outputRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    fetch("/api/documents/list?limit=50")
+      .then((r) => (r.ok ? r.json() : { documents: [] }))
+      .then((data) => setAvailableDocs(data.documents ?? []))
+      .catch(() => {});
+  }, []);
 
   // ── Type selection ──────────────────────────────────────────────────────────
 
@@ -208,6 +239,17 @@ export default function DocStudioPage() {
     setTimeout(() => setIsCopied(false), 2000);
   }, [output]);
 
+  const handleDownload = useCallback(() => {
+    if (!output) return;
+    const blob = new Blob([output], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${selectedType?.label ?? "document"}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [output, selectedType]);
+
   // ── Save existing output ────────────────────────────────────────────────────
 
   const handleSaveExisting = useCallback(async () => {
@@ -275,7 +317,7 @@ export default function DocStudioPage() {
             Doc Studio
           </h1>
           <p className="text-xs text-zinc-500 mt-0.5">
-            14 document generators
+            15 document generators
           </p>
         </div>
 
@@ -421,6 +463,7 @@ export default function DocStudioPage() {
                       onChange={(val) =>
                         setInputs((prev) => ({ ...prev, [field.key]: val }))
                       }
+                      availableDocs={availableDocs}
                     />
                   </div>
                 ))}
@@ -534,6 +577,13 @@ export default function DocStudioPage() {
                           Save
                         </button>
                       )}
+                      <button
+                        onClick={handleDownload}
+                        className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-amber-300 transition-colors"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        Download .md
+                      </button>
                     </>
                   )}
                 </div>

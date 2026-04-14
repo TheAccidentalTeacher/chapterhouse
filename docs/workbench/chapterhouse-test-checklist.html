@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chapterhouse — Test Checklist</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
+header{background:#1e293b;border-bottom:2px solid #6366f1;padding:14px 20px;position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+h1{font-size:1.1rem;font-weight:700;color:#a5b4fc;white-space:nowrap}
+.bar-wrap{flex:1;min-width:150px;background:#334155;border-radius:999px;height:10px}
+.bar{height:10px;border-radius:999px;background:linear-gradient(90deg,#6366f1,#22d3ee);transition:width .3s}
+.lbl{font-size:.78rem;color:#94a3b8;white-space:nowrap}
+.btns{display:flex;gap:6px}
+.btns button,.rst{padding:4px 11px;border-radius:6px;font-size:.78rem;cursor:pointer;border:1px solid #334155;background:transparent;color:#94a3b8}
+.btns button.on{background:#6366f1;color:#fff;border-color:#6366f1}
+.rst{border-color:#ef4444;color:#ef4444}
+main{max-width:860px;margin:0 auto;padding:20px 14px}
+.sec{margin-bottom:22px;background:#1e293b;border-radius:10px;overflow:hidden;border:1px solid #334155}
+.sec-h{padding:11px 15px;background:#293548;display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none}
+.sec-t{font-size:.9rem;font-weight:600;color:#cbd5e1}
+.sec-c{font-size:.72rem;color:#64748b}
+.row{display:flex;align-items:flex-start;gap:11px;padding:9px 15px;border-bottom:1px solid #1a2535;cursor:pointer;transition:background .12s}
+.row:last-child{border-bottom:none}
+.row:hover{background:#243045}
+.row.done{opacity:.45}
+.row input{margin-top:2px;accent-color:#6366f1;width:15px;height:15px;flex-shrink:0;cursor:pointer}
+.row span{font-size:.84rem;line-height:1.5;color:#cbd5e1}
+.row.done span{text-decoration:line-through;color:#475569}
+.future .sec-h{background:#1a2535;border-left:3px solid #22d3ee}
+.future .sec-t{color:#67e8f9}
+.row-t{font-size:.7rem;color:#475569;flex-shrink:0;cursor:help;position:relative;padding:2px 6px;background:#1a2535;border-radius:4px;margin-top:2px;white-space:nowrap;border:1px solid #334155}
+.row-t::after{content:attr(data-t);display:none;position:absolute;right:0;top:22px;background:#071a2e;color:#bfdbfe;padding:9px 13px;border-radius:8px;font-size:.76rem;width:320px;z-index:300;white-space:normal;line-height:1.55;border:1px solid #2563eb;box-shadow:0 4px 24px #00000099;pointer-events:none}
+.row-t:hover::after{display:block}
+.empty{padding:11px 15px;color:#475569;font-size:.8rem}
+</style>
+</head>
+<body>
+<header>
+  <h1>⚙ Chapterhouse Test Checklist</h1>
+  <div class="bar-wrap"><div class="bar" id="bar" style="width:0%"></div></div>
+  <span class="lbl" id="lbl">0 / 0</span>
+  <div class="btns">
+    <button class="on" onclick="setF('all')">All</button>
+    <button onclick="setF('todo')">To Do</button>
+    <button onclick="setF('done')">Done</button>
+  </div>
+  <button class="rst" onclick="if(confirm('Reset all?')){save({});render()}">Reset</button>
+</header>
+<main id="main"></main>
+<script>
+const T={
+'0_0':'✅ Text streams word-by-word with blinking cursor. ⚠️ Full response loads at once = SSE broken at /api/chat.',
+'0_1':'✅ Header label updates to chosen model. ⚠️ Stale label = selectedModel state not updating.',
+'0_2':'✅ 5 distinctly colored bubbles fill simultaneously. ⚠️ Single response = /api/chat/council SSE is down.',
+'0_3':'✅ Divider appears, then 5 rebuttals fill in after. ⚠️ No rebuttal = council route stopped after first pass.',
+'0_4':'✅ "Fetching URL…" spinner appears then article text injected as context. ⚠️ Spinner hangs = server-side fetch or SSRF block failing.',
+'0_5':'✅ Open Settings → note in Founder Memory within ~60s. Note: /remember is instant; auto-extract fires after 6+ messages.',
+'0_6':'✅ New note in Settings without any /remember command. ⚠️ Never appears = /api/extract-learnings returning 0 items.',
+'0_7':'✅ Same thread + all messages present after refresh. ⚠️ History empty = 1.5s debounced thread save failing.',
+'0_8':'✅ Old thread visible in left rail after clicking New. ⚠️ Rail always empty = threads not fetched from Supabase on load.',
+'0_9':'✅ Color-coded type badges on results (task/research/opportunity/etc). ⚠️ Empty = DB has no matching data or ilike query returning nothing.',
+'1_0':'✅ Today\'s date on the brief card. ⚠️ Only Generate button visible = cron hasn\'t fired; manually generate to verify pipeline works.',
+'1_1':'✅ All sections present with specific non-generic content. ⚠️ Missing section = that source\'s fetch failed during context injection.',
+'1_2':'✅ Amber ⚡ section pinned at very top of brief page. ⚠️ Absent = Haiku scoring pass returned null or no items scored ≥2 on 2+ tracks.',
+'1_3':'✅ 1–3 colored dots per item card per track (ncho/somersschool/biblesaas). ⚠️ No dots = track_impacts key missing from brief JSON response.',
+'1_4':'✅ Amber inline "⚡ Collision —" callout on qualifying items. ⚠️ Missing = collision_note field empty even when triggered.',
+'1_5':'✅ Some items cite daily.dev as source. ⚠️ Zero daily.dev items = DAILYDEV_TOKEN missing or expired in Vercel env.',
+'1_6':'✅ Contract end date + days countdown visible in brief. ⚠️ Missing = days_remaining not injected in system prompt.',
+'1_7':'✅ Formatted HTML email in scott@nextchapterhomeschool.com inbox. ⚠️ Missing = RESEND_API_KEY invalid or Resend in sandbox/unverified mode.',
+'1_8':'✅ Green cron entry at 3:00 UTC in Vercel logs. ⚠️ No entry = CRON_SECRET header mismatch or cron missing from vercel.json.',
+'2_0':'✅ Tags + OG image + site_name all populated on save. ⚠️ Partial data = OG extractor fallback; article text is still saved.',
+'2_1':'✅ Title auto-extracted; summary generated. ⚠️ Blank title = Claude couldn\'t identify a clear title in pasted text.',
+'2_2':'✅ Saved immediately with correct timestamp. No AI needed — pure Supabase write. If this fails, POST /api/research is broken.',
+'2_3':'✅ GPT Vision summary + tags generated from image content. ⚠️ Error = OPENAI_API_KEY missing Vision access or out of credits.',
+'2_4':'✅ Items appear in library after dedup check. ⚠️ Empty = TAVILY_API_KEY invalid; verify in Tavily dashboard.',
+'2_5':'✅ All 4 source types (Tavily/SerpAPI/Reddit/NewsAPI) return results. ⚠️ One source empty = that API key missing or rate-limited.',
+'2_6':'✅ Verdict change persists after page reload. ⚠️ Reverts = PATCH /api/research/[id] not saving changes.',
+'2_7':'✅ Item immediately gone from list. ⚠️ Still shows = soft-delete filter not applied on re-fetch.',
+'2_8':'✅ Brief references recent research topics by name. ⚠️ No reference = context block empty; ensure research_items table has rows.',
+'3_0':'✅ Either instant transcript or pending job created. ⚠️ Note: fast path ALWAYS fails on Vercel (YouTube blocks cloud IPs). Railway via Gemini is the correct production path.',
+'3_1':'✅ {pending:true, jobId} returned in ~80ms. ⚠️ >5s delay = Railway handoff waiting synchronously — should return immediately.',
+'3_2':'✅ 10K+ chars, source: gemini shown. ⚠️ Short generic text = gemini-analysis fallback fired; video may be unavailable or private.',
+'3_3':'✅ Green "Gemini" badge = verbatim multimodal transcript (Gemini watched the video). ⚠️ Amber "Gemini-analysis" badge = fallback educational summary — NOT verbatim transcript.',
+'3_4':'✅ Clear error shown, no transcript content returned. ⚠️ Transcript returned for invalid ID = hallucination guard not running in worker.',
+'3_5':'✅ Results load with thumbnails and titles. ⚠️ Empty = YOUTUBE_API_KEY invalid or daily quota exceeded in Google Console.',
+'3_6':'✅ Questions are specific to THIS video\'s content. ⚠️ Generic questions ("What was the main idea?") = transcript not passed to Claude prompt.',
+'3_7':'✅ Learning objectives reference this specific video. ⚠️ Generic plan = transcript missing from Claude context.',
+'3_8':'✅ Key terms are FROM this specific video. ⚠️ Generic vocabulary = transcript not in Claude prompt context.',
+'3_9':'✅ Questions reference specific moments from the video. ⚠️ Generic = transcript missing from discussion question prompt.',
+'3_10':'✅ 4 noticeably distinct complexity levels present. ⚠️ All same difficulty = DOK scaffolding in prompt not followed by Claude.',
+'3_11':'✅ Visual structure with blanks and boxes described. ⚠️ Just paragraphs = Claude not following graphic organizer format instruction.',
+'3_12':'✅ Blanks use this video\'s specific key terms. ⚠️ Generic blanks = transcript not passed to guided notes prompt.',
+'3_13':'✅ Per-video progress tracked in batch sidebar. ⚠️ All fail = Railway concurrency limit hit or bad QStash batch payload.',
+'4_0':'✅ A+ amber/gold, A green, B gray badges. ⚠️ All B = scoring prompt not differentiating; check if score column is populated in DB.',
+'4_1':'✅ Three separate 0–3 scores (Store/Curriculum/Content) per card. ⚠️ All null = analyze route ran but triple_score fields not populated.',
+'4_2':'✅ Status change persists after page reload. ⚠️ Reverts = status field not included in PATCH body.',
+'4_3':'✅ Approved items visible in /review-queue. ⚠️ Missing = review-queue filter not including opportunities type.',
+'5_0':'✅ Subject line + email body + clear CTA present. ⚠️ Generic/short output = brand voice system prompt not injecting.',
+'5_1':'✅ Grade-appropriate language generated. ⚠️ Placeholder text = Claude API key or prompt configuration issue.',
+'5_2':'✅ Output uses NCHO warm/educator voice. ⚠️ Generic marketing copy = brand voice prompt not applied to this mode.',
+'5_3':'✅ Text in clipboard + confirmation toast shows. ⚠️ Silent fail = navigator.clipboard.writeText needs HTTPS context.',
+'6_0':'✅ Image contains readable embedded text. ⚠️ Blurry/no text = SDXL routing used instead of GPT Image 1; check model selector.',
+'6_1':'✅ High-quality photorealistic result renders. ⚠️ Error = check Stability AI credits or STABILITY_API_KEY env var.',
+'6_2':'✅ Image renders. ⚠️ Error = check REPLICATE_API_TOKEN and current Flux model availability on Replicate.',
+'6_3':'✅ Detailed character-consistent illustration style. ⚠️ Looks like SDXL = Leonardo routing broken; check LEONARDO_API_KEY.',
+'6_4':'✅ All 3 provider columns populated with results. ⚠️ Empty column = that provider\'s key missing or rate-limited.',
+'6_5':'✅ Noticeably sharper edges in upscaled version. ⚠️ Identical to original = Real-ESRGAN endpoint not processing request.',
+'6_6':'✅ res.cloudinary.com/dpn8gl54c/... URL returned. ⚠️ Local/data URL only = Cloudinary upload failed; check CLOUDINARY_API_KEY.',
+'6_7':'✅ CC0 or CC-BY licensed results with in-browser preview. ⚠️ Empty results = FREESOUND_API_KEY env var missing or invalid.',
+'6_8':'✅ Audio plays correctly in browser. ⚠️ Silent = MediaSource API blocked or audio format unsupported.',
+'6_9':'✅ Video link appears after polling completes. ⚠️ Stuck at Processing = HeyGen webhook not firing; check HEYGEN_API_KEY scope.',
+'6_10':'✅ Previous generated images still visible after navigating away. ⚠️ History cleared = state in React not persisted across component unmount.',
+'7_0':'✅ Recognizably distinct ElevenLabs character voice. ⚠️ Generic TTS = Azure fallback routing; check that scoped ElevenLabs key is set.',
+'7_1':'✅ Audibly different from ElevenLabs output. ⚠️ Sounds identical = both routes may be hitting the same provider.',
+'7_2':'✅ Obvious speed difference between 0.5× and 2.0×. ⚠️ No difference = speed parameter not being passed to TTS provider.',
+'7_3':'✅ .mp3 downloads and plays correctly. ⚠️ Silent file = audio buffer not written correctly to response.',
+'7_4':'✅ Transcribed text matches what was spoken. ⚠️ Empty string = AZURE_SPEECH_KEY or AZURE_SPEECH_REGION env var missing.',
+'8_0':'✅ Both research items AND opportunities visible in one combined list. ⚠️ Only one type = query not unioning both tables.',
+'8_1':'✅ Approved status persists after reload. Pure Supabase write; no AI.',
+'8_2':'✅ Item leaves the pending queue immediately. ⚠️ Still shows = reject filter not applied on re-fetch.',
+'8_3':'✅ Flagged state persists after reload. Pure Supabase write.',
+'8_4':'✅ Task appears in /tasks with clickable source link. ⚠️ No link = task.source_id not saved in create payload.',
+'9_0':'✅ All status columns visible with correct tasks in each. ⚠️ Empty board = RLS blocking or tasks table has no rows.',
+'9_1':'✅ Appears in open column immediately. Pure Supabase write.',
+'9_2':'✅ Column change sticks without reload. ⚠️ Reverts = PATCH /api/tasks/[id] not saving status field.',
+'9_3':'✅ Task moves to blocked column. Pure Supabase write.',
+'9_4':'✅ Task moves to done column. Pure Supabase write.',
+'9_5':'✅ Task moves to canceled column. Pure Supabase write.',
+'9_6':'✅ Clickable link back to originating brief or opportunity. ⚠️ Text but no link = source_id saved but join query not resolving URL.',
+'9_7':'✅ Title and notes persist after reload. Pure Supabase write.',
+'9_8':'✅ Row removed immediately. Pure Supabase delete.',
+'10_0':'✅ All workspace .md files listed. ⚠️ Empty = documents route reading wrong directory path.',
+'10_1':'✅ List filters in real time as you type. ⚠️ No filter effect = search filter state not applied in render.',
+'10_2':'✅ Headings formatted, code blocks styled with background. ⚠️ Raw markdown text = react-markdown or remark-gfm missing.',
+'11_0':'✅ All jobs listed newest-first with correct data. ⚠️ Empty = RLS blocking authenticated user; check session.',
+'11_1':'✅ green=completed, yellow=running, red=failed, gray=queued. ⚠️ All gray = Railway not picking up; check RAILWAY_WORKER_URL env var.',
+'11_2':'✅ Progress bar increments without page reload. ⚠️ Only updates on refresh = jobs table not in supabase_realtime publication.',
+'11_3':'✅ Granular text like "Pass 3/6: Polgara finalizing…". ⚠️ Just "Running…" = worker not sending per-step progress_message updates.',
+'11_4':'✅ Drawer opens with formatted markdown output. ⚠️ Blank drawer = output null or CouncilOutput parseOutput() failed.',
+'11_5':'✅ Formatted headers, lists, bold visible. ⚠️ Raw markdown = react-markdown not applied in job detail drawer component.',
+'11_6':'✅ .md download includes JSON fenced block at bottom. ⚠️ No JSON block = structuredOutput was null; Pass 6 extraction failed in worker.',
+'11_7':'✅ Status immediately "cancelled". ⚠️ Still "queued" = job already picked up by Railway, or cancel route not saving to Supabase.',
+'11_8':'✅ Parent job shows N/total child count. ⚠️ Stuck at 0% = child completion not triggering parent progress recalculation.',
+'12_0':'✅ All form fields present and functional. Duration has presets (full year/semester/9 weeks).',
+'12_1':'✅ Job row visible in /jobs within 2s. ⚠️ >10s delay = QStash enqueue slow or QSTASH_TOKEN wrong.',
+'12_2':'✅ Animated pulsing dot on active pass; ✓ checkmark on completed. ⚠️ All dots static = PassStepper not reading progress % (breakpoints: 5/18/35/52/75/88/100).',
+'12_3':'✅ Session log grows line by line in real time. ⚠️ Single static line = useEffect not appending new messages to log array.',
+'12_4':'✅ Long detailed markdown with units, lessons, and pacing table. ⚠️ Short = Polgara pass failed; check if dataCritique present in job output.',
+'12_5':'✅ Valid JSON visible in emerald card preview; .json file downloads. ⚠️ Shows null = extractStructuredOutput() failed in Pass 6; check Railway logs.',
+'12_6':'✅ Earl\'s section is open/expanded when page loads. ⚠️ Collapsed by default = defaultOpen prop missing on Earl accordion.',
+'12_7':'✅ Per-unit COOL/SUCKS/MEH verdicts in Gen Alpha voice. ⚠️ Very short output = GPT-5-mini rate-limited; rerun the job.',
+'12_8':'✅ Both Gandalf draft and Data critique inside Working Papers. ⚠️ Missing = output key names changed (must be draftsRetained.gandalfInitialDraft and .dataCritique).',
+'12_9':'✅ .md download includes JSON fenced block at end. ⚠️ No JSON block = transcript builder not appending structuredOutput.',
+'12_10':'✅ .html file opens in browser with formatted layout. No fallback.',
+'12_11':'✅ .pdf file opens and is readable. ⚠️ Corrupted = html-to-pdf library config issue on Vercel.',
+'12_12':'✅ .docx opens in Microsoft Word. ⚠️ Corrupt file = html-to-docx returning empty buffer.',
+'12_13':'✅ Data\'s audit names NGSS / CCSS-M / CCSS-ELA / C3 specifically. ⚠️ Generic "national standards" = subject→framework mapping not running in worker.',
+'12_14':'✅ One parent job + N child jobs in /jobs. ⚠️ Only 1 job = batch loop not creating children; check payload has subjects array.',
+'13_0':'✅ Job appears in /jobs within 2s of form submit. No fallback.',
+'13_1':'✅ 6 animated dots; each transitions to ✓ as pass completes. ⚠️ Stuck on pass 1 = PassStepper not matching progress % breakpoints.',
+'13_2':'✅ Session log appends each new progress_message in real time. ⚠️ Single static line = useEffect dependency not watching the log array.',
+'13_3':'✅ Output order: Scope→JSON(emerald)→Earl(open)→B&B→Working Papers(closed)→Download. ⚠️ Wrong order or missing section = output key names changed in worker.',
+'13_4':'✅ 6-row table with "Extract" row in emerald color. ⚠️ Only 5 rows = page still showing old 5-pass table.',
+'14_0':'✅ Each brand has a distinct colored badge. ⚠️ All gray = brand field not being set on generated posts.',
+'14_1':'✅ edit_history JSONB array gains one entry per manual save. Check in Supabase Studio. ⚠️ No history = PATCH not appending to JSONB array.',
+'14_2':'✅ Selected date/time shown in post card. Pure client state.',
+'14_3':'✅ Buffer channel names from your account in dropdown. ⚠️ Empty dropdown = go to Accounts tab and run Sync from Buffer first.',
+'14_4':'✅ Status changes to "Scheduled"; buffer_update_id populated in Supabase. ⚠️ Stays "pending_review" = Buffer createPost mutation failed; check BUFFER_ACCESS_TOKEN.',
+'14_5':'✅ Status "rejected"; post leaves pending queue. Pure DB write.',
+'14_6':'✅ Tab A updates instantly when Tab B approves. ⚠️ Requires manual refresh = Supabase Realtime not subscribed on social_posts.',
+'14_7':'✅ New posts appear in Review Queue as generation runs. ⚠️ Need refresh = generation inserts rows but Realtime channel not active.',
+'14_8':'✅ Uses "your child", warm/curated tone, no "journey/leverage/synergy". ⚠️ Generic copy = NCHO brand voice system prompt not applying.',
+'14_9':'✅ Visible-progress language, zero faith words. ⚠️ Faith language present = brand route mismatch in generation prompt.',
+'14_10':'✅ Personal story-driven women\'s perspective voice. ⚠️ Same tone as other brands = brand not switching per brand in prompt.',
+'14_11':'✅ Channel names with social service labels populate. ⚠️ Empty = BUFFER_ACCESS_TOKEN expired or wrong org ID (695b16d...).',
+'14_12':'✅ Brand→channel mapping saved and persists. Pure DB write.',
+'14_13':'✅ Monday entry visible in Vercel cron logs. ⚠️ Missing = CRON_SECRET mismatch or cron entry missing from vercel.json.',
+'15_0':'✅ Workflow names match your n8n dashboard. ⚠️ Empty = N8N_BASE_URL unreachable from Vercel or N8N_API_KEY wrong.',
+'15_1':'✅ n8n shows updated active/inactive state. ⚠️ Toggle has no effect = proxy PUT not reaching n8n.',
+'15_2':'✅ Correct recent timestamp shown. ⚠️ Stale = executions endpoint not fetching fresh data.',
+'15_3':'✅ Toast "Workflow triggered" appears immediately. ⚠️ No toast = trigger route returned error; check n8n logs.',
+'15_4':'✅ Last run column updates after 30s without action. ⚠️ Only updates on manual refresh = setInterval not set up in component.',
+'16_0':'✅ Green ✅ on all connected services. ⚠️ Red ✗ = that env var missing; click to identify which key.',
+'16_1':'✅ All existing notes visible in list. ⚠️ Empty = founder_notes table has no rows or RLS blocking.',
+'16_2':'✅ New note visible immediately — no reload needed. Pure Supabase write.',
+'16_3':'✅ Edit persists after page refresh. Pure Supabase write.',
+'16_4':'✅ Note gone immediately. Pure Supabase delete.',
+'16_5':'✅ Chat response specifically references your notes. ⚠️ No reference = buildLiveContext() not fetching notes or context is overflowing.',
+'17_0':'✅ Full chapterhouse-help-guide.md content renders. ⚠️ Blank page = file path in documents route pointing to wrong location.',
+'17_1':'✅ H1/H2 as large text; code blocks with monospace background. ⚠️ Raw markdown text = remark-gfm not in markdown plugins array.',
+'18_0':'✅ Streaming text chunks arrive. ⚠️ 401 = auth middleware blocking. 500 = ANTHROPIC_API_KEY missing.',
+'18_1':'✅ 5 SSE events arriving with different memberName fields. ⚠️ Single chunk = Content-Type: text/event-stream not set on response.',
+'18_2':'✅ Array of job objects with all expected fields. ⚠️ 401 = RLS blocking. Empty = no jobs in DB yet.',
+'18_3':'✅ {jobId, status:"queued"} returned. ⚠️ 500 = Supabase insert or QStash publish failed; check both.',
+'18_4':'✅ Array of research_items. ⚠️ Empty array = table has no rows or RLS filter too strict.',
+'18_5':'✅ Created item returned with id. ⚠️ 422 = Zod validation failed; check required fields in payload.',
+'18_6':'✅ Array of brief objects returned. ⚠️ 500 = Supabase connection issue.',
+'18_7':'✅ Brief object returned with all sections. ⚠️ Takes >30s = context injection parallel queries timing out.',
+'18_8':'✅ Array of scored opportunity cards. ⚠️ Empty = opportunities table has no rows.',
+'18_9':'✅ Array of created post rows returned. ⚠️ 500 = Claude API call or Supabase insert failed.',
+'18_10':'✅ Channel list array from Buffer. ⚠️ Empty = BUFFER_ACCESS_TOKEN invalid or no channels connected in Buffer.',
+'18_11':'✅ {pending:true, jobId} returned quickly. ⚠️ Instant transcript = captions worked (rare outside localhost).',
+'18_12':'✅ YouTube search results array returned. ⚠️ Empty = YOUTUBE_API_KEY quota exceeded in Google Console.',
+'18_13':'✅ Object with quiz/lesson/vocab/etc keys. ⚠️ Missing keys = tool type param wrong or Claude prompt failed.',
+'18_14':'✅ Generated content string returned. ⚠️ 500 = ANTHROPIC_API_KEY missing from Vercel env.',
+'18_15':'✅ Audio URL or stream returned. ⚠️ 500 = ElevenLabs scoped key missing or Azure Speech unreachable.',
+'18_16':'✅ Created task object returned with id. ⚠️ 422 = required field missing in request payload.',
+'18_17':'✅ Created founder note returned. ⚠️ 500 = Supabase insert failed; check service role key.',
+'19_0':'✅ output.finalScopeAndSequence = long markdown; output.structuredOutput = valid JSON object. ⚠️ output null = worker crashed; check Railway deploy logs for this jobId.',
+'19_1':'✅ output.source = "gemini"; transcript 10K+ chars. ⚠️ source = "gemini-analysis" = fallback summary (not verbatim); video likely unavailable or age-restricted.',
+'19_2':'✅ social_posts rows inserted with status "pending_review". ⚠️ Worker completes but no posts = /api/social/generate returned error; check job.error field.',
+'19_3':'✅ Unsigned curl returns HTTP 401 before job processes. ⚠️ Returns 200 = SECURITY ISSUE — QStash signature verification disabled or broken.',
+'19_4':'✅ /jobs shows % incrementing in real time, no reload. ⚠️ Only updates on refresh = jobs table not in supabase_realtime publication.',
+'19_5':'✅ Email in inbox within 5 min of completion. ⚠️ Missing = RESEND_API_KEY missing or ALERT_EMAIL_TO not set in Railway env.',
+};
+
+const S=[
+{t:"🏠 Command Center — /",i:[
+"Solo mode: send a message → streaming response appears and completes",
+"Model selector: switch GPT-5.4 → Claude Sonnet 4.6 → Haiku 4.5 → confirm header label changes",
+"Council Mode toggle: enable → 5 colored avatar bubbles appear (Gandalf / Data / Polgara / Earl / B&B)",
+"Council rebuttal: divider + second response round visible after all five first responses complete",
+"Paste URL in message box → 'Fetching URL…' spinner → page content injected as context",
+"/remember [fact] → open Settings → fact appears in Founder Memory panel",
+"Auto-learn: after ~8 messages new founder note appears in Settings (silently extracted by Claude)",
+"Thread persistence: refresh page → last active thread reloads with all messages intact",
+"New thread button: creates blank thread; previous thread still in left-hand history list",
+"Global search bar (header): type a keyword → results show color-coded type badges",
+]},
+{t:"📰 Daily Brief — /daily-brief",i:[
+"Page loads today's brief or shows active 'Generate Brief' button",
+"Generate Brief fires, loading state visible, completes with all sections",
+"⚡ Collisions section pinned at top of page when cross-track items exist (amber styling)",
+"Track badges on items: colored ●/●●/●●● dots for ncho / somersschool / biblesaas",
+"Collision callout: amber '⚡ Collision —' note renders inline on qualifying items",
+"Brief content includes items sourced from RSS feeds, GitHub activity, and daily.dev posts",
+"Days countdown visible: 'Teaching contract ends: May 24, 2026 (N days remaining)'",
+"Brief email delivered to scott@nextchapterhomeschool.com — check inbox after cron fires",
+"Vercel Cron dashboard: 3:00 UTC daily job shows success status",
+]},
+{t:"🔬 Research — /research",i:[
+"URL ingest: paste a real article URL → tags, verdict, and OG metadata generated",
+"Text paste: paste article text → title, summary, and tags extracted",
+"Quick note: enter short text note → saves with correct timestamp",
+"Screenshot: attach an image → GPT Vision reads and analyzes content",
+"Agentic research tab: enter topic → Tavily fetches → GPT-5.4 analyzes → deduped items auto-ingested",
+"Deep research: multi-source parallel fetch fires (Tavily + SerpAPI + Reddit + NewsAPI)",
+"Edit research item: update verdict on existing item → persists on reload",
+"Delete research item: remove item → disappears from list",
+"Research items surface as context in generated daily briefs",
+]},
+{t:"▶ YouTube Intelligence — /youtube",i:[
+"Paste YouTube URL → transcript extraction initiates",
+"Vercel returns pending jobId in ~80ms → youtube_transcript job appears in /jobs",
+"Railway worker completes via Gemini → transcript viewer shows 21K+ chars of real text",
+"Source badge: green 'Gemini' badge visible on completed transcript",
+"Invalid video ID → hallucination guard fires → clear error shown (no fake transcript)",
+"YouTube search: enter term → results load from YouTube Data API v3",
+"Quiz: select transcript → generate quiz → multiple choice + short answer questions appear",
+"Lesson plan: objectives / activities / assessment structure generated",
+"Vocabulary: key terms with definitions and context",
+"Discussion questions: open-ended questions generated",
+"DOK projects: multi-level depth-of-knowledge projects generated",
+"Graphic organizer: visual structure template generated",
+"Guided notes: fill-in-the-blank study guide generated",
+"Batch mode: open sidebar → add multiple URLs → batch job created and tracked",
+]},
+{t:"💡 Product Intelligence — /product-intelligence",i:[
+"Opportunity cards load with A+/A/B score badges",
+"Triple-track scores visible: Store (NCHO) / Curriculum / Content",
+"Status change on a card persists after page reload",
+"High-score items route to Review Queue correctly",
+]},
+{t:"✍ Content Studio — /content-studio",i:[
+"Newsletter/campaign mode: generates draft content successfully",
+"Curriculum guide mode: generates guide description",
+"Product description mode: generates product copy",
+"Copy to clipboard button works on all three modes",
+]},
+{t:"🎨 Creative Studio — /creative-studio",i:[
+"GPT Image 1: generate image with text prompt → result displays",
+"Stability AI (SDXL): generate image → result displays",
+"Flux (Replicate): generate image → result displays",
+"Leonardo Phoenix: generate image → result displays (best for Gimli character consistency)",
+"Stock photo search: one query → Pexels + Pixabay + Unsplash results load simultaneously",
+"4× upscale: submit image → Real-ESRGAN upscale returns higher-res version",
+"Save to Cloudinary: generated image saved → CDN URL returned",
+"Freesound browser: search sound effect → results with CC license tags appear",
+"Freesound preview: click play → in-browser audio preview plays",
+"HeyGen avatar video: submit request → polls every 10s → result link appears on completion",
+"Generation history: persists in session when navigating away and back to Creative Studio",
+]},
+{t:"🎙 Voice Studio — /voice-studio",i:[
+"ElevenLabs TTS: choose premium voice → enter text → audio plays",
+"Azure Speech TTS: choose Azure neural voice → audio plays",
+"Speed control: 0.5× vs 2.0× produces audible difference",
+"Download as MP3: generated audio downloads correctly",
+"In-browser recording: record speech → stop → Azure Speech STT transcription appears",
+]},
+{t:"✅ Review Queue — /review-queue",i:[
+"Research items and opportunities appear in combined queue",
+"Approve item → moves to approved state",
+"Reject item → moves to rejected state",
+"Flag item → flagged state persists",
+"'Create Task' from a queue item → task appears on /tasks board",
+]},
+{t:"📋 Tasks — /tasks",i:[
+"Task board loads with all tasks in correct status columns",
+"Create task → appears in 'open' column",
+"Move task to in-progress → status updates",
+"Block task → blocked state shows",
+"Complete task → appears in done column",
+"Cancel task → appears in canceled column",
+"Task created from brief/opportunity shows source link",
+"Edit task title/notes → persists on reload",
+"Delete task → removed from board",
+]},
+{t:"📄 Documents — /documents",i:[
+"All workspace markdown files appear in the documents list",
+"Search/filter: keyword search returns filtered results",
+"Open document: click → markdown renders with correct headings and formatting",
+]},
+{t:"⚙ Jobs Dashboard — /jobs",i:[
+"All jobs visible, sorted newest first",
+"Status badges color-coded: queued / running / completed / failed / cancelled",
+"Realtime: with a running job open, progress bar increments without page refresh",
+"Progress message: current pass/step text shown below progress bar",
+"Job detail drawer: click job → opens with full output",
+"Completed curriculum job output renders as formatted markdown",
+"Download full session transcript from drawer (includes JSON fenced block)",
+"Cancel a queued job → status changes to cancelled",
+"Batch parent job shows N/total child completion count",
+]},
+{t:"🏗 Curriculum Factory — /curriculum-factory",i:[
+"Form: subject, grade level, duration, optional standards and context fields",
+"Submit single job → job created → visible in /jobs immediately",
+"6-step PassStepper animates: animated dot → ✓ check as each pass completes",
+"Session log accumulates each progress_message in real time (not overwritten)",
+"Final Scope & Sequence: Polgara's markdown document renders after completion",
+"Pipeline Handoff JSON: emerald card shows with copy / download .json / preview toggle",
+"Earl's assessment section open by default",
+"Beavis & Butthead engagement report present",
+"Working Papers accordion: Gandalf draft + Data critique inside (collapsed by default)",
+"Download full transcript: .md file includes JSON fenced block",
+"HTML export downloads correctly",
+"PDF export downloads correctly",
+"DOCX export downloads correctly",
+"Standards auto-detection: Science → NGSS, Math → CCSS-M, ELA → CCSS-ELA, History → C3",
+"Batch mode: multi-subject × grade range → parent + child jobs created",
+]},
+{t:"🏛 Council Chamber — /council",i:[
+"Form submits → background job created and confirmed in /jobs",
+"6-step PassStepper animates through all passes with correct labels",
+"Accumulating session log: each progress_message appends as job runs",
+"Output order: Scope & Sequence → Pipeline Handoff JSON → Earl (open) → B&B → Working Papers (closed) → Download",
+"'How It Works' panel shows 6-pass table including Pass 6 (Extract, emerald)",
+]},
+{t:"📱 Social Media — /social",i:[
+"Review Queue tab: pending posts show with brand color badges (NCHO / SomersSchool / Alana Terry)",
+"Inline text edit: click post text → edit → save → edit_history updated in DB",
+"Datetime picker: set a schedule date/time on a post",
+"Buffer channel selector: choose channel from dropdown on a post",
+"Approve post → Buffer GraphQL createPost fires → status changes to 'Scheduled'",
+"Reject post → status changes to 'rejected'",
+"Realtime: open Review Queue in two browser tabs → approve in one → other updates without refresh",
+"Generate tab: select brands + platforms + count → posts appear in Review Queue after generation",
+"NCHO brand voice: generated post is warm/teacher-curated and uses 'your child' language",
+"SomersSchool brand voice: zero faith language, mentions visible progress",
+"Alana Terry brand voice: personal, story-forward, written as woman's voice",
+"Accounts tab: 'Sync from Buffer' → channel list populates from Buffer GraphQL API",
+"Brand→channel mapping: assign NCHO to a Buffer channel → saved correctly",
+"Weekly cron: Vercel cron logs show Monday 05:00 UTC social-weekly execution success",
+]},
+{t:"🔧 Pipelines — /pipelines",i:[
+"n8n workflow list loads with active/inactive status per workflow",
+"Activate/deactivate toggle: status change reflects in n8n",
+"Last run timestamp and status visible per workflow row",
+"'Run now' button: triggers workflow → toast 'Workflow triggered' appears",
+"Table auto-refreshes every 30 seconds without user action",
+]},
+{t:"⚙ Settings — /settings",i:[
+"Environment status: all connected services show green ✅",
+"Founder Memory panel: all existing notes visible in list",
+"Add note: enter text → saves and appears immediately",
+"Edit note: update existing note → change persists on reload",
+"Delete note: remove note → disappears from list",
+"Memory in chat: open chat → ask something relevant → founder notes referenced in response",
+]},
+{t:"❓ Help — /help",i:[
+"Help guide renders chapterhouse-help-guide.md as formatted markdown",
+"Headings, lists, and code blocks all formatted correctly",
+]},
+{t:"🔌 API Health — Route Smoke Tests",i:[
+"POST /api/chat — single-model response streams back",
+"GET /api/chat/council (SSE) — 5 member responses + rebuttal all arrive",
+"GET /api/jobs — returns job list JSON",
+"POST /api/jobs/create — returns jobId and queued status",
+"GET /api/research — returns research items array",
+"POST /api/research — creates item from URL payload",
+"GET /api/briefs — returns briefs list",
+"POST /api/briefs/generate — brief generation starts",
+"GET /api/opportunities — returns opportunity cards",
+"POST /api/social/generate — Claude social posts created",
+"POST /api/social/accounts/sync — Buffer channels returned",
+"POST /api/youtube/transcript — returns {pending: true, jobId}",
+"GET /api/youtube/search — returns YouTube search results",
+"POST /api/youtube/analyze — returns curriculum materials (quiz/lesson/vocab etc)",
+"POST /api/content-studio — returns AI-generated content",
+"POST /api/voice/synthesize — returns audio URL or stream",
+"POST /api/tasks — creates task record",
+"POST /api/founder-notes — creates founder note",
+]},
+{t:"🚂 Railway Worker Health",i:[
+"curriculum-factory job: submits → Railway picks up → 6-pass completes → output in Supabase",
+"youtube-transcript job: submits → Gemini processes → transcript stored on job output",
+"social-batch job: submits → /api/social/generate called → posts inserted to Supabase",
+"QStash signature: worker rejects unsigned requests (test with curl without signature header)",
+"Realtime progress: job progress % updates live on /jobs dashboard while worker runs",
+"Resend email: completed curriculum job sends notification email",
+]},
+];
+
+const FUTURE=[
+{t:"🔮 Phase A — Dynamic Fetch Engine (Not Built Yet)",i:[
+"PLANNED: fetchPage(url) tool lets brief AI read full article text from any URL",
+"PLANNED: SSRF protection on all server-side URL fetching (allowlist / URL sanitization)",
+"PLANNED: Enables Phase G (feed self-healing) once built",
+"PLANNED: Estimated effort 1–2 days",
+]},
+{t:"🔮 Phase D — Artifact Creation Pipeline (Not Built Yet)",i:[
+"PLANNED: Brief auto-proposes artifacts (handoff docs, specs, policy drafts, prompt templates)",
+"PLANNED: Artifact schema in Supabase: type / title / content / source_brief_id",
+"PLANNED: /artifacts route in sidebar",
+]},
+{t:"🔮 Phase E — Council Voices in Brief (Not Built Yet)",i:[
+"PLANNED: Top 3 brief items get a Council pass (Gandalf→Data→Polgara→Earl→B&B)",
+"PLANNED: Council Chamber already exists — only wiring into brief pipeline needed",
+"PLANNED: Estimated effort 2–3 days",
+]},
+{t:"🔮 Phase F — Dream Integration (Not Built Yet)",i:[
+"PLANNED: Collision score ≥2 on 2+ tracks → SEED proposition auto-queued for Scott's review",
+"PLANNED: dreamer queue in Supabase linked to dreamer.md",
+"PLANNED: Depends on Phase C (collision mapping — partially shipped in Phase 7)",
+]},
+{t:"🔮 Phase G — Feed Self-Healing (Not Built Yet)",i:[
+"PLANNED: Stale source detection (30+ days since last new item from a feed)",
+"PLANNED: Auto-research job finds 3 active replacement sources → approval queue",
+"PLANNED: Depends on Phase A (fetch engine to verify candidate sources are live)",
+]},
+{t:"🔮 Autoresearch Loop Instrument (Not Built Yet)",i:[
+"PLANNED: brief_action_rate metric: % of priority items → task/artifact within 24h",
+"PLANNED: Instrumentation table: brief_id / item_id / actioned_at",
+"PLANNED: Build the counter now; run optimization loop after real data exists",
+]},
+];
+
+const ALL=[...S.map(s=>({...s,f:false})),...FUTURE.map(s=>({...s,f:true}))];
+let filt='all';
+function load(){return JSON.parse(localStorage.getItem('ch_v1')||'{}')}
+function save(st){localStorage.setItem('ch_v1',JSON.stringify(st))}
+function setF(f){filt=f;document.querySelectorAll('.btns button').forEach(b=>b.classList.remove('on'));document.querySelectorAll('.btns button').forEach(b=>{if(b.textContent.toLowerCase().startsWith(f[0]))b.classList.add('on')});render()}
+function toggle(id){const st=load();st[id]=!st[id];save(st);render()}
+function render(){
+  const st=load();
+  let total=0,done=0,html='';
+  ALL.forEach((sec,si)=>{
+    let rows='',sc=0,st2=0;
+    sec.i.forEach((label,ii)=>{
+      const id='i'+si+'_'+ii;
+      const ck=!!st[id];
+      total++;if(ck)done++;sc++;if(ck)st2++;
+      if(filt==='todo'&&ck)return;
+      if(filt==='done'&&!ck)return;
+      const tip=T[si+'_'+ii]||'';
+      rows+=`<div class="row${ck?' done':''}" onclick="toggle('${id}')"><input type="checkbox" ${ck?'checked':''} onclick="event.stopPropagation();toggle('${id}')"><span>${label}</span>${tip?`<span class="row-t" data-t="${tip.replace(/"/g,'&quot;')}">ℹ</span>`:''}</div>`;
+    });
+    if(!rows&&filt!=='all')return;
+    html+=`<div class="sec${sec.f?' future':''}"><div class="sec-h"><span class="sec-t">${sec.t}</span><span class="sec-c">${st2}/${sc}</span></div><div class="sec-b">${rows||'<div class="empty">All done ✓</div>'}</div></div>`;
+  });
+  document.getElementById('main').innerHTML=html;
+  const pct=total?Math.round(done/total*100):0;
+  document.getElementById('bar').style.width=pct+'%';
+  document.getElementById('lbl').textContent=done+' / '+total+' ('+pct+'%)';
+}
+render();
+</script>
+</body>
+</html>

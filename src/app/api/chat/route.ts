@@ -6,6 +6,10 @@ import { getAuthenticatedUserId } from "@/lib/auth-context";
 import { getPersonaById } from "@/lib/personas";
 import { PUSH_LOG } from "@/lib/push-log";
 import { getFolioContext } from "@/lib/folio-builder";
+import { searchSemanticScholar } from "@/lib/semantic-scholar";
+import type { CitationResult } from "@/lib/semantic-scholar";
+
+const ACADEMIC_PAPER_INTENT = /\b(write.*(?:academic|research)\s*paper|(?:academic|research)\s*paper|literature\s*review|paper.*with\s*citations?|semantic\s*scholar)\b/i;
 
 function getOpenAI() { return new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); }
 function getAnthropic() { return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }); }
@@ -599,6 +603,48 @@ Scott's permanent advisory team. They run in Council Mode (/council) but Scott c
     // intel_sessions table may not exist — ignore
   }
 
+  // Academic paper intent — inject Semantic Scholar citations + relevant doc content
+  if (ACADEMIC_PAPER_INTENT.test(userMessage)) {
+    try {
+      const supabase = getSupabaseServiceRoleClient();
+      const userId = await getAuthenticatedUserId();
+      const acBlocks: string[] = [];
+
+      // Pull any uploaded docs mentioned by name in the message
+      if (supabase && userId) {
+        const { data: docs } = await supabase
+          .from("documents")
+          .select("title, content")
+          .eq("user_id", userId)
+          .limit(3);
+        if (docs && docs.length > 0) {
+          for (const doc of docs) {
+            const titleMentioned = userMessage.toLowerCase().includes((doc.title as string).toLowerCase());
+            if (titleMentioned && doc.content) {
+              acBlocks.push(`## Source Document: ${doc.title}\n\n${(doc.content as string).slice(0, 3000)}`);
+            }
+          }
+        }
+      }
+
+      // Semantic Scholar citations
+      const citations: CitationResult[] = await searchSemanticScholar(userMessage.slice(0, 200));
+      if (citations.length > 0) {
+        const citationBlock = citations
+          .map((c, i) => {
+            const doi = c.doi ? ` DOI: ${c.doi}` : "";
+            return `${i + 1}. **${c.title}** — ${c.authors}${c.year ? ` (${c.year})` : ""}${doi}\n   ${c.abstract}`;
+          })
+          .join("\n\n");
+        acBlocks.push(`## Semantic Scholar — Relevant Papers\n\n${citationBlock}`);
+      }
+
+      if (acBlocks.length > 0) {
+        blocks.push(`## Academic Paper Context\n\n${acBlocks.join("\n\n---\n\n")}`);
+      }
+    } catch { /* non-fatal — skip if Semantic Scholar unavailable */ }
+  }
+
   return blocks.length > 0
     ? "\n\n---\n\n" + blocks.join("\n\n---\n\n")
     : "";
@@ -924,6 +970,7 @@ export async function POST(request: Request) {
 
     // Enrich system prompt with live context from Supabase (research ranked by relevance to this message)
     const liveContext = await buildLiveContext(lastUserMsg);
+    const isAcademicPaper = ACADEMIC_PAPER_INTENT.test(lastUserMsg);
 
     // Detect URLs in the user's message and fetch their content
     let urlContext = "";
@@ -976,7 +1023,7 @@ export async function POST(request: Request) {
     if (model.startsWith("claude")) {
       const stream = getAnthropic().messages.stream({
         model,
-        max_tokens: 2048,
+        max_tokens: isAcademicPaper ? 8000 : 2048,
         system: systemPrompt,
         messages: anthropicMessages,
       });
@@ -1035,7 +1082,7 @@ export async function POST(request: Request) {
       instructions: systemPrompt,
       input: openAiInput,
       stream: true,
-      max_output_tokens: 2048,
+      max_output_tokens: isAcademicPaper ? 8000 : 2048,
     });
 
     const readable = new ReadableStream({

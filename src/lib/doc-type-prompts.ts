@@ -1,7 +1,7 @@
 /**
  * doc-type-prompts.ts
  *
- * Definitions for all 14 Documents Studio document types.
+ * Definitions for all 15 Documents Studio document types.
  * Each type has:
  *   - label/description for the UI
  *   - fields: the form inputs shown to the user
@@ -17,7 +17,7 @@
 export type DocField = {
   key: string;
   label: string;
-  type: "text" | "textarea" | "select";
+  type: "text" | "textarea" | "select" | "document_picker";
   placeholder?: string;
   options?: string[];   // only for type: "select"
   required?: boolean;
@@ -527,6 +527,73 @@ Flag ⚠️ SCOTT DECIDES for anything requiring human input.`,
   defaultTitle: (i) => `Brainstorm: ${i.topic || "New Topic"}`,
 };
 
+// ── 15. Academic Comparison Paper ──────────────────────────────────────────────
+
+const academicPaper: DocTypeDefinition = {
+  id: "academic_paper",
+  label: "Academic Comparison Paper",
+  description:
+    "Generates a 12-page scholarly paper comparing two uploaded documents with real peer-reviewed citations from Semantic Scholar. Output is formatted Markdown ready to download.",
+  category: "research",
+  icon: "🎓",
+  useCouncilDefault: false,
+  fields: [
+    {
+      key: "doc1_id",
+      label: "First source document",
+      type: "document_picker",
+      required: true,
+    },
+    {
+      key: "doc2_id",
+      label: "Second source document",
+      type: "document_picker",
+      required: true,
+    },
+    {
+      key: "thesis",
+      label: "Central thesis / research question",
+      type: "textarea",
+      placeholder:
+        "What are you comparing? What argument should the paper make?",
+      required: true,
+    },
+    {
+      key: "page_length",
+      label: "Target length",
+      type: "select",
+      options: ["8 pages", "12 pages", "15 pages", "20 pages"],
+      required: true,
+    },
+    {
+      key: "citation_style",
+      label: "Citation style",
+      type: "select",
+      options: ["APA", "MLA", "Chicago", "Turabian"],
+      required: true,
+    },
+    {
+      key: "additional_guidance",
+      label: "Additional guidance (optional)",
+      type: "textarea",
+      placeholder: "Sections, angles, or themes to emphasize?",
+    },
+  ],
+  systemPromptSuffix: `You are writing a formal academic comparison paper.
+
+Rules you must follow without exception:
+- ONLY cite sources returned by the Semantic Scholar search provided to you. Do NOT invent, hallucinate, or fabricate any citation. If no search results were returned, acknowledge the limitation and note that citations could not be retrieved.
+- Every claim that requires a citation must reference a specific paper from the provided list using the requested citation style.
+- Structure the paper with: Abstract, Introduction, Literature Review, Comparative Analysis, Discussion, Conclusion, and References.
+- Use formal academic prose throughout. No first-person unless quoting sources.
+- The References section must list every cited paper in full bibliographic format.
+- Format the entire output as Markdown (use ## for section headings, **bold** for emphasis, proper citation inline markers).`,
+  buildPrompt: (i) =>
+    `Write an academic comparison paper.\n\nThesis: ${i.thesis || "(no thesis provided)"}\nLength: ${i.page_length || "12 pages"}\nCitation style: ${i.citation_style || "APA"}${i.additional_guidance ? `\nAdditional guidance: ${i.additional_guidance}` : ""}`,
+  defaultTitle: (i) =>
+    `Academic Paper: ${(i.thesis ?? "Comparison Study").slice(0, 60)}`,
+};
+
 // ── Registry ──────────────────────────────────────────────────────────────────
 
 export const DOC_TYPES: DocTypeDefinition[] = [
@@ -544,6 +611,7 @@ export const DOC_TYPES: DocTypeDefinition[] = [
   studyGuide,
   reportWriter,
   brainstorm,
+  academicPaper,
 ];
 
 export const DOC_TYPE_MAP: Record<string, DocTypeDefinition> = Object.fromEntries(

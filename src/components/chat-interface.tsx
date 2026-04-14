@@ -7,6 +7,7 @@ import {
   Brain,
   Check,
   ChevronDown,
+  Download,
   Edit3,
   FileText,
   LinkIcon,
@@ -1081,6 +1082,7 @@ ${f.text}`
                     >
                       {msg.role === "assistant" ? (
                         msg.content ? (
+                          <>
                           <ReactMarkdown
                             remarkPlugins={[remarkGfm]}
                             components={{
@@ -1112,6 +1114,27 @@ ${f.text}`
                           >
                             {msg.content}
                           </ReactMarkdown>
+                          {!isStreaming && (
+                            <div className="mt-3 flex justify-end">
+                              <button
+                                onClick={() => {
+                                  const blob = new Blob([msg.content], { type: "text/plain" });
+                                  const url = URL.createObjectURL(blob);
+                                  const a = document.createElement("a");
+                                  a.href = url;
+                                  a.download = "response.md";
+                                  a.click();
+                                  URL.revokeObjectURL(url);
+                                }}
+                                className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-card/60 px-2.5 py-1 text-xs text-muted transition hover:border-accent/40 hover:text-foreground"
+                                title="Download as .md"
+                              >
+                                <Download className="h-3 w-3" />
+                                .md
+                              </button>
+                            </div>
+                          )}
+                          </>
                         ) : (
                           <Loader2 className="h-4 w-4 animate-spin text-muted" />
                         )

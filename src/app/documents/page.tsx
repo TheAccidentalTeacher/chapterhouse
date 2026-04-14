@@ -12,32 +12,72 @@ type DocFile = {
   size: number;
 };
 
+const DOC_DIRECTORIES = ["docs", "reference"];
+
+const PRIORITY = [
+  "docs/strategy/persona.md",
+  "docs/strategy/biography.md",
+  "docs/strategy/brand-personality-handoff.md",
+  "docs/strategy/operating-system.md",
+  "docs/strategy/ai-operating-principles.md",
+  "docs/strategy/shopify-strategy.md",
+  "docs/specs/chapterhouse-product-spec.md",
+  "docs/specs/chapterhouse-coding-plan.md",
+  "README.md",
+  "CLAUDE.md",
+];
+
+function collectMarkdownFiles(root: string, directory: string): string[] {
+  const absoluteDirectory = path.join(root, directory);
+
+  if (!fs.existsSync(absoluteDirectory)) {
+    return [];
+  }
+
+  const entries = fs.readdirSync(absoluteDirectory, { withFileTypes: true });
+  const files: string[] = [];
+
+  for (const entry of entries) {
+    if (entry.name.startsWith(".")) {
+      continue;
+    }
+
+    const relativePath = path.posix.join(directory, entry.name);
+    const absolutePath = path.join(root, relativePath);
+
+    if (entry.isDirectory()) {
+      files.push(...collectMarkdownFiles(root, relativePath));
+      continue;
+    }
+
+    if (entry.isFile() && absolutePath.endsWith(".md")) {
+      files.push(relativePath);
+    }
+  }
+
+  return files;
+}
+
 function readDocs(): DocFile[] {
   const root = process.cwd();
   let files: string[];
 
   try {
-    files = fs.readdirSync(root).filter((f) => f.endsWith(".md"));
+    const rootFiles = fs
+      .readdirSync(root, { withFileTypes: true })
+      .filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
+      .map((entry) => entry.name);
+
+    const nestedFiles = DOC_DIRECTORIES.flatMap((directory) => collectMarkdownFiles(root, directory));
+
+    files = Array.from(new Set([...rootFiles, ...nestedFiles]));
   } catch {
     return [];
   }
 
-  // Put important brand/ops docs first
-  const priority = [
-    "persona.md",
-    "biography.md",
-    "brand-personality-handoff.md",
-    "operating-system.md",
-    "ai-operating-principles.md",
-    "shopify-strategy.md",
-    "chapterhouse-product-spec.md",
-    "chapterhouse-coding-plan.md",
-    "README.md",
-  ];
-
   const sorted = [
-    ...priority.filter((f) => files.includes(f)),
-    ...files.filter((f) => !priority.includes(f)).sort(),
+    ...PRIORITY.filter((file) => files.includes(file)),
+    ...files.filter((file) => !PRIORITY.includes(file)).sort(),
   ];
 
   return sorted.map((filename): DocFile => {
