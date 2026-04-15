@@ -16,7 +16,7 @@ export default function CurriculumFactoryPage() {
         </div>
         <p className="text-sm text-[var(--muted)]">
           Five-pass Council of the Unserious — Gandalf drafts, Data audits, Polgara finalizes,
-          Earl assesses operations, Beavis &amp; Butthead stress-test engagement. Each job produces a
+          Earl assesses operations, Silk stress-tests engagement. Each job produces a
           full scope &amp; sequence ready to hand off to lesson builders.
         </p>
       </div>
@@ -28,7 +28,7 @@ export default function CurriculumFactoryPage() {
           { step: "Pass 2", name: "Data", role: "Structural audit" },
           { step: "Pass 3", name: "Polgara", role: "Final for the child" },
           { step: "Pass 4", name: "Earl", role: "Operational assessment" },
-          { step: "Pass 5", name: "Beavis & Butthead", role: "Engagement test" },
+          { step: "Pass 5", name: "Silk", role: "Pattern-break analysis" },
         ].map((p) => (
           <div
             key={p.step}

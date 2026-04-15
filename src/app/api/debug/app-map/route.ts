@@ -230,7 +230,7 @@ const FEATURE_REGISTRY: Omit<FeatureEntry, "available" | "missingRequired" | "mi
   {
     id: "curriculum-factory",
     name: "Curriculum Factory",
-    description: "6-pass Council of the Unserious (Gandalf → Data → Polgara → Earl → B&B → Extract JSON). CCSS-ELA/Math, NGSS, C3 Framework auto-aligned by subject. Produces SomersSchool pipeline JSON. HTML/PDF/DOCX export. Batch mode.",
+    description: "6-pass Council of the Unserious (Gandalf → Data → Polgara → Earl → Silk → Extract JSON). CCSS-ELA/Math, NGSS, C3 Framework auto-aligned by subject. Produces SomersSchool pipeline JSON. HTML/PDF/DOCX export. Batch mode.",
     page: "/curriculum-factory",
     apiRoutes: ["/api/jobs/create"],
     components: ["src/components/curriculum-factory-form.tsx", "src/components/council-chamber-viewer.tsx"],
@@ -258,7 +258,7 @@ const FEATURE_REGISTRY: Omit<FeatureEntry, "available" | "missingRequired" | "mi
   {
     id: "council-chamber",
     name: "Council Chamber",
-    description: "6-pass Council of the Unserious curriculum generation as a background job. Same pipeline as Curriculum Factory. Output: Scope & Sequence → Pipeline Handoff JSON (emerald card) → Earl → B&B → Working Papers → Download full session transcript.",
+    description: "6-pass Council of the Unserious curriculum generation as a background job. Same pipeline as Curriculum Factory. Output: Scope & Sequence → Pipeline Handoff JSON (emerald card) → Earl → Silk → Working Papers → Download full session transcript.",
     page: "/council",
     apiRoutes: ["/api/jobs/create"],
     components: ["src/components/council-session-form.tsx", "src/components/council-chamber-viewer.tsx"],

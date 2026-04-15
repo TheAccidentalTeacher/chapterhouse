@@ -264,7 +264,7 @@ function ChatPage() {
         <li>• <span className="text-blue-400">Lt. Commander Data</span> — Auditor/analyst</li>
         <li>• <span className="text-emerald-400">Polgara</span> — Content director</li>
         <li>• <span className="text-orange-500">Earl Harbinger</span> — Operations commander</li>
-        <li>• <span className="text-gray-400">Beavis & Butthead</span> — Engagement stress-test</li>
+        <li>• <span className="text-purple-400">Silk</span> — Pattern-break analysis</li>
       </ul>
     </div>
   )
@@ -621,7 +621,7 @@ function CurriculumPage() {
         <li><strong className="text-blue-400">Lt. Commander Data</strong> audits against national standards</li>
         <li><strong className="text-emerald-400">Polgara</strong> synthesizes into production-ready version</li>
         <li><strong className="text-orange-500">Earl Harbinger</strong> assesses operational viability</li>
-        <li><strong className="text-gray-400">Beavis & Butthead</strong> stress-test engagement</li>
+        <li><strong className="text-purple-400">Silk</strong> stress-tests engagement patterns</li>
       </ol>
 
       <h2 className="text-2xl font-semibold text-gray-100 mt-8 mb-4">National Standards Auto-Alignment</h2>

@@ -316,7 +316,7 @@ async function runCouncilSession(
 
   const aiResponse = await getOpenAI().responses.create({
     model: "gpt-5.4",
-    input: `You are the Council of the Unserious (Gandalf, Data, Polgara, Earl, Beavis & Butthead). Scott Somers is asking for your collective wisdom.
+    input: `You are the Council of the Unserious (Gandalf, Data, Polgara, Earl, Silk). Scott Somers is asking for your collective wisdom.
 
 ${context ? `Context:\n${context}\n\n` : ""}Question: ${question}
 

@@ -251,7 +251,7 @@ const COUNCIL_MEMBERS = [
   { name: "Data",               color: "text-blue-300",    border: "border-blue-500/30",    bg: "bg-blue-500/5"    },
   { name: "Polgara",            color: "text-emerald-300", border: "border-emerald-500/30", bg: "bg-emerald-500/5" },
   { name: "Earl",               color: "text-orange-300",  border: "border-orange-500/30",  bg: "bg-orange-500/5"  },
-  { name: "Beavis & Butthead",  color: "text-zinc-300",    border: "border-zinc-600/40",    bg: "bg-zinc-800/50"   },
+  { name: "Silk",               color: "text-purple-300",  border: "border-purple-600/40",  bg: "bg-purple-800/50" },
 ];
 
 function CouncilSynthesisBlock({ synthesis }: { synthesis: string }) {

@@ -83,7 +83,7 @@ async function callCouncilMember(
   return block.type === "text" ? block.text : "";
 }
 
-// OpenAI-routed council members (Earl = GPT-5.4, Beavis = GPT-5-mini)
+// OpenAI-routed council members (Earl = GPT-5.4, Silk = GPT-5-mini)
 async function callWithOpenAI(
   member: CouncilMember,
   userMessage: string,
@@ -344,17 +344,17 @@ export async function runCurriculumFactory(
       "gpt-5.4"
     );
 
-    // Pass 5: Beavis & Butthead engagement test
-    await updateProgress(jobId, 75, "Pass 5/6: Beavis & Butthead engagement stress test...");
-    const beavisReport = await callWithOpenAI(
-      "beavis",
-      `Stress test this finalized scope and sequence for student engagement.\n\n` +
-      `For each unit, judge:\n` +
-      `- Overall: COOL, SUCKS, or MEH?\n` +
-      `- Which specific lessons would a kid actually like vs. zone out on?\n` +
-      `- Does the energy flow feel like a roller coaster (good) or a flatline (bad)?\n` +
-      `- Is there enough variety in lesson types or does it all feel the same?\n` +
-      `- Is the review lesson a game or a boring test?\n\n` +
+    // Pass 5: Silk — pattern-break analysis
+    await updateProgress(jobId, 75, "Pass 5/6: Silk pattern-break analysis...");
+    const silkReport = await callWithOpenAI(
+      "silk",
+      `Stress test this finalized scope and sequence. Read it as a spy who has smuggled\n` +
+      `information across borders — what hidden assumptions will break this in week six?\n\n` +
+      `For each unit, assess:\n` +
+      `- Hidden assumptions about the child, parent, or schedule\n` +
+      `- Will a real kid on a real Tuesday actually do this?\n` +
+      `- Where does the structure become a template instead of a tool?\n` +
+      `- What's the critical path item nobody named?\n\n` +
       `${polgaraFinal}`,
       "gpt-5-mini"
     );
@@ -433,7 +433,7 @@ export async function runCurriculumFactory(
       finalScopeAndSequence: polgaraFinal,
       structuredOutput: structuredJson,
       operationalAssessment: earlReport,
-      engagementReport: beavisReport,
+      engagementReport: silkReport,
       draftsRetained: {
         gandalfInitialDraft: gandalfDraft,
         dataCritique: dataCritique,

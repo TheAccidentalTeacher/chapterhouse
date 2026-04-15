@@ -53,7 +53,7 @@ function OutputViewer({ job }: { job: Job }) {
   const finalDoc = (output.finalScopeAndSequence as string) ?? null;
   const structuredOutput = (output.structuredOutput as Record<string, unknown>) ?? null;
   const earlReport = (output.operationalAssessment as string) ?? null;
-  const beavisReport = (output.engagementReport as string) ?? null;
+  const silkReport = (output.engagementReport as string) ?? null;
   const [showDrafts, setShowDrafts] = useState(false);
   const [showStructured, setShowStructured] = useState(false);
 
@@ -163,13 +163,13 @@ function OutputViewer({ job }: { job: Job }) {
         </div>
       )}
 
-      {beavisReport && (
+      {silkReport && (
         <div>
           <h4 className="text-sm font-semibold text-zinc-200 mb-2">
-            Beavis &amp; Butthead&apos;s Engagement Report
+            Silk&apos;s Pattern-Break Analysis
           </h4>
           <div className="bg-zinc-900 rounded-lg p-4 text-sm text-zinc-300 whitespace-pre-wrap font-mono max-h-64 overflow-y-auto border border-zinc-800">
-            {beavisReport}
+            {silkReport}
           </div>
         </div>
       )}

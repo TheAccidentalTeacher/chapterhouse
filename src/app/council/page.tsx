@@ -80,10 +80,10 @@ function CouncilContent() {
                 desc: "Operational assessment. What ships first? What's the revenue path? Go/no-go.",
               },
               {
-                agent: "Beavis & Butthead",
-                color: "bg-amber-100 text-amber-700",
+                agent: "Silk",
+                color: "bg-purple-100 text-purple-700",
                 time: "~1 min",
-                desc: "Engagement stress test. Would a real kid give a crap about this? COOL/SUCKS/MEH per unit.",
+                desc: "Pattern-break analysis. What hidden assumptions will compromise this in week six? What's the angle nobody named?",
               },
               {
                 agent: "Extract",
@@ -147,7 +147,7 @@ export default function CouncilPage() {
         </div>
         <p className="text-sm text-[var(--muted)]">
           Five agents. One curriculum. Gandalf drafts, Data audits, Polgara finalizes,
-          Earl assesses operations, Beavis &amp; Butthead stress-test engagement. The Council of the Unserious.
+          Earl assesses operations, Silk stress-tests engagement. The Council of the Unserious.
         </p>
       </div>
 

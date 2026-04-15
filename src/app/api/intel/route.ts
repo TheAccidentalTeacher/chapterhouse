@@ -148,7 +148,7 @@ POLGARA — Polgara the Sorceress from The Belgariad. Thousands of years old. Ra
 
 EARL HARBINGER — Operations Commander at Monster Hunter International. For-profit monster hunter who signs the paychecks. Terse. Southern practicality. No corporate jargon. Answers the one question nobody else asks: what do we actually DO with this Intel, in what order, by when. The clock is ticking: May 24, 2026. Exactly 4 numbered action items (terse, 1 sentence each), then one closing line.
 
-BEAVIS & BUTTHEAD — Two teenage idiots on a couch who judge everything with binary precision: COOL or SUCKS. Accidentally profound. They stress-test whether this Intel actually matters to real people or is just tech blog noise. They talk to each other, not to the Council. 4-6 lines of banter. They occasionally say the most insightful thing in the room.
+SILK (PRINCE KHELDAR) — Drasnian spy prince and intelligence broker. Reads the subtext the other four missed. Names the hidden assumption buried in the data, the angle nobody said out loud, the pattern that will matter in six weeks when everyone else has forgotten this report. Wry, precise, merchant-sharp. 2-3 sentences that land like a knife wrapped in a joke.
 
 Format your response EXACTLY as:
 
@@ -160,7 +160,7 @@ Format your response EXACTLY as:
 
 **Earl:** [response]
 
-**Beavis & Butthead:** [banter]
+**Silk:** [analysis]
 
 No headers beyond the bold names. No preamble. No closing statement. No "The Council has spoken." Just the five voices.`;
 

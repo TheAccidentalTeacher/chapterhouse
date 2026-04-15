@@ -10,7 +10,7 @@ const PASSES = [
   { id: "data",    label: "Data",              sub: "Audit",       minProgress: 18, dot: "bg-green-500",   ring: "ring-green-400",   text: "text-green-600",  active: "text-green-700" },
   { id: "polgara", label: "Polgara",           sub: "Finalize",    minProgress: 35, dot: "bg-fuchsia-500", ring: "ring-fuchsia-400", text: "text-fuchsia-600",active: "text-fuchsia-700" },
   { id: "earl",    label: "Earl",              sub: "Assess",      minProgress: 52, dot: "bg-amber-500",   ring: "ring-amber-400",   text: "text-amber-600",  active: "text-amber-700" },
-  { id: "beavis",  label: "B & B",             sub: "Stress-test", minProgress: 75, dot: "bg-purple-500",  ring: "ring-purple-400",  text: "text-purple-600", active: "text-purple-700" },
+  { id: "silk",    label: "Silk",              sub: "Pattern-break", minProgress: 75, dot: "bg-purple-500",  ring: "ring-purple-400",  text: "text-purple-600", active: "text-purple-700" },
   { id: "extract", label: "Extract",           sub: "Build JSON",  minProgress: 88, dot: "bg-emerald-500", ring: "ring-emerald-400", text: "text-emerald-600",active: "text-emerald-700" },
 ] as const;
 
@@ -311,13 +311,13 @@ export function CouncilChamberViewer({ job }: Props) {
             </details>
           )}
 
-          {/* 4. Beavis & Butthead's Engagement Report */}
+          {/* 4. Silk's Pattern-Break Analysis */}
           {!!output.engagementReport && (
             <details className="group">
               <summary className="cursor-pointer list-none flex items-center gap-2 hover:opacity-80 transition-opacity select-none">
                 <span className="group-open:rotate-90 transition-transform inline-block text-amber-500 text-xs">▶</span>
                 <span className="text-xs font-semibold text-amber-700 uppercase tracking-wide">
-                  Beavis &amp; Butthead&apos;s Engagement Report
+                  Silk&apos;s Pattern-Break Analysis
                 </span>
               </summary>
               <pre className="mt-2 bg-amber-50 border border-amber-100 rounded-xl p-4 text-xs leading-relaxed overflow-auto max-h-64 whitespace-pre-wrap">
@@ -368,7 +368,8 @@ export function CouncilChamberViewer({ job }: Props) {
                 `\n## Final Scope & Sequence\n${output.finalScopeAndSequence ?? ""}`,
                 jsonBlock,
                 `\n## Earl's Operational Assessment\n${output.operationalAssessment ?? ""}`,
-                `\n## Beavis & Butthead's Engagement Report\n${output.engagementReport ?? ""}`,
+                `\n## Silk's Pattern-Break Analysis\n${output.engagementReport ?? ""}`,
+
                 `\n## Gandalf's Initial Draft\n${output.draftsRetained?.gandalfInitialDraft ?? ""}`,
                 `\n## Data's Critique\n${output.draftsRetained?.dataCritique ?? ""}`,
               ].join("\n\n");
