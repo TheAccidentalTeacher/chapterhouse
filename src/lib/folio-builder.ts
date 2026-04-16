@@ -73,7 +73,7 @@ export async function buildFolioEntry(date: Date = new Date()): Promise<{ id: st
         priorityItems.push({ content: n.content as string, source: "founder_notes", type: n.category as string ?? "general" });
       }
     }
-  } catch { /* ignore */ }
+  } catch (e) { console.warn("[folio-builder] source query failed:", e); }
 
   // ── PRIORITY 2: Manually-Added Dreams ────────────────────────────────────
   try {
@@ -95,7 +95,7 @@ export async function buildFolioEntry(date: Date = new Date()): Promise<{ id: st
         priorityItems.push({ content: d.title as string, source: "dreams", type: d.category as string ?? "idea" });
       }
     }
-  } catch { /* ignore */ }
+  } catch (e) { console.warn("[folio-builder] source query failed:", e); }
 
   // ── PRIORITY 3: Manually-Added Research (last 7 days) ────────────────────
   try {
@@ -118,7 +118,7 @@ export async function buildFolioEntry(date: Date = new Date()): Promise<{ id: st
         priorityItems.push({ content: (r.title || r.url) as string, source: "research_manual", type: "research" });
       }
     }
-  } catch { /* ignore */ }
+  } catch (e) { console.warn("[folio-builder] source query failed:", e); }
 
   // ── PRIORITY 4: Manual Intel Sessions (last 48h) ──────────────────────────
   try {
@@ -143,7 +143,7 @@ export async function buildFolioEntry(date: Date = new Date()): Promise<{ id: st
       }).join("\n\n");
       priorityBlocks.push(`## ⭐ PRIORITY: Intel Sessions — Manually Submitted (${manualIntel.length})\n\n${lines}`);
     }
-  } catch { /* ignore */ }
+  } catch (e) { console.warn("[folio-builder] source query failed:", e); }
 
   // ── STANDARD: Latest Brief ────────────────────────────────────────────────
   try {
@@ -167,7 +167,7 @@ export async function buildFolioEntry(date: Date = new Date()): Promise<{ id: st
         : "";
       standardBlocks.push(`## Daily Brief (${brief.brief_date})\n\n**${brief.title}**\n\n${brief.summary ?? ""}\n\n${sectionText}`);
     }
-  } catch { /* ignore */ }
+  } catch (e) { console.warn("[folio-builder] source query failed:", e); }
 
   // ── STANDARD: All Intel Sessions (last 48h) ───────────────────────────────
   try {
@@ -193,7 +193,7 @@ export async function buildFolioEntry(date: Date = new Date()): Promise<{ id: st
       }).filter(Boolean).join("\n\n");
       standardBlocks.push(`## Intel Sessions (last 48h) — ${allIntel.length} sessions\n\n${lines}`);
     }
-  } catch { /* ignore */ }
+  } catch (e) { console.warn("[folio-builder] source query failed:", e); }
 
   // ── STANDARD: Action-Required Emails ─────────────────────────────────────
   try {
@@ -213,7 +213,7 @@ export async function buildFolioEntry(date: Date = new Date()): Promise<{ id: st
       ).join("\n");
       standardBlocks.push(`## Action-Required Emails (last 24h) — ${emails.length} items\n\n${lines}`);
     }
-  } catch { /* ignore */ }
+  } catch (e) { console.warn("[folio-builder] source query failed:", e); }
 
   // ── STANDARD: Top Opportunities ───────────────────────────────────────────
   try {
@@ -231,7 +231,7 @@ export async function buildFolioEntry(date: Date = new Date()): Promise<{ id: st
       ).join("\n");
       standardBlocks.push(`## Open Opportunities — ${opps.length} items\n\n${lines}`);
     }
-  } catch { /* ignore */ }
+  } catch (e) { console.warn("[folio-builder] source query failed:", e); }
 
   // ── STANDARD: Tasks ───────────────────────────────────────────────────────
   try {
@@ -249,7 +249,7 @@ export async function buildFolioEntry(date: Date = new Date()): Promise<{ id: st
       ).join("\n");
       standardBlocks.push(`## Active Tasks — ${tasks.length} items\n\n${lines}`);
     }
-  } catch { /* ignore */ }
+  } catch (e) { console.warn("[folio-builder] source query failed:", e); }
 
   // ── STANDARD: All Dreams ──────────────────────────────────────────────────
   try {
@@ -267,7 +267,7 @@ export async function buildFolioEntry(date: Date = new Date()): Promise<{ id: st
       ).join("\n");
       standardBlocks.push(`## Dreamer Board — ${allDreams.length} active items\n\n${lines}`);
     }
-  } catch { /* ignore */ }
+  } catch (e) { console.warn("[folio-builder] source query failed:", e); }
 
   // ── STANDARD: Recent Research ────────────────────────────────────────────
   try {
@@ -286,7 +286,7 @@ export async function buildFolioEntry(date: Date = new Date()): Promise<{ id: st
       ).join("\n");
       standardBlocks.push(`## Research Library (last 7 days) — ${research.length} items\n\n${lines}`);
     }
-  } catch { /* ignore */ }
+  } catch (e) { console.warn("[folio-builder] source query failed:", e); }
 
   // ── STANDARD: Knowledge Summaries ────────────────────────────────────────
   try {
@@ -301,7 +301,7 @@ export async function buildFolioEntry(date: Date = new Date()): Promise<{ id: st
       const lines = summaries.map((s) => `### ${s.tag} (${s.item_count} items)\n${s.summary}`).join("\n\n");
       standardBlocks.push(`## Knowledge Summaries — ${summaries.length} topics\n\n${lines}`);
     }
-  } catch { /* ignore */ }
+  } catch (e) { console.warn("[folio-builder] source query failed:", e); }
 
   // ── Assemble Full Context for Claude ────────────────────────────────────
   const daysRemaining = Math.ceil((new Date("2026-05-24").getTime() - Date.now()) / (1000 * 60 * 60 * 24));

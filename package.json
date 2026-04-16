@@ -26,7 +26,7 @@
     "@upstash/qstash": "^2.9.0",
     "@upstash/redis": "^1.37.0",
     "date-fns": "^4.1.0",
-    "html-to-docx": "^1.8.0",
+    "docx": "^9.6.1",
     "imapflow": "^1.2.15",
     "langfuse": "^3.38.20",
     "lucide-react": "^0.577.0",

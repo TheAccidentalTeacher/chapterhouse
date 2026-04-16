@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { marked } from "marked";
 import { handleRouteError } from "@/lib/route-helpers";
 import { createClient } from "@supabase/supabase-js";
+import { markdownToDocx } from "@/lib/docx-builder";
 
 const exportSchema = z.object({
   document_id: z.string().uuid(),
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     // Fetch document
     const { data: doc, error: fetchError } = await supabase
       .from("documents")
-      .select("id, title, content, content_html, export_history")
+      .select("id, title, content, doc_type, export_history")
       .eq("id", document_id)
       .single();
 
@@ -66,40 +66,15 @@ export async function POST(req: Request) {
     }
 
     if (format === "docx") {
-      // Convert markdown to HTML, then to DOCX via html-to-docx
-      const html =
-        doc.content_html ||
-        (marked.parse(doc.content || "", { async: false }) as string);
+      // Programmatic .docx generation via docx library
+      // Replaces html-to-docx — native Word XML elements, not HTML conversion
+      const docxBuffer = await markdownToDocx(
+        doc.title || "Untitled",
+        doc.content || "",
+        doc.doc_type as string | undefined
+      );
 
-      // html-to-docx expects a full HTML string
-      const styledHtml = `
-        <html><head><style>
-          body { font-family: Calibri, sans-serif; font-size: 11pt; line-height: 1.5; }
-          h1 { font-size: 20pt; font-weight: bold; margin-top: 24pt; margin-bottom: 8pt; }
-          h2 { font-size: 16pt; font-weight: bold; margin-top: 18pt; margin-bottom: 6pt; }
-          h3 { font-size: 13pt; font-weight: bold; margin-top: 14pt; margin-bottom: 4pt; }
-          table { width: 100%; border-collapse: collapse; }
-          th, td { border: 1px solid #ccc; padding: 4pt 8pt; }
-          blockquote { border-left: 3px solid #2563eb; padding-left: 12pt; color: #555; }
-        </style></head><body>
-        <h1>${escapeHtml(doc.title || "Untitled")}</h1>
-        ${html}
-        </body></html>
-      `;
-
-      const HTMLtoDOCX = (await import("html-to-docx")).default;
-      const docxBuffer = await HTMLtoDOCX(styledHtml, null, {
-        table: { row: { cantSplit: true } },
-        footer: true,
-        pageNumber: true,
-      });
-
-      // html-to-docx returns a Buffer — convert to Uint8Array for Web Response compat
-      const uint8 = Buffer.isBuffer(docxBuffer)
-        ? new Uint8Array(docxBuffer)
-        : new Uint8Array(docxBuffer as unknown as ArrayBuffer);
-
-      return new Response(uint8 as BodyInit, {
+      return new Response(new Uint8Array(docxBuffer), {
         headers: {
           "Content-Type":
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -120,12 +95,4 @@ function slugify(text: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
     .slice(0, 60);
-}
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }

@@ -3,11 +3,16 @@ import { getSupabaseServiceRoleClient } from "@/lib/supabase-server";
 
 export const maxDuration = 300; // Claude synthesis can take a few minutes
 
-export async function POST(request: Request) {
+/**
+ * Shared handler for both GET (Vercel cron) and POST (manual UI trigger).
+ * Vercel crons send GET requests — without this, the daily Folio never builds.
+ */
+async function handleFolioBuild(request: Request) {
   try {
     // Auth: CRON_SECRET bearer token or authenticated Supabase session
     const authHeader = request.headers.get("authorization") ?? "";
-    const isCron = authHeader === `Bearer ${process.env.CRON_SECRET}`;
+    const cronSecret = process.env.CRON_SECRET;
+    const isCron = !!cronSecret && authHeader === `Bearer ${cronSecret}`;
 
     if (!isCron) {
       // Fall back to Supabase session check for manual UI triggers
@@ -37,4 +42,14 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
+}
+
+// Vercel crons send GET requests
+export async function GET(request: Request) {
+  return handleFolioBuild(request);
+}
+
+// Manual UI triggers send POST requests
+export async function POST(request: Request) {
+  return handleFolioBuild(request);
 }
