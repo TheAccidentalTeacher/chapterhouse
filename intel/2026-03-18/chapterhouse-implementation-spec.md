@@ -10,11 +10,10 @@
 
 Before touching a single file, the code bot must read all of the following. Do not skip any of them. Do not skim.
 
-1. **`intel/chapterhouse-evolution-handoff.md`** — the strategic context for why this exists and where it's going
-2. **`reference/CHAPTERHOUSE-CLAUDE.md`** — the existing operational guidelines for the Chapterhouse repo
-3. **`reference/COPILOT-EXTENDED-CONTEXT.md`** — the full business context (all three businesses, all constraints)
-4. **`intel/2026-03-18/chapterhouse-brainstorm-interview.md`** — the complete voice-dictated Q&A that produced this spec. Read the SYNTHESIS and all Round 2 gap answers.
-5. **`intel/2026-03-18/chapterhouse-vs-dreamfloor.md`** — the strategic comparison that defines what "done" looks like
+1. **`CLAUDE.md`** — the living technical brief for the Chapterhouse repo (routes, tables, env vars, build history)
+2. **`.github/copilot-instructions.md`** — the full identity brain: Scott's background, all repos, three business tracks, Council personas, locked decisions
+3. **`intel/2026-03-18/chapterhouse-brainstorm-interview.md`** — the complete voice-dictated Q&A that produced this spec. Read the SYNTHESIS and all Round 2 gap answers.
+4. **`intel/2026-03-18/chapterhouse-vs-dreamfloor.md`** — the strategic comparison that defines what "done" looks like
 
 Then read the Chapterhouse codebase itself:
 - `src/app/api/chat/route.ts` — the streaming chat route (primary surface to upgrade)
@@ -962,7 +961,7 @@ The **Council of the Unserious** is different — it's Scott's strategic advisor
 |---|---|---|
 | Where | `/council` page | Main chat (`/`) |
 | How | Background job → Railway worker | Live streaming SSE in chat |
-| Members | Gandalf / Legolas / Aragorn / Gimli / Frodo | Gandalf (strategist) + Data + Polgara + Earl + Beavis & Butthead |
+| Members | Gandalf / Legolas / Aragorn / Gimli / Frodo | Gandalf (strategist) + Data + Polgara + Earl + Silk (Prince Kheldar) |
 | Purpose | Produce curriculum documents | Strategic advice, dream shaping, business decisions |
 | Speed | ~10 min async | Real-time, seconds per voice |
 | Default on? | No — user initiates | Yes — 2 always-on companions (Calvin & Hobbes) |
@@ -1179,6 +1178,8 @@ Earl knows about countdowns. Earl knows about May 24, 2026.
 Default mode: What ships on Monday?
 ```
 
+> [LEGACY — Beavis & Butthead replaced by Silk (Prince Kheldar) in Phase 11. Prompts below are historical reference only.]
+
 **Beavis (engagement tester)**:
 ```markdown
 # Beavis — The Engagement Heat Sensor
@@ -1360,7 +1361,7 @@ Add a toggle button in the chat toolbar:
 When "Council" is clicked:
 - Dropdown opens showing checkboxes for each non-curriculum persona
 - Default companions (Calvin & Hobbes) are pre-checked and labeled "(always on)"
-- Other council members (Gandalf, Data, Polgara, Earl, Beavis, Butthead) can be checked
+- Other council members (Gandalf, Data, Polgara, Earl, Silk) can be checked
 - Bench personas available but grayed out with "Coming soon"
 - Optional goal text field at the top: "What are we deciding today? (optional)"
 - [Start Council Session] button

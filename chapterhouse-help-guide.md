@@ -35,7 +35,7 @@ Chapterhouse has twenty-one screens organized in six sidebar groups. Here's what
 
 **Council Mode:** Click the amber **Council** pill button next to the text input to toggle Council Mode on/off:
 - **Solo mode** (default) — one AI model responds, like a normal chat
-- **Council mode** — your question goes to the Council of the Unserious (Gandalf, Lt. Commander Data, Polgara, Earl Harbinger, and Beavis & Butthead). Each responds in character, with colored avatar bubbles. After the initial round, a **rebuttal round** follows where members respond to each other.
+- **Council mode** — your question goes to the Council of the Unserious (Gandalf, Lt. Commander Data, Polgara, Earl Harbinger, and Silk). Each responds in character, with colored avatar bubbles. After the initial round, a **rebuttal round** follows where members respond to each other.
 
 **Special trick:** Type `/remember [any fact]` and the system will memorize it permanently. Example: `/remember We decided to launch the first curriculum guide by September`. That fact then gets included in every future chat automatically.
 
@@ -374,7 +374,7 @@ Each task shows where it came from (brief, opportunity, or manual) so you always
   2. **Lt. Commander Data** audits it against national standards (CCSS-ELA, CCSS-M, NGSS, or C3)
   3. **Polgara** synthesizes Gandalf + Data into a production-ready, child-first final version
   4. **Earl Harbinger** assesses operational viability — build order, revenue, minimum viable version
-  5. **Beavis & Butthead** stress-test engagement — COOL/SUCKS/MEH per unit
+  5. **Silk (Prince Kheldar)** stress-tests the hidden assumption — names what no one said
 - View the final output as rendered Markdown, download as HTML/PDF/DOCX, or copy to clipboard
 
 **National standards auto-alignment:** Standards are auto-detected from the subject field. ELA → CCSS-ELA, Math → CCSS-M, Science → NGSS, Social Studies → C3 Framework. No manual input needed.
@@ -385,7 +385,7 @@ Each task shows where it came from (brief, opportunity, or manual) so you always
 
 ### 17. Council Chamber
 
-**What it is:** A purpose-built 5-agent system for generating curriculum scope & sequences as a background job. Uses the full Council of the Unserious (Gandalf → Data → Polgara → Earl → Beavis & Butthead) as a longer, more thorough process.
+**What it is:** A purpose-built 5-agent system for generating curriculum scope & sequences as a background job. Uses the full Council of the Unserious (Gandalf → Data → Polgara → Earl → Silk) as a longer, more thorough process.
 
 **How to use it:**
 - Select subject, grade, and duration
@@ -572,7 +572,7 @@ Items scoring ≥2 on 2+ tracks become **"⚡ Collisions"** flagged at the top o
 | **Who can access this?** | Only scott@nextchapterhomeschool.com and anna@nextchapterhomeschool.com (or personal Gmail accounts) |
 | **Where does it live?** | chapterhouse.vercel.app |
 | **Is my data private?** | Yes — stored in your private Supabase (PostgreSQL) database in us-west-2. No one else has access. |
-| **What AI models are used?** | **Chat:** GPT-5.4 (solo) or Claude Sonnet 4.6 (trio roles). **Council:** Gandalf + Data + Polgara (Claude Sonnet 4.6), Earl (GPT-5.4), Beavis & Butthead (GPT-5-mini). **Brief:** Claude Haiku 4.5 (collision scoring). **Email:** Claude Haiku 4.5 (categorize, draft replies), Claude Sonnet 4.6 (digest). **Social:** Claude Sonnet 4.6. **YouTube:** Gemini 2.5 Flash (transcripts). **Curriculum:** All Council members + Extract (Claude Sonnet 4.6). |
+| **What AI models are used?** | **Chat:** GPT-5.4 (solo) or Claude Sonnet 4.6 (trio roles). **Council:** Gandalf + Data + Polgara (Claude Sonnet 4.6), Earl (GPT-5.4), Silk (GPT-5-mini). **Brief:** Claude Haiku 4.5 (collision scoring). **Email:** Claude Haiku 4.5 (categorize, draft replies), Claude Sonnet 4.6 (digest). **Social:** Claude Sonnet 4.6. **YouTube:** Gemini 2.5 Flash (transcripts). **Curriculum:** All Council members + Extract (Claude Sonnet 4.6). |
 | **Approximate monthly cost?** | ~$15–25 Vercel Pro + ~$50–100 AI API usage (briefs, chat, email, social, YouTube, curriculum) depending on usage volume. |
 | **How do I sign out?** | Click the door icon (top right of page header) |
 | **How do I teach it something?** | Type `/remember [fact]` in Chat. Or go to Settings → Founder Memory → Add. Or use Context Brain to edit copilot-instructions.md directly. |
