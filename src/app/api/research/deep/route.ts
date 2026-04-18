@@ -95,38 +95,59 @@ export async function POST(request: Request) {
       });
     }
 
-    // Step 2: AI synthesis
-    const { synthesis, tokensUsed, model } = await synthesizeResults(
-      query,
-      results,
-      analysisDepth
-    );
+    // Step 2: AI synthesis (with timeout protection)
+    console.log("[deep-research] Starting synthesis, depth:", analysisDepth, "results:", results.length);
+    let synthesis: string;
+    let tokensUsed: number;
+    let model: string;
+    try {
+      const synthPromise = synthesizeResults(query, results, analysisDepth);
+      const synthTimeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Synthesis timeout after 90s")), 90_000)
+      );
+      const synthResult = await Promise.race([synthPromise, synthTimeout]);
+      synthesis = synthResult.synthesis;
+      tokensUsed = synthResult.tokensUsed;
+      model = synthResult.model;
+    } catch (synthError) {
+      console.error("[deep-research] Synthesis failed:", synthError);
+      // Return raw results without synthesis
+      const rawSummary = results.slice(0, 10).map((r, i) =>
+        `**[${i+1}] ${r.title}** (${r.source})\n${r.url}\n${r.content?.slice(0, 300) || ""}`
+      ).join("\n\n---\n\n");
+      synthesis = `AI synthesis timed out, but here are the raw results:\n\n${rawSummary}`;
+      tokensUsed = 0;
+      model = "timeout-fallback";
+    }
+    console.log("[deep-research] Synthesis complete, model:", model);
 
-    // Step 3: Auto-save to research_items
+    // Step 3: Auto-save to research_items (parallel, non-blocking)
     const supabase = getSupabaseServiceRoleClient();
     let savedCount = 0;
     if (supabase) {
-      for (const r of results.slice(0, 15)) {
-        try {
-          const { data: existing } = await supabase
-            .from("research_items")
-            .select("id")
-            .eq("url", r.url)
-            .maybeSingle();
-          if (existing) continue;
-
-          const { error } = await supabase.from("research_items").insert({
-            url: r.url,
-            title: r.title,
-            summary: r.content?.slice(0, 500) || r.title,
-            verdict: `Found via deep research: "${query}" [${r.source}]`,
-            tags: ["deep-research", r.source],
-            status: "review",
-          });
-          if (!error) savedCount++;
-        } catch {
-          // Skip individual save errors
-        }
+      try {
+        const saveResults = await Promise.allSettled(
+          results.slice(0, 15).map(async (r) => {
+            const { data: existing } = await supabase
+              .from("research_items")
+              .select("id")
+              .eq("url", r.url)
+              .maybeSingle();
+            if (existing) return false;
+            const { error } = await supabase.from("research_items").insert({
+              url: r.url,
+              title: r.title,
+              summary: r.content?.slice(0, 500) || r.title,
+              verdict: `Found via deep research: "${query}" [${r.source}]`,
+              tags: ["deep-research", r.source],
+              status: "review",
+            });
+            return !error;
+          })
+        );
+        savedCount = saveResults.filter(r => r.status === "fulfilled" && r.value).length;
+      } catch {
+        // Non-critical — don't fail the response
       }
     }
 

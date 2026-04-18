@@ -133,7 +133,7 @@ async function searchInternetArchive(query: string, limit: number): Promise<Sear
   try {
     const bookRes = await fetch(
       `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=${Math.ceil(limit / 2)}`,
-      { signal: AbortSignal.timeout(15_000) }
+      { signal: AbortSignal.timeout(8_000) }
     );
     if (bookRes.ok) {
       const bookData = await bookRes.json();
@@ -168,7 +168,7 @@ async function searchInternetArchive(query: string, limit: number): Promise<Sear
   try {
     const archiveRes = await fetch(
       `https://archive.org/advancedsearch.php?q=${encodeURIComponent(query)}&output=json&rows=${Math.ceil(limit / 2)}&fl[]=identifier&fl[]=title&fl[]=description&fl[]=creator`,
-      { signal: AbortSignal.timeout(15_000) }
+      { signal: AbortSignal.timeout(8_000) }
     );
     if (archiveRes.ok) {
       const archiveData = await archiveRes.json();
