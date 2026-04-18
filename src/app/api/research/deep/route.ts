@@ -34,10 +34,16 @@ export const maxDuration = 300;
  * deduplicates results, synthesizes with AI, and auto-saves to research_items.
  */
 export async function POST(request: Request) {
+  const t0 = Date.now();
+  const log = (phase: string, ...args: unknown[]) =>
+    console.log(`[deep-research][${phase}][${Date.now() - t0}ms]`, ...args);
+
   try {
+    log("init", "POST received");
     const body = await request.json();
     const query = typeof body.query === "string" ? body.query.trim() : "";
     if (query.length < 5 || query.length > 500) {
+      log("init", "REJECTED — query length:", query.length);
       return Response.json(
         { error: "query must be 5-500 characters" },
         { status: 400 }
@@ -57,8 +63,10 @@ export async function POST(request: Request) {
       ? body.analysisDepth
       : "standard";
 
-    // Step 1: Parallel multi-source search (with global safety timeout)
-    console.log("[deep-research] Starting search for:", query, "sources:", sources.join(", "));
+    log("init", `query="${query.slice(0, 80)}" sources=[${sources}] depth=${analysisDepth} maxPerSource=${maxResultsPerSource}`);
+
+    // ── Step 1: Parallel multi-source search ──
+    log("search", "START");
     let results: SearchResult[];
     let sourcesSearched: string[];
     let searchDuration: number;
@@ -71,8 +79,9 @@ export async function POST(request: Request) {
       results = searchResult.results;
       sourcesSearched = searchResult.sourcesSearched;
       searchDuration = searchResult.searchDuration;
+      log("search", `DONE — ${results.length} results from [${sourcesSearched}] in ${searchDuration}ms`);
     } catch (searchError) {
-      console.error("[deep-research] Search phase failed:", searchError);
+      log("search", "FAILED:", String(searchError));
       return Response.json({
         query,
         sourcesSearched: [],
@@ -80,11 +89,12 @@ export async function POST(request: Request) {
         synthesis: `Search failed: ${String(searchError)}. Try again with fewer sources or a shorter query.`,
         sources: [],
         metadata: { searchDuration: 0, tokensUsed: 0, model: "none" },
+        _debug: { totalMs: Date.now() - t0, phase: "search", error: String(searchError) },
       });
     }
-    console.log("[deep-research] Search complete:", results.length, "results from", sourcesSearched.join(", "), "in", searchDuration, "ms");
 
     if (results.length === 0) {
+      log("search", "ZERO results — returning early");
       return Response.json({
         query,
         sourcesSearched,
@@ -92,11 +102,13 @@ export async function POST(request: Request) {
         synthesis: "No results found across any source.",
         sources: [],
         metadata: { searchDuration, tokensUsed: 0, model: "none" },
+        _debug: { totalMs: Date.now() - t0, phase: "search-empty" },
       });
     }
 
-    // Step 2: AI synthesis (with timeout protection)
-    console.log("[deep-research] Starting synthesis, depth:", analysisDepth, "results:", results.length);
+    // ── Step 2: AI synthesis ──
+    const inputChars = results.slice(0, 20).reduce((n, r) => n + (r.content?.length || 0), 0);
+    log("synth", `START — depth=${analysisDepth}, feeding ${results.length} results (~${inputChars} chars)`);
     let synthesis: string;
     let tokensUsed: number;
     let model: string;
@@ -109,9 +121,9 @@ export async function POST(request: Request) {
       synthesis = synthResult.synthesis;
       tokensUsed = synthResult.tokensUsed;
       model = synthResult.model;
+      log("synth", `DONE — model=${model}, tokens=${tokensUsed}, synthLen=${synthesis.length}`);
     } catch (synthError) {
-      console.error("[deep-research] Synthesis failed:", synthError);
-      // Return raw results without synthesis
+      log("synth", "FAILED:", String(synthError));
       const rawSummary = results.slice(0, 10).map((r, i) =>
         `**[${i+1}] ${r.title}** (${r.source})\n${r.url}\n${r.content?.slice(0, 300) || ""}`
       ).join("\n\n---\n\n");
@@ -119,9 +131,9 @@ export async function POST(request: Request) {
       tokensUsed = 0;
       model = "timeout-fallback";
     }
-    console.log("[deep-research] Synthesis complete, model:", model);
 
-    // Step 3: Auto-save to research_items (parallel, non-blocking)
+    // ── Step 3: Auto-save to research_items ──
+    log("save", "START");
     const supabase = getSupabaseServiceRoleClient();
     let savedCount = 0;
     if (supabase) {
@@ -147,9 +159,13 @@ export async function POST(request: Request) {
         );
         savedCount = saveResults.filter(r => r.status === "fulfilled" && r.value).length;
       } catch {
-        // Non-critical — don't fail the response
+        // Non-critical
       }
     }
+    log("save", `DONE — saved ${savedCount} new items`);
+
+    const totalMs = Date.now() - t0;
+    log("done", `TOTAL ${totalMs}ms — search=${searchDuration}ms, results=${results.length}, saved=${savedCount}`);
 
     return Response.json({
       query,
@@ -170,10 +186,15 @@ export async function POST(request: Request) {
         tokensUsed,
         model,
       },
+      _debug: { totalMs, searchMs: searchDuration, savedCount, model },
     });
   } catch (error) {
-    console.error("[deep-research] Error:", error);
-    return Response.json({ error: String(error) }, { status: 500 });
+    const totalMs = Date.now() - t0;
+    console.error(`[deep-research][CRASH][${totalMs}ms]`, error);
+    return Response.json(
+      { error: String(error), _debug: { totalMs, phase: "uncaught" } },
+      { status: 500 }
+    );
   }
 }
 
@@ -229,6 +250,7 @@ ${depthInstructions[depth]}`;
   try {
     if (depth === "quick") {
       // GPT-5-mini for speed
+      console.log("[deep-research][synth-inner] Calling GPT-4o-mini...");
       const openai = getOpenAI();
       const response = await openai.responses.create({
         model: "gpt-4o-mini",
@@ -242,6 +264,7 @@ ${depthInstructions[depth]}`;
       };
     } else {
       // Claude Sonnet for standard/deep
+      console.log(`[deep-research][synth-inner] Calling claude-sonnet-4-6, max_tokens=${depth === "deep" ? 4096 : 2048}, input ~${sourceSummaries.length} chars...`);
       const anthropic = getAnthropic();
       const response = await anthropic.messages.create({
         model: "claude-sonnet-4-6",

@@ -212,7 +212,21 @@ export async function orchestrateSearch(
 
   // Fire all selected sources in parallel
   const activeSearches = sources.filter((s) => searchMap[s]);
-  const settled = await Promise.allSettled(activeSearches.map((s) => searchMap[s]()));
+  console.log(`[search-orch] Firing ${activeSearches.length} sources in parallel:`, activeSearches.join(", "));
+
+  const settled = await Promise.allSettled(
+    activeSearches.map(async (s) => {
+      const sourceStart = Date.now();
+      try {
+        const results = await searchMap[s]();
+        console.log(`[search-orch] ${s}: ${results.length} results in ${Date.now() - sourceStart}ms`);
+        return results;
+      } catch (err) {
+        console.error(`[search-orch] ${s}: FAILED in ${Date.now() - sourceStart}ms —`, String(err));
+        throw err;
+      }
+    })
+  );
 
   const allResults: SearchResult[] = [];
   const sourcesSearched: string[] = [];
