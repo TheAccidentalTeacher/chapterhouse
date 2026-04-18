@@ -24,6 +24,9 @@ const VALID_SOURCES: SearchSource[] = [
 const VALID_DEPTHS = ["quick", "standard", "deep"] as const;
 type AnalysisDepth = (typeof VALID_DEPTHS)[number];
 
+// Route segment config — belt-and-suspenders with vercel.json
+export const maxDuration = 120;
+
 /**
  * POST /api/research/deep
  *
@@ -55,11 +58,13 @@ export async function POST(request: Request) {
       : "standard";
 
     // Step 1: Parallel multi-source search
+    console.log("[deep-research] Starting search for:", query, "sources:", sources.join(", "));
     const { results, sourcesSearched, searchDuration } = await orchestrateSearch(
       query,
       sources,
       maxResultsPerSource
     );
+    console.log("[deep-research] Search complete:", results.length, "results from", sourcesSearched.join(", "), "in", searchDuration, "ms");
 
     if (results.length === 0) {
       return Response.json({
