@@ -25,7 +25,7 @@ const VALID_DEPTHS = ["quick", "standard", "deep"] as const;
 type AnalysisDepth = (typeof VALID_DEPTHS)[number];
 
 // Route segment config — belt-and-suspenders with vercel.json
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 /**
  * POST /api/research/deep
@@ -57,13 +57,31 @@ export async function POST(request: Request) {
       ? body.analysisDepth
       : "standard";
 
-    // Step 1: Parallel multi-source search
+    // Step 1: Parallel multi-source search (with global safety timeout)
     console.log("[deep-research] Starting search for:", query, "sources:", sources.join(", "));
-    const { results, sourcesSearched, searchDuration } = await orchestrateSearch(
-      query,
-      sources,
-      maxResultsPerSource
-    );
+    let results: SearchResult[];
+    let sourcesSearched: string[];
+    let searchDuration: number;
+    try {
+      const searchPromise = orchestrateSearch(query, sources, maxResultsPerSource);
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Search timeout after 60s")), 60_000)
+      );
+      const searchResult = await Promise.race([searchPromise, timeoutPromise]);
+      results = searchResult.results;
+      sourcesSearched = searchResult.sourcesSearched;
+      searchDuration = searchResult.searchDuration;
+    } catch (searchError) {
+      console.error("[deep-research] Search phase failed:", searchError);
+      return Response.json({
+        query,
+        sourcesSearched: [],
+        totalResults: 0,
+        synthesis: `Search failed: ${String(searchError)}. Try again with fewer sources or a shorter query.`,
+        sources: [],
+        metadata: { searchDuration: 0, tokensUsed: 0, model: "none" },
+      });
+    }
     console.log("[deep-research] Search complete:", results.length, "results from", sourcesSearched.join(", "), "in", searchDuration, "ms");
 
     if (results.length === 0) {

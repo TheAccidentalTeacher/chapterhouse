@@ -34,7 +34,7 @@ async function searchTavily(query: string, limit: number): Promise<SearchResult[
       include_raw_content: false,
       search_depth: "advanced",
     }),
-    signal: AbortSignal.timeout(20_000),
+    signal: AbortSignal.timeout(10_000),
   });
 
   if (!res.ok) return [];
@@ -63,7 +63,7 @@ async function searchSerpApi(query: string, limit: number): Promise<SearchResult
   });
 
   const res = await fetch(`https://serpapi.com/search.json?${params}`, {
-    signal: AbortSignal.timeout(15_000),
+    signal: AbortSignal.timeout(10_000),
   });
 
   if (!res.ok) return [];
@@ -110,7 +110,7 @@ async function searchNewsApi(query: string, limit: number): Promise<SearchResult
   });
 
   const res = await fetch(`https://newsapi.org/v2/everything?${params}`, {
-    signal: AbortSignal.timeout(15_000),
+    signal: AbortSignal.timeout(10_000),
   });
 
   if (!res.ok) return [];

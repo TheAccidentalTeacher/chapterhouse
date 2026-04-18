@@ -122,7 +122,7 @@
       "maxDuration": 120
     },
     "src/app/api/research/deep/route.ts": {
-      "maxDuration": 120
+      "maxDuration": 300
     }
   }
 }

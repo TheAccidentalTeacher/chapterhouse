@@ -62,7 +62,7 @@ export async function searchReddit(
         Authorization: `Bearer ${token}`,
         "User-Agent": "Chapterhouse/1.0 by /u/TheAccidentalTeacher",
       },
-      signal: AbortSignal.timeout(15_000),
+      signal: AbortSignal.timeout(8_000),
     }
   );
 
