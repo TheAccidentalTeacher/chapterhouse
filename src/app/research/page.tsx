@@ -641,7 +641,21 @@ export default function ResearchPage() {
                 ))}
               </div>
 
-              {/* Depth + query */}
+              {/* Query — full-width, prominent */}
+              <input
+                value={deepQuery}
+                onChange={(e) => setDeepQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !deepSearching && deepQuery.trim() && deepSources.length > 0) {
+                    e.currentTarget.closest("div")?.querySelector("button")?.click();
+                  }
+                }}
+                placeholder="What do you want to research? e.g. best 4/20 dry herb vape deals 2025…"
+                className="w-full rounded-xl border border-accent/40 bg-muted-surface px-4 py-3 text-base text-foreground placeholder:text-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/30"
+                autoFocus
+              />
+
+              {/* Depth + run */}
               <div className="flex gap-3">
                 <select
                   value={deepDepth}
@@ -652,12 +666,6 @@ export default function ResearchPage() {
                   <option value="standard">Standard</option>
                   <option value="deep">Deep</option>
                 </select>
-                <input
-                  value={deepQuery}
-                  onChange={(e) => setDeepQuery(e.target.value)}
-                  placeholder="e.g. Alaska homeschool allotment regulations 2026…"
-                  className="flex-1 rounded-xl border border-border/70 bg-muted-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-accent/40 focus:outline-none"
-                />
                 <button
                   type="button"
                   disabled={deepSearching || !deepQuery.trim() || deepSources.length === 0}
