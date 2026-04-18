@@ -87,6 +87,7 @@ export default function ResearchPage() {
   const [deepDepth, setDeepDepth] = useState<"quick" | "standard" | "deep">("standard");
   const [deepSources, setDeepSources] = useState<string[]>(["tavily", "serpapi", "reddit", "newsapi", "internet-archive"]);
   const [deepResult, setDeepResult] = useState<{ synthesis: string; sources: { url: string; title: string; source: string; excerpt: string; relevanceScore: number }[]; totalResults: number; savedCount: number; metadata: { searchDuration: number; tokensUsed: number; model: string } } | null>(null);
+  const [deepStatus, setDeepStatus] = useState<string | null>(null);
 
   useEffect(() => {
     logEvent("info", "Research page loaded — fetching items");
@@ -675,6 +676,7 @@ export default function ResearchPage() {
                     setDeepSearching(true);
                     setDeepError(null);
                     setDeepResult(null);
+                    setDeepStatus("Starting deep research...");
                     try {
                       const res = await fetch("/api/research/deep", {
                         method: "POST",
@@ -685,11 +687,43 @@ export default function ResearchPage() {
                           maxResultsPerSource: 5,
                           analysisDepth: deepDepth,
                         }),
-                        signal: AbortSignal.timeout(180_000),
+                        signal: AbortSignal.timeout(240_000),
                       });
-                      const data = await res.json();
-                      if (!res.ok) throw new Error(data.error || res.statusText);
-                      setDeepResult(data);
+                      if (!res.ok) {
+                        const errData = await res.json().catch(() => ({}));
+                        throw new Error((errData as Record<string, string>).error || res.statusText);
+                      }
+                      const reader = res.body?.getReader();
+                      if (!reader) throw new Error("No response stream");
+                      const decoder = new TextDecoder();
+                      let buffer = "";
+                      while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split("\n");
+                        buffer = lines.pop() || "";
+                        for (const line of lines) {
+                          if (!line.startsWith("data: ")) continue;
+                          try {
+                            const event = JSON.parse(line.slice(6));
+                            if (event.phase === "done" && event.result) {
+                              setDeepResult(event.result);
+                              setDeepStatus(null);
+                            } else if (event.phase === "error") {
+                              throw new Error(event.error || "Research failed");
+                            } else if (event.message) {
+                              setDeepStatus(event.message);
+                            }
+                          } catch (parseErr) {
+                            if (parseErr instanceof Error && parseErr.message !== "Research failed" && !parseErr.message.startsWith("Search failed")) {
+                              // Ignore JSON parse errors on partial chunks
+                            } else {
+                              throw parseErr;
+                            }
+                          }
+                        }
+                      }
                       // Refresh items list
                       const refreshRes = await fetch("/api/research");
                       const refreshData = await refreshRes.json();
@@ -698,8 +732,9 @@ export default function ResearchPage() {
                       setDeepError(String(err instanceof Error ? err.message : err));
                     } finally {
                       setDeepSearching(false);
+                      setDeepStatus(null);
                     }
-                  }}
+                  }}}
                   className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-accent-foreground shadow shadow-accent/25 transition hover:opacity-90 disabled:opacity-40"
                 >
                   {deepSearching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Globe className="h-3.5 w-3.5" />}
@@ -707,6 +742,7 @@ export default function ResearchPage() {
                 </button>
               </div>
 
+              {deepStatus && <p className="text-xs text-amber-400/80">{deepStatus}</p>}
               {deepError && <p className="text-xs text-red-400">{deepError}</p>}
 
               {/* Deep Research Results */}

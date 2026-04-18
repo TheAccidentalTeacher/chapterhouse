@@ -30,178 +30,234 @@ export const maxDuration = 300;
 /**
  * POST /api/research/deep
  *
- * Multi-source parallel research. Searches across all configured sources,
- * deduplicates results, synthesizes with AI, and auto-saves to research_items.
+ * SSE streaming deep research. Sends progress events to keep the connection
+ * alive, then a final "result" event with the full payload.
+ *
+ * Events:
+ *   data: {"phase":"search","message":"Searching 5 sources...","elapsed":123}
+ *   data: {"phase":"search_done","message":"Found 18 results","elapsed":4500}
+ *   data: {"phase":"synth","message":"Synthesizing with Claude...","elapsed":5000}
+ *   data: {"phase":"done","result":{...fullPayload...}}
+ *   data: {"phase":"error","error":"..."}
  */
 export async function POST(request: Request) {
   const t0 = Date.now();
+  const elapsed = () => Date.now() - t0;
   const log = (phase: string, ...args: unknown[]) =>
-    console.log(`[deep-research][${phase}][${Date.now() - t0}ms]`, ...args);
+    console.log(`[deep-research][${phase}][${elapsed()}ms]`, ...args);
 
+  // Parse body before opening stream
+  let body: Record<string, unknown>;
   try {
-    log("init", "POST received");
-    const body = await request.json();
-    const query = typeof body.query === "string" ? body.query.trim() : "";
-    if (query.length < 5 || query.length > 500) {
-      log("init", "REJECTED — query length:", query.length);
-      return Response.json(
-        { error: "query must be 5-500 characters" },
-        { status: 400 }
-      );
-    }
+    body = await request.json();
+  } catch {
+    return Response.json({ error: "Invalid JSON" }, { status: 400 });
+  }
 
-    const sources: SearchSource[] = Array.isArray(body.sources)
-      ? body.sources.filter((s: string) => VALID_SOURCES.includes(s as SearchSource))
-      : [...VALID_SOURCES];
+  const query = typeof body.query === "string" ? (body.query as string).trim() : "";
+  if (query.length < 5 || query.length > 500) {
+    return Response.json({ error: "query must be 5-500 characters" }, { status: 400 });
+  }
 
-    const maxResultsPerSource = Math.min(
-      Math.max(Number(body.maxResultsPerSource) || 5, 1),
-      10
-    );
+  const sources: SearchSource[] = Array.isArray(body.sources)
+    ? (body.sources as string[]).filter((s) => VALID_SOURCES.includes(s as SearchSource)) as SearchSource[]
+    : [...VALID_SOURCES];
 
-    const analysisDepth: AnalysisDepth = VALID_DEPTHS.includes(body.analysisDepth)
-      ? body.analysisDepth
-      : "standard";
+  const maxResultsPerSource = Math.min(
+    Math.max(Number(body.maxResultsPerSource) || 5, 1),
+    10
+  );
 
-    log("init", `query="${query.slice(0, 80)}" sources=[${sources}] depth=${analysisDepth} maxPerSource=${maxResultsPerSource}`);
+  const analysisDepth: AnalysisDepth = VALID_DEPTHS.includes(body.analysisDepth as AnalysisDepth)
+    ? (body.analysisDepth as AnalysisDepth)
+    : "standard";
 
-    // ── Step 1: Parallel multi-source search ──
-    log("search", "START");
-    let results: SearchResult[];
-    let sourcesSearched: string[];
-    let searchDuration: number;
-    try {
-      const searchPromise = orchestrateSearch(query, sources, maxResultsPerSource);
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Search timeout after 60s")), 60_000)
-      );
-      const searchResult = await Promise.race([searchPromise, timeoutPromise]);
-      results = searchResult.results;
-      sourcesSearched = searchResult.sourcesSearched;
-      searchDuration = searchResult.searchDuration;
-      log("search", `DONE — ${results.length} results from [${sourcesSearched}] in ${searchDuration}ms`);
-    } catch (searchError) {
-      log("search", "FAILED:", String(searchError));
-      return Response.json({
-        query,
-        sourcesSearched: [],
-        totalResults: 0,
-        synthesis: `Search failed: ${String(searchError)}. Try again with fewer sources or a shorter query.`,
-        sources: [],
-        metadata: { searchDuration: 0, tokensUsed: 0, model: "none" },
-        _debug: { totalMs: Date.now() - t0, phase: "search", error: String(searchError) },
-      });
-    }
+  log("init", `query="${query.slice(0, 80)}" sources=[${sources}] depth=${analysisDepth}`);
 
-    if (results.length === 0) {
-      log("search", "ZERO results — returning early");
-      return Response.json({
-        query,
-        sourcesSearched,
-        totalResults: 0,
-        synthesis: "No results found across any source.",
-        sources: [],
-        metadata: { searchDuration, tokensUsed: 0, model: "none" },
-        _debug: { totalMs: Date.now() - t0, phase: "search-empty" },
-      });
-    }
+  // Open SSE stream
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (data: Record<string, unknown>) => {
+        try {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        } catch {
+          // Stream may be closed
+        }
+      };
 
-    // ── Steps 2+3: AI synthesis + Supabase save IN PARALLEL ──
-    const inputChars = results.slice(0, 20).reduce((n, r) => n + (r.content?.length || 0), 0);
-    log("synth+save", `START PARALLEL — depth=${analysisDepth}, ${results.length} results (~${inputChars} chars)`);
+      const sendProgress = (phase: string, message: string) => {
+        send({ phase, message, elapsed: elapsed() });
+      };
 
-    // Synthesis (with 90s timeout)
-    const synthPromiseWrapped = (async () => {
       try {
-        const synthPromise = synthesizeResults(query, results, analysisDepth);
-        const synthTimeout = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Synthesis timeout after 90s")), 90_000)
-        );
-        const synthResult = await Promise.race([synthPromise, synthTimeout]);
-        log("synth", `DONE — model=${synthResult.model}, tokens=${synthResult.tokensUsed}, synthLen=${synthResult.synthesis.length}`);
-        return synthResult;
-      } catch (synthError) {
-        log("synth", "FAILED:", String(synthError));
-        const rawSummary = results.slice(0, 10).map((r, i) =>
-          `**[${i+1}] ${r.title}** (${r.source})\n${r.url}\n${r.content?.slice(0, 300) || ""}`
-        ).join("\n\n---\n\n");
-        return {
-          synthesis: `AI synthesis timed out, but here are the raw results:\n\n${rawSummary}`,
-          tokensUsed: 0,
-          model: "timeout-fallback",
-        };
-      }
-    })();
+        // ── Step 1: Search ──
+        sendProgress("search", `Searching ${sources.length} sources...`);
+        log("search", "START");
 
-    // Supabase save (fire alongside synthesis)
-    const savePromise = (async () => {
-      const supabase = getSupabaseServiceRoleClient();
-      if (!supabase) return 0;
-      try {
-        const saveResults = await Promise.allSettled(
-          results.slice(0, 15).map(async (r) => {
-            const { data: existing } = await supabase
-              .from("research_items")
-              .select("id")
-              .eq("url", r.url)
-              .maybeSingle();
-            if (existing) return false;
-            const { error } = await supabase.from("research_items").insert({
+        let results: SearchResult[];
+        let sourcesSearched: string[];
+        let searchDuration: number;
+        try {
+          const searchPromise = orchestrateSearch(query, sources, maxResultsPerSource);
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Search timeout after 60s")), 60_000)
+          );
+          const searchResult = await Promise.race([searchPromise, timeoutPromise]);
+          results = searchResult.results;
+          sourcesSearched = searchResult.sourcesSearched;
+          searchDuration = searchResult.searchDuration;
+          log("search", `DONE — ${results.length} results from [${sourcesSearched}] in ${searchDuration}ms`);
+          sendProgress("search_done", `Found ${results.length} results from ${sourcesSearched.join(", ")} in ${searchDuration}ms`);
+        } catch (searchError) {
+          log("search", "FAILED:", String(searchError));
+          send({
+            phase: "done",
+            result: {
+              query,
+              sourcesSearched: [],
+              totalResults: 0,
+              synthesis: `Search failed: ${String(searchError)}. Try again with fewer sources or a shorter query.`,
+              sources: [],
+              metadata: { searchDuration: 0, tokensUsed: 0, model: "none" },
+              _debug: { totalMs: elapsed(), phase: "search", error: String(searchError) },
+            },
+          });
+          controller.close();
+          return;
+        }
+
+        if (results.length === 0) {
+          send({
+            phase: "done",
+            result: {
+              query,
+              sourcesSearched,
+              totalResults: 0,
+              synthesis: "No results found across any source.",
+              sources: [],
+              metadata: { searchDuration, tokensUsed: 0, model: "none" },
+              _debug: { totalMs: elapsed(), phase: "search-empty" },
+            },
+          });
+          controller.close();
+          return;
+        }
+
+        // ── Step 2+3: Synthesis + Save in parallel ──
+        sendProgress("synth", `Synthesizing ${results.length} results with AI (${analysisDepth} depth)...`);
+        log("synth+save", "START PARALLEL");
+
+        // Keep-alive: send a heartbeat every 15s while synthesis runs
+        const heartbeat = setInterval(() => {
+          sendProgress("heartbeat", `Still working... (${Math.round(elapsed() / 1000)}s)`);
+        }, 15_000);
+
+        // Synthesis
+        const synthPromise = (async () => {
+          try {
+            const synthP = synthesizeResults(query, results, analysisDepth);
+            const synthTimeout = new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error("Synthesis timeout after 90s")), 90_000)
+            );
+            const synthResult = await Promise.race([synthP, synthTimeout]);
+            log("synth", `DONE — model=${synthResult.model}, tokens=${synthResult.tokensUsed}`);
+            return synthResult;
+          } catch (synthError) {
+            log("synth", "FAILED:", String(synthError));
+            const rawSummary = results.slice(0, 10).map((r, i) =>
+              `**[${i + 1}] ${r.title}** (${r.source})\n${r.url}\n${r.content?.slice(0, 300) || ""}`
+            ).join("\n\n---\n\n");
+            return {
+              synthesis: `AI synthesis timed out, but here are the raw results:\n\n${rawSummary}`,
+              tokensUsed: 0,
+              model: "timeout-fallback",
+            };
+          }
+        })();
+
+        // Supabase save
+        const savePromise = (async () => {
+          const supabase = getSupabaseServiceRoleClient();
+          if (!supabase) return 0;
+          try {
+            const saveResults = await Promise.allSettled(
+              results.slice(0, 15).map(async (r) => {
+                const { data: existing } = await supabase
+                  .from("research_items")
+                  .select("id")
+                  .eq("url", r.url)
+                  .maybeSingle();
+                if (existing) return false;
+                const { error } = await supabase.from("research_items").insert({
+                  url: r.url,
+                  title: r.title,
+                  summary: r.content?.slice(0, 500) || r.title,
+                  verdict: `Found via deep research: "${query}" [${r.source}]`,
+                  tags: ["deep-research", r.source],
+                  status: "review",
+                });
+                return !error;
+              })
+            );
+            const count = saveResults.filter((r) => r.status === "fulfilled" && r.value).length;
+            log("save", `DONE — saved ${count} new items`);
+            return count;
+          } catch {
+            return 0;
+          }
+        })();
+
+        const [synthResult, savedCount] = await Promise.all([synthPromise, savePromise]);
+        clearInterval(heartbeat);
+
+        const { synthesis, tokensUsed, model } = synthResult;
+        const totalMs = elapsed();
+        log("done", `TOTAL ${totalMs}ms — search=${searchDuration}ms, results=${results.length}, saved=${savedCount}`);
+
+        sendProgress("saving", `Saved ${savedCount} new items`);
+
+        // Final result
+        send({
+          phase: "done",
+          result: {
+            query,
+            sourcesSearched,
+            totalResults: results.length,
+            savedCount,
+            synthesis,
+            sources: results.map((r) => ({
               url: r.url,
               title: r.title,
-              summary: r.content?.slice(0, 500) || r.title,
-              verdict: `Found via deep research: "${query}" [${r.source}]`,
-              tags: ["deep-research", r.source],
-              status: "review",
-            });
-            return !error;
-          })
-        );
-        const count = saveResults.filter(r => r.status === "fulfilled" && r.value).length;
-        log("save", `DONE — saved ${count} new items`);
-        return count;
-      } catch {
-        return 0;
+              source: r.source,
+              excerpt: r.content?.slice(0, 300) || "",
+              relevanceScore: r.relevanceScore,
+              metadata: r.metadata,
+            })),
+            metadata: { searchDuration, tokensUsed, model },
+            _debug: { totalMs, searchMs: searchDuration, savedCount, model },
+          },
+        });
+      } catch (error) {
+        log("CRASH", String(error));
+        send({
+          phase: "error",
+          error: String(error),
+          elapsed: elapsed(),
+        });
+      } finally {
+        controller.close();
       }
-    })();
+    },
+  });
 
-    // Wait for both
-    const [synthResult, savedCount] = await Promise.all([synthPromiseWrapped, savePromise]);
-    const { synthesis, tokensUsed, model } = synthResult;
-    log("synth+save", "BOTH DONE");
-
-    const totalMs = Date.now() - t0;
-    log("done", `TOTAL ${totalMs}ms — search=${searchDuration}ms, results=${results.length}, saved=${savedCount}`);
-
-    return Response.json({
-      query,
-      sourcesSearched,
-      totalResults: results.length,
-      savedCount,
-      synthesis,
-      sources: results.map((r) => ({
-        url: r.url,
-        title: r.title,
-        source: r.source,
-        excerpt: r.content?.slice(0, 300) || "",
-        relevanceScore: r.relevanceScore,
-        metadata: r.metadata,
-      })),
-      metadata: {
-        searchDuration,
-        tokensUsed,
-        model,
-      },
-      _debug: { totalMs, searchMs: searchDuration, savedCount, model },
-    });
-  } catch (error) {
-    const totalMs = Date.now() - t0;
-    console.error(`[deep-research][CRASH][${totalMs}ms]`, error);
-    return Response.json(
-      { error: String(error), _debug: { totalMs, phase: "uncaught" } },
-      { status: 500 }
-    );
-  }
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
+  });
 }
 
 async function synthesizeResults(
@@ -257,7 +313,6 @@ ${depthInstructions[depth]}`;
 
   try {
     if (depth === "quick") {
-      // GPT-5-mini for speed
       console.log("[deep-research][synth-inner] Calling GPT-4o-mini...");
       const openai = getOpenAI();
       const response = await openai.responses.create({
@@ -271,7 +326,6 @@ ${depthInstructions[depth]}`;
         model: "gpt-4o-mini",
       };
     } else {
-      // Claude Sonnet for standard/deep
       console.log(`[deep-research][synth-inner] Calling claude-sonnet-4-6, max_tokens=${depth === "deep" ? 4096 : 2048}, input ~${sourceSummaries.length} chars...`);
       const anthropic = getAnthropic();
       const response = await anthropic.messages.create({
