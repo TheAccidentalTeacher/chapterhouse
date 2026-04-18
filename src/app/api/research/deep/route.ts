@@ -106,37 +106,37 @@ export async function POST(request: Request) {
       });
     }
 
-    // ── Step 2: AI synthesis ──
+    // ── Steps 2+3: AI synthesis + Supabase save IN PARALLEL ──
     const inputChars = results.slice(0, 20).reduce((n, r) => n + (r.content?.length || 0), 0);
-    log("synth", `START — depth=${analysisDepth}, feeding ${results.length} results (~${inputChars} chars)`);
-    let synthesis: string;
-    let tokensUsed: number;
-    let model: string;
-    try {
-      const synthPromise = synthesizeResults(query, results, analysisDepth);
-      const synthTimeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Synthesis timeout after 90s")), 90_000)
-      );
-      const synthResult = await Promise.race([synthPromise, synthTimeout]);
-      synthesis = synthResult.synthesis;
-      tokensUsed = synthResult.tokensUsed;
-      model = synthResult.model;
-      log("synth", `DONE — model=${model}, tokens=${tokensUsed}, synthLen=${synthesis.length}`);
-    } catch (synthError) {
-      log("synth", "FAILED:", String(synthError));
-      const rawSummary = results.slice(0, 10).map((r, i) =>
-        `**[${i+1}] ${r.title}** (${r.source})\n${r.url}\n${r.content?.slice(0, 300) || ""}`
-      ).join("\n\n---\n\n");
-      synthesis = `AI synthesis timed out, but here are the raw results:\n\n${rawSummary}`;
-      tokensUsed = 0;
-      model = "timeout-fallback";
-    }
+    log("synth+save", `START PARALLEL — depth=${analysisDepth}, ${results.length} results (~${inputChars} chars)`);
 
-    // ── Step 3: Auto-save to research_items ──
-    log("save", "START");
-    const supabase = getSupabaseServiceRoleClient();
-    let savedCount = 0;
-    if (supabase) {
+    // Synthesis (with 90s timeout)
+    const synthPromiseWrapped = (async () => {
+      try {
+        const synthPromise = synthesizeResults(query, results, analysisDepth);
+        const synthTimeout = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Synthesis timeout after 90s")), 90_000)
+        );
+        const synthResult = await Promise.race([synthPromise, synthTimeout]);
+        log("synth", `DONE — model=${synthResult.model}, tokens=${synthResult.tokensUsed}, synthLen=${synthResult.synthesis.length}`);
+        return synthResult;
+      } catch (synthError) {
+        log("synth", "FAILED:", String(synthError));
+        const rawSummary = results.slice(0, 10).map((r, i) =>
+          `**[${i+1}] ${r.title}** (${r.source})\n${r.url}\n${r.content?.slice(0, 300) || ""}`
+        ).join("\n\n---\n\n");
+        return {
+          synthesis: `AI synthesis timed out, but here are the raw results:\n\n${rawSummary}`,
+          tokensUsed: 0,
+          model: "timeout-fallback",
+        };
+      }
+    })();
+
+    // Supabase save (fire alongside synthesis)
+    const savePromise = (async () => {
+      const supabase = getSupabaseServiceRoleClient();
+      if (!supabase) return 0;
       try {
         const saveResults = await Promise.allSettled(
           results.slice(0, 15).map(async (r) => {
@@ -157,12 +157,18 @@ export async function POST(request: Request) {
             return !error;
           })
         );
-        savedCount = saveResults.filter(r => r.status === "fulfilled" && r.value).length;
+        const count = saveResults.filter(r => r.status === "fulfilled" && r.value).length;
+        log("save", `DONE — saved ${count} new items`);
+        return count;
       } catch {
-        // Non-critical
+        return 0;
       }
-    }
-    log("save", `DONE — saved ${savedCount} new items`);
+    })();
+
+    // Wait for both
+    const [synthResult, savedCount] = await Promise.all([synthPromiseWrapped, savePromise]);
+    const { synthesis, tokensUsed, model } = synthResult;
+    log("synth+save", "BOTH DONE");
 
     const totalMs = Date.now() - t0;
     log("done", `TOTAL ${totalMs}ms — search=${searchDuration}ms, results=${results.length}, saved=${savedCount}`);
@@ -203,11 +209,13 @@ async function synthesizeResults(
   results: SearchResult[],
   depth: AnalysisDepth
 ): Promise<{ synthesis: string; tokensUsed: number; model: string }> {
+  const maxResults = depth === "deep" ? 20 : depth === "standard" ? 12 : 8;
+  const maxContentLen = depth === "deep" ? 1500 : depth === "standard" ? 1000 : 500;
   const sourceSummaries = results
-    .slice(0, 20)
+    .slice(0, maxResults)
     .map(
       (r, i) =>
-        `[${i + 1}] (${r.source}) ${r.title}\nURL: ${r.url}\n${r.content?.slice(0, 1500) || "No content"}`
+        `[${i + 1}] (${r.source}) ${r.title}\nURL: ${r.url}\n${r.content?.slice(0, maxContentLen) || "No content"}`
     )
     .join("\n\n---\n\n");
 

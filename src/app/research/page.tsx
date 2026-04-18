@@ -685,6 +685,7 @@ export default function ResearchPage() {
                           maxResultsPerSource: 5,
                           analysisDepth: deepDepth,
                         }),
+                        signal: AbortSignal.timeout(180_000),
                       });
                       const data = await res.json();
                       if (!res.ok) throw new Error(data.error || res.statusText);
