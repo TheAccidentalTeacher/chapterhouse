@@ -734,7 +734,7 @@ export default function ResearchPage() {
                       setDeepSearching(false);
                       setDeepStatus(null);
                     }
-                  }}}
+                  }}
                   className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-accent-foreground shadow shadow-accent/25 transition hover:opacity-90 disabled:opacity-40"
                 >
                   {deepSearching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Globe className="h-3.5 w-3.5" />}
