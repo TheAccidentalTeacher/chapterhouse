@@ -120,6 +120,9 @@
     },
     "src/app/api/cron/geo-visibility/route.ts": {
       "maxDuration": 120
+    },
+    "src/app/api/research/deep/route.ts": {
+      "maxDuration": 120
     }
   }
 }
