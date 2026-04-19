@@ -617,7 +617,10 @@ ${f.text}`
         const response = await fetch("/api/chat/council", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: newMessages.filter((m) => !isCouncilMessage(m)), model: selectedModel.id }),
+          body: JSON.stringify({
+            messages: newMessages.filter((m) => !isCouncilMessage(m) && m.role !== "system"),
+            model: selectedModel.id,
+          }),
         });
 
         if (!response.ok || !response.body) {
@@ -755,7 +758,7 @@ ${f.text}`
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: [
-            ...newMessages.slice(0, -1).filter((m) => !isCouncilMessage(m)),
+            ...newMessages.slice(0, -1).filter((m) => !isCouncilMessage(m) && m.role !== "system"),
             { role: "user" as const, content: userContentForApi },
           ],
           model: selectedModel.id,

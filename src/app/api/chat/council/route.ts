@@ -135,11 +135,19 @@ function sseEvent(encoder: TextEncoder, type: string, data: unknown): Uint8Array
 
 export async function POST(request: Request) {
   try {
-    const { messages, model: _preferredModel } = await request.json();
+    const { messages: rawMessages, model: _preferredModel } = await request.json();
 
-    if (!messages || !Array.isArray(messages)) {
+    if (!rawMessages || !Array.isArray(rawMessages)) {
       return Response.json({ error: "messages array is required" }, { status: 400 });
     }
+
+    // Strip any non-user/assistant roles — UI banners ("— The Council responds to each other —",
+    // /remember confirmations) use role: "system" for display only; Anthropic's Messages API
+    // rejects any role other than user/assistant in the messages array. Rebuttal round also
+    // builds on this array so the sanitization protects both rounds.
+    const messages = rawMessages.filter(
+      (m: { role?: string }) => m?.role === "user" || m?.role === "assistant"
+    );
 
     const encoder = new TextEncoder();
 

@@ -758,7 +758,14 @@ async function fetchUrlContent(url: string): Promise<string | null> {
 
 export async function POST(request: Request) {
   try {
-    const { messages, model = "gpt-5.4", personaId, imageAttachments, grounded = false } = await request.json();
+    const { messages: rawMessages, model = "gpt-5.4", personaId, imageAttachments, grounded = false } = await request.json();
+
+    // Strip any non-user/assistant roles — UI banners ("— The Council responds to each other —",
+    // /remember confirmations) use role: "system" for display only; Anthropic's Messages API
+    // rejects any role other than user/assistant in the messages array.
+    const messages = Array.isArray(rawMessages)
+      ? rawMessages.filter((m: { role?: string }) => m?.role === "user" || m?.role === "assistant")
+      : rawMessages;
 
     const encoder = new TextEncoder();
 
