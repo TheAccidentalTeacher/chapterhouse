@@ -29,6 +29,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { personas, type Persona } from "@/lib/personas";
 import { FocusBoardPanel } from "@/components/focus-board-panel";
 import { ScratchpadPanel } from "@/components/scratchpad-panel";
+import { MemberPresence } from "@/components/member-presence";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -134,6 +135,8 @@ export function ChatInterface() {
   // Council mode
   const [councilMode, setCouncilMode] = useState(false);
   const [activeCouncilMembers, setActiveCouncilMembers] = useState<CouncilMemberInfo[]>([]);
+  const [completedCouncilMembers, setCompletedCouncilMembers] = useState<Set<string>>(new Set());
+  const [councilPhase, setCouncilPhase] = useState<"opening" | "rebuttal" | null>(null);
   const [currentSpeaker, setCurrentSpeaker] = useState<string | null>(null);
 
   // Persona mode
@@ -612,6 +615,8 @@ ${f.text}`
       log.data("Messages in context", newMessages.length);
       setActiveCouncilMembers([]);
       setCurrentSpeaker(null);
+      setCompletedCouncilMembers(new Set());
+      setCouncilPhase("opening");
 
       try {
         const response = await fetch("/api/chat/council", {
@@ -683,6 +688,11 @@ ${f.text}`
                     }
                     return updated;
                   });
+                  setCompletedCouncilMembers((prev) => {
+                    const next = new Set(prev);
+                    next.add(data.name);
+                    return next;
+                  });
                   log.success(`${data.name} done`);
                 } else if (eventType === "member_error") {
                   setMessages((prev) => {
@@ -696,6 +706,9 @@ ${f.text}`
                   });
                 } else if (eventType === "rebuttal_start") {
                   log.info("Rebuttal round beginning...");
+                  setCouncilPhase("rebuttal");
+                  // Reset completed set for the rebuttal round so presence tracks who's spoken in the rebuttal
+                  setCompletedCouncilMembers(new Set());
                   // Insert a visual divider
                   setMessages((prev) => [
                     ...prev,
@@ -703,6 +716,7 @@ ${f.text}`
                   ]);
                 } else if (eventType === "council_done") {
                   setCurrentSpeaker(null);
+                  setCouncilPhase(null);
                   log.success(`Council complete: ${data.membersResponded.join(", ")}`);
                   // Save conversation
                   setMessages((prev) => {
@@ -975,30 +989,14 @@ ${f.text}`
           <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
             {!isEmpty && (
             <div className="mx-auto w-full max-w-3xl space-y-6">
-              {/* Council members bar — shows when council is active */}
+              {/* Council members presence — shows when council is active */}
               {councilMode && activeCouncilMembers.length > 0 && isStreaming && (
-                <div className="flex items-center gap-2 rounded-2xl border border-border/40 bg-card/60 px-4 py-2.5">
-                  <Users className="h-4 w-4 text-muted" />
-                  <span className="text-xs text-muted">Council:</span>
-                  {activeCouncilMembers.map((m) => (
-                    <span
-                      key={m.name}
-                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium transition-all ${
-                        currentSpeaker === m.name
-                          ? "ring-2 ring-offset-1 ring-offset-background"
-                          : "opacity-50"
-                      }`}
-                      style={{
-                        backgroundColor: m.color + "18",
-                        color: m.color,
-                        ...(currentSpeaker === m.name ? { ringColor: m.color } : {}),
-                      }}
-                    >
-                      {currentSpeaker === m.name && <Loader2 className="h-3 w-3 animate-spin" />}
-                      {m.name}
-                    </span>
-                  ))}
-                </div>
+                <MemberPresence
+                  members={activeCouncilMembers}
+                  currentSpeaker={currentSpeaker}
+                  completedMembers={completedCouncilMembers}
+                  phase={councilPhase}
+                />
               )}
 
               {messages.map((msg, i) => {
