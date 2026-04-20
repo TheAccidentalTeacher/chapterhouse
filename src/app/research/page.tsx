@@ -5,6 +5,7 @@ import { ArrowUp, ExternalLink, Loader2, Tag, PenLine, X, Link2, ClipboardPaste,
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { logEvent, loggedFetch } from "@/lib/debug-log";
+import { ReasoningTrace } from "@/components/reasoning-trace";
 
 type InputTab = "url" | "paste" | "note" | "image" | "auto" | "deep";
 
@@ -88,6 +89,12 @@ export default function ResearchPage() {
   const [deepSources, setDeepSources] = useState<string[]>(["tavily", "serpapi", "reddit", "newsapi", "internet-archive"]);
   const [deepResult, setDeepResult] = useState<{ synthesis: string; sources: { url: string; title: string; source: string; excerpt: string; relevanceScore: number }[]; totalResults: number; savedCount: number; metadata: { searchDuration: number; tokensUsed: number; model: string } } | null>(null);
   const [deepStatus, setDeepStatus] = useState<string | null>(null);
+  const [deepTrace, setDeepTrace] = useState<Array<{
+    step_type: "decompose" | "search" | "read" | "cross-reference" | "synthesize" | "compose";
+    label: string;
+    detail?: string;
+    status: "active" | "complete";
+  }>>([]);
 
   useEffect(() => {
     logEvent("info", "Research page loaded — fetching items");
@@ -677,6 +684,7 @@ export default function ResearchPage() {
                     setDeepError(null);
                     setDeepResult(null);
                     setDeepStatus("Starting deep research...");
+                    setDeepTrace([]);
                     try {
                       const res = await fetch("/api/research/deep", {
                         method: "POST",
@@ -712,6 +720,30 @@ export default function ResearchPage() {
                               setDeepStatus(null);
                             } else if (event.phase === "error") {
                               throw new Error(event.error || "Research failed");
+                            } else if (event.phase === "trace_step") {
+                              setDeepTrace((prev) => {
+                                // If this is marking a previously-active step complete, update it in place
+                                if (event.status === "complete") {
+                                  const existingIdx = prev.findIndex(
+                                    (s) => s.step_type === event.step_type && s.status === "active" && s.label === event.label,
+                                  );
+                                  if (existingIdx >= 0) {
+                                    const updated = [...prev];
+                                    updated[existingIdx] = { ...updated[existingIdx], status: "complete", detail: event.detail ?? updated[existingIdx].detail };
+                                    return updated;
+                                  }
+                                }
+                                // Otherwise append a new step
+                                return [
+                                  ...prev,
+                                  {
+                                    step_type: event.step_type,
+                                    label: event.label,
+                                    detail: event.detail,
+                                    status: event.status,
+                                  },
+                                ];
+                              });
                             } else if (event.message) {
                               setDeepStatus(event.message);
                             }
@@ -742,7 +774,10 @@ export default function ResearchPage() {
                 </button>
               </div>
 
-              {deepStatus && <p className="text-xs text-amber-400/80">{deepStatus}</p>}
+              {(deepSearching || deepTrace.length > 0) && (
+                <ReasoningTrace steps={deepTrace} streaming={deepSearching} collapsed={!!deepResult} />
+              )}
+              {deepStatus && !deepTrace.length && <p className="text-xs text-amber-400/80">{deepStatus}</p>}
               {deepError && <p className="text-xs text-red-400">{deepError}</p>}
 
               {/* Deep Research Results */}

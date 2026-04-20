@@ -90,8 +90,22 @@ export async function POST(request: Request) {
         send({ phase, message, elapsed: elapsed() });
       };
 
+      const sendTrace = (
+        step_type: "decompose" | "search" | "read" | "cross-reference" | "synthesize" | "compose",
+        label: string,
+        status: "active" | "complete",
+        detail?: string,
+      ) => {
+        send({ phase: "trace_step", step_type, label, status, detail, elapsed: elapsed() });
+      };
+
       try {
+        // ── Step 0: Decompose (receive + plan) ──
+        sendTrace("decompose", `Parsing query: "${query.slice(0, 80)}${query.length > 80 ? "…" : ""}"`, "active", `${sources.length} sources selected · depth: ${analysisDepth}`);
+
         // ── Step 1: Search ──
+        sendTrace("decompose", `Query parsed — ${sources.length} sources selected`, "complete");
+        sendTrace("search", `Searching ${sources.length} sources in parallel`, "active", sources.join(" · "));
         sendProgress("search", `Searching ${sources.length} sources...`);
         log("search", "START");
 
@@ -108,6 +122,12 @@ export async function POST(request: Request) {
           sourcesSearched = searchResult.sourcesSearched;
           searchDuration = searchResult.searchDuration;
           log("search", `DONE — ${results.length} results from [${sourcesSearched}] in ${searchDuration}ms`);
+          sendTrace("search", `Found ${results.length} results across ${sourcesSearched.length} sources`, "complete", `${searchDuration}ms · ${sourcesSearched.join(", ")}`);
+          // Emit a read step per top source (max 5) so the trace shows reading activity
+          const topSources = results.slice(0, 5);
+          for (const r of topSources) {
+            sendTrace("read", `Reading: ${r.title?.slice(0, 80) || "(untitled)"}`, "complete", r.source);
+          }
           sendProgress("search_done", `Found ${results.length} results from ${sourcesSearched.join(", ")} in ${searchDuration}ms`);
         } catch (searchError) {
           log("search", "FAILED:", String(searchError));
@@ -145,6 +165,7 @@ export async function POST(request: Request) {
         }
 
         // ── Step 2+3: Synthesis + Save in parallel ──
+        sendTrace("synthesize", `Synthesizing ${results.length} results into a coherent report`, "active", `${analysisDepth} depth · ${results.length} sources`);
         sendProgress("synth", `Synthesizing ${results.length} results with AI (${analysisDepth} depth)...`);
         log("synth+save", "START PARALLEL");
 
@@ -215,6 +236,8 @@ export async function POST(request: Request) {
         const totalMs = elapsed();
         log("done", `TOTAL ${totalMs}ms — search=${searchDuration}ms, results=${results.length}, saved=${savedCount}`);
 
+        sendTrace("synthesize", `Synthesis complete`, "complete", `${model} · ${tokensUsed.toLocaleString()} tokens`);
+        sendTrace("compose", `Composing final report`, "complete", `${savedCount} new items saved to library`);
         sendProgress("saving", `Saved ${savedCount} new items`);
 
         // Final result
