@@ -30,6 +30,9 @@ import { personas, type Persona } from "@/lib/personas";
 import { FocusBoardPanel } from "@/components/focus-board-panel";
 import { ScratchpadPanel } from "@/components/scratchpad-panel";
 import { MemberPresence } from "@/components/member-presence";
+import { ToolInvocationCard } from "@/components/tool-invocation-card";
+import type { TraceStep } from "@/components/reasoning-trace";
+import type { IntentType } from "@/lib/intent-detection";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -89,10 +92,127 @@ type CouncilMessage = {
   isStreaming?: boolean;
 };
 
-type DisplayMessage = Message | CouncilMessage;
+type ToolMessage = {
+  role: "tool";
+  intentType: IntentType;
+  subject?: string;
+  status: "detected" | "running" | "complete" | "error";
+  trace: TraceStep[];
+  resultSummary?: string;
+  resultLink?: string;
+  error?: string;
+};
+
+type DisplayMessage = Message | CouncilMessage | ToolMessage;
 
 function isCouncilMessage(msg: DisplayMessage): msg is CouncilMessage {
   return msg.role === "council";
+}
+
+function isToolMessage(msg: DisplayMessage): msg is ToolMessage {
+  return msg.role === "tool";
+}
+
+// ── Tool Invocation SSE Handler ─────────────────────────────────────────────
+// Parses SSE events from the chat route when intent detection has fired.
+// Replaces the last (empty assistant) message with a tool message, then
+// updates it in place as trace/result events arrive.
+async function streamToolInvocation(
+  response: Response,
+  setMessages: React.Dispatch<React.SetStateAction<DisplayMessage[]>>,
+  log: { info: (msg: string) => void; error: (msg: string, err?: unknown) => void; success: (msg: string) => void },
+): Promise<void> {
+  if (!response.body) return;
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      try {
+        const event = JSON.parse(line.slice(6));
+        if (event.phase === "intent_detected") {
+          const toolMsg: ToolMessage = {
+            role: "tool",
+            intentType: event.intent_type,
+            subject: event.subject,
+            status: "running",
+            trace: [],
+          };
+          setMessages((prev) => {
+            const updated = [...prev];
+            // Replace the trailing empty assistant placeholder
+            if (updated.length > 0 && updated[updated.length - 1].role === "assistant") {
+              updated[updated.length - 1] = toolMsg;
+            } else {
+              updated.push(toolMsg);
+            }
+            return updated;
+          });
+          log.info(`Intent: ${event.label} — ${event.subject || "(no subject)"}`);
+        } else if (event.phase === "trace_step") {
+          setMessages((prev) => {
+            const updated = [...prev];
+            const lastIdx = updated.length - 1;
+            const last = updated[lastIdx];
+            if (isToolMessage(last)) {
+              // If marking an active step complete, update it in place
+              let newTrace = [...last.trace];
+              if (event.status === "complete") {
+                const activeIdx = newTrace.findIndex(
+                  (s) => s.step_type === event.step_type && s.status === "active" && s.label === event.label,
+                );
+                if (activeIdx >= 0) {
+                  newTrace[activeIdx] = { ...newTrace[activeIdx], status: "complete", detail: event.detail ?? newTrace[activeIdx].detail };
+                } else {
+                  newTrace.push({ step_type: event.step_type, label: event.label, detail: event.detail, status: "complete" });
+                }
+              } else {
+                newTrace.push({ step_type: event.step_type, label: event.label, detail: event.detail, status: "active" });
+              }
+              updated[lastIdx] = { ...last, trace: newTrace };
+            }
+            return updated;
+          });
+        } else if (event.phase === "tool_result") {
+          setMessages((prev) => {
+            const updated = [...prev];
+            const lastIdx = updated.length - 1;
+            const last = updated[lastIdx];
+            if (isToolMessage(last)) {
+              updated[lastIdx] = {
+                ...last,
+                status: "complete",
+                resultSummary: event.summary,
+                resultLink: event.link,
+              };
+            }
+            return updated;
+          });
+          log.success("Tool invocation complete");
+        } else if (event.phase === "tool_error") {
+          setMessages((prev) => {
+            const updated = [...prev];
+            const lastIdx = updated.length - 1;
+            const last = updated[lastIdx];
+            if (isToolMessage(last)) {
+              updated[lastIdx] = { ...last, status: "error", error: event.error };
+            }
+            return updated;
+          });
+          log.error(`Tool invocation failed: ${event.error}`);
+        }
+      } catch {
+        /* skip malformed */
+      }
+    }
+  }
 }
 
 // ── Quick Command Palette ────────────────────────────────────────────────────────
@@ -623,7 +743,7 @@ ${f.text}`
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            messages: newMessages.filter((m) => !isCouncilMessage(m) && m.role !== "system"),
+            messages: newMessages.filter((m) => !isCouncilMessage(m) && !isToolMessage(m) && m.role !== "system"),
             model: selectedModel.id,
           }),
         });
@@ -772,7 +892,7 @@ ${f.text}`
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: [
-            ...newMessages.slice(0, -1).filter((m) => !isCouncilMessage(m) && m.role !== "system"),
+            ...newMessages.slice(0, -1).filter((m) => !isCouncilMessage(m) && !isToolMessage(m) && m.role !== "system"),
             { role: "user" as const, content: userContentForApi },
           ],
           model: selectedModel.id,
@@ -795,31 +915,41 @@ ${f.text}`
 
       log.success("Stream opened");
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let accumulated = "";
+      // Branch on content type — SSE means tool invocation card, plain text means normal chat
+      const contentType = response.headers.get("content-type") ?? "";
+      const isSSE = contentType.includes("text/event-stream");
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      if (isSSE) {
+        log.info("Tool invocation detected — rendering tool card");
+        // Replace the empty assistant placeholder with a tool card message
+        await streamToolInvocation(response, setMessages, log);
+      } else {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let accumulated = "";
 
-        const chunk = decoder.decode(value, { stream: true });
-        accumulated += chunk;
-        chunkCount++;
-        totalChars += chunk.length;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
-        if (firstChunkTime === null) {
-          firstChunkTime = performance.now();
-          setFetchingUrls([]);
-          log.timing("Time to first token", Math.round(firstChunkTime - t0));
+          const chunk = decoder.decode(value, { stream: true });
+          accumulated += chunk;
+          chunkCount++;
+          totalChars += chunk.length;
+
+          if (firstChunkTime === null) {
+            firstChunkTime = performance.now();
+            setFetchingUrls([]);
+            log.timing("Time to first token", Math.round(firstChunkTime - t0));
+          }
+
+          const captured = accumulated;
+          setMessages((prev) => {
+            const updated = [...prev];
+            updated[updated.length - 1] = { role: "assistant", content: captured };
+            return updated;
+          });
         }
-
-        const captured = accumulated;
-        setMessages((prev) => {
-          const updated = [...prev];
-          updated[updated.length - 1] = { role: "assistant", content: captured };
-          return updated;
-        });
       }
 
       const totalTime = Math.round(performance.now() - t0);
@@ -832,7 +962,20 @@ ${f.text}`
       // Save the complete conversation to DB
       // Use a callback to get the final messages state
       setMessages((prev) => {
-        if (threadId) saveMessages(prev as Message[], threadId);
+        if (threadId) {
+          // Convert tool messages to plain assistant messages for storage
+          const storable = prev.map((m) =>
+            isToolMessage(m)
+              ? {
+                  role: "assistant" as const,
+                  content:
+                    `[Tool: ${m.intentType}${m.subject ? ` — ${m.subject}` : ""}]\n\n` +
+                    (m.resultSummary ?? m.error ?? "(no result)"),
+                }
+              : m,
+          );
+          saveMessages(storable as Message[], threadId);
+        }
         return prev;
       });
     } catch (e) {
@@ -1000,6 +1143,22 @@ ${f.text}`
               )}
 
               {messages.map((msg, i) => {
+                // Tool invocation card — full-width inline
+                if (isToolMessage(msg)) {
+                  return (
+                    <div key={i} className="w-full">
+                      <ToolInvocationCard
+                        intentType={msg.intentType}
+                        subject={msg.subject}
+                        status={msg.status}
+                        trace={msg.trace}
+                        resultSummary={msg.resultSummary}
+                        resultLink={msg.resultLink}
+                        error={msg.error}
+                      />
+                    </div>
+                  );
+                }
                 // Council member message
                 if (isCouncilMessage(msg)) {
                   return (

@@ -8,6 +8,7 @@ import { PUSH_LOG } from "@/lib/push-log";
 import { getFolioContext } from "@/lib/folio-builder";
 import { searchSemanticScholar } from "@/lib/semantic-scholar";
 import type { CitationResult } from "@/lib/semantic-scholar";
+import { detectIntent, INTENT_INVOKE_THRESHOLD, INTENT_LABELS, type Intent } from "@/lib/intent-detection";
 
 const ACADEMIC_PAPER_INTENT = /\b(write.*(?:academic|research)\s*paper|(?:academic|research)\s*paper|literature\s*review|paper.*with\s*citations?|semantic\s*scholar)\b/i;
 
@@ -975,6 +976,16 @@ export async function POST(request: Request) {
       }
     }
 
+    // ── Intent Detection — chat-as-command-surface ───────────────────────────
+    // If the user's message matches a known feature-invocation pattern with high
+    // confidence, route to the appropriate feature pipeline and return an SSE
+    // stream that the chat UI renders as a tool-invocation card (instead of a
+    // standard AI chat response).
+    const intent = detectIntent(lastUserMsg);
+    if (intent && intent.confidence >= INTENT_INVOKE_THRESHOLD) {
+      return handleToolInvocation(intent, request);
+    }
+
     // Enrich system prompt with live context from Supabase (research ranked by relevance to this message)
     const liveContext = await buildLiveContext(lastUserMsg);
     const isAcademicPaper = ACADEMIC_PAPER_INTENT.test(lastUserMsg);
@@ -1127,5 +1138,161 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Chat API error:", error);
     return new Response("Failed to get response", { status: 500 });
+  }
+}
+
+// ── Tool Invocation Handler ─────────────────────────────────────────────────
+// When intent detection fires above threshold, route to the appropriate
+// feature pipeline and stream SSE events the chat UI renders as a tool card.
+// v1: deep_research fully wired. Other intents acknowledge and link to the
+// feature page until their streaming pipelines are integrated (Shifts 4-5).
+
+async function handleToolInvocation(intent: Intent, request: Request): Promise<Response> {
+  const encoder = new TextEncoder();
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (data: Record<string, unknown>) => {
+        try {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        } catch {
+          /* stream may be closed */
+        }
+      };
+
+      // Always emit the intent_detected event first so the UI can render the
+      // card immediately while the pipeline warms up.
+      send({
+        phase: "intent_detected",
+        intent_type: intent.type,
+        label: INTENT_LABELS[intent.type],
+        subject: intent.params.subject ?? "",
+        params: intent.params,
+        confidence: intent.confidence,
+      });
+
+      try {
+        if (intent.type === "deep_research") {
+          await runDeepResearchInvocation(intent, request, send);
+        } else {
+          // Intents not yet fully wired — acknowledge + provide link to feature page
+          send({
+            phase: "trace_step",
+            step_type: "decompose",
+            label: `Recognized ${INTENT_LABELS[intent.type]} intent`,
+            status: "complete",
+            detail: `Subject: ${intent.params.subject ?? "(none)"}`,
+          });
+          const linkMap: Record<string, string> = {
+            council_quick: "/council",
+            doc_generate: "/doc-studio",
+            social_generate: "/social",
+            image_generate: "/creative-studio",
+            voice_synth: "/voice-studio",
+            intel_fetch: "/intel",
+          };
+          send({
+            phase: "tool_result",
+            summary: `${INTENT_LABELS[intent.type]} invocation recognized. This feature's inline chat pipeline will be wired in a later shift — for now, open the dedicated page to continue.`,
+            link: linkMap[intent.type] ?? "/",
+          });
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        send({ phase: "tool_error", error: msg });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
+  });
+}
+
+async function runDeepResearchInvocation(
+  intent: Intent,
+  request: Request,
+  send: (data: Record<string, unknown>) => void,
+): Promise<void> {
+  const subject = typeof intent.params.subject === "string" ? intent.params.subject : intent.rawMessage;
+  if (!subject || subject.trim().length < 5) {
+    send({
+      phase: "tool_error",
+      error: "Research subject is too short. Try: 'research [specific topic]'",
+    });
+    return;
+  }
+
+  // Build absolute URL for internal fetch (serverless same-origin)
+  const origin = new URL(request.url).origin;
+  const res = await fetch(`${origin}/api/research/deep`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      // Forward auth cookie so the internal call has the same session
+      Cookie: request.headers.get("cookie") ?? "",
+    },
+    body: JSON.stringify({
+      query: subject.slice(0, 500),
+      sources: ["tavily", "serpapi", "reddit", "newsapi"],
+      maxResultsPerSource: 5,
+      analysisDepth: "standard",
+    }),
+  });
+
+  if (!res.ok || !res.body) {
+    const errText = await res.text().catch(() => "");
+    send({ phase: "tool_error", error: `Deep research failed: HTTP ${res.status} — ${errText.slice(0, 200)}` });
+    return;
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      try {
+        const event = JSON.parse(line.slice(6));
+        // Pass through trace_step events directly
+        if (event.phase === "trace_step") {
+          send(event);
+        } else if (event.phase === "done" && event.result) {
+          // Transform into tool_result
+          const r = event.result;
+          const summary =
+            (typeof r.synthesis === "string" ? r.synthesis.slice(0, 800) : "") +
+            (typeof r.synthesis === "string" && r.synthesis.length > 800 ? "\n\n…" : "");
+          send({
+            phase: "tool_result",
+            summary: summary || "Deep research complete — no synthesis returned.",
+            link: "/research",
+            stats: {
+              total_results: r.totalResults,
+              saved_count: r.savedCount,
+              model: r.metadata?.model,
+              tokens: r.metadata?.tokensUsed,
+            },
+          });
+        } else if (event.phase === "error") {
+          send({ phase: "tool_error", error: event.error || "Research failed" });
+        }
+        // Ignore progress/heartbeat — the trace carries the visual load
+      } catch {
+        /* skip malformed */
+      }
+    }
   }
 }
